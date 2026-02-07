@@ -1,0 +1,131 @@
+{
+    "1": {
+        "nom": "Juju",
+        "photo": "uploads\/perso_1_1770501975.jpg",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": [
+            {
+                "token": "test1",
+                "joined_at": 1770504217
+            },
+            {
+                "token": "test2",
+                "joined_at": 1770504229
+            }
+        ]
+    },
+    "2": {
+        "nom": "Personnage 2",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "3": {
+        "nom": "Personnage 3",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "4": {
+        "nom": "Personnage 4",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "5": {
+        "nom": "Personnage 5",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "6": {
+        "nom": "Personnage 6",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "7": {
+        "nom": "Personnage 7",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "8": {
+        "nom": "Personnage 8",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "9": {
+        "nom": "Personnage 9",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "10": {
+        "nom": "Personnage 10",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "11": {
+        "nom": "Personnage 11",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "12": {
+        "nom": "Personnage 12",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "13": {
+        "nom": "Personnage 13",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "14": {
+        "nom": "Personnage 14",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    },
+    "15": {
+        "nom": "Personnage 15",
+        "photo": "",
+        "time_per_player": 120,
+        "buffer_before_next": 15,
+        "last_access_at": 0,
+        "queue": []
+    }
+}

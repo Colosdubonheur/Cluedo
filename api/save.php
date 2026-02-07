@@ -1,0 +1,1 @@
+<?php file_put_contents('../data/personnages.json', file_get_contents('php://input')); echo json_encode(['ok'=>true]);

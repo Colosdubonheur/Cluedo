@@ -1,0 +1,11 @@
+/* style.css (see previous message for full comments) */
+:root { --bg:#0f1115; --card:#171a21; --text:#e9eef7; --muted:#a8b3c7; --ok:#4ade80; --warn:#fbbf24; }
+*{box-sizing:border-box}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
+.container{max-width:1100px;margin:0 auto;padding:18px}
+.card{background:var(--card);border-radius:14px;padding:14px}
+.play{min-height:100vh;display:flex;align-items:center;justify-content:center}
+.bigTimer{font-size:64px;font-weight:800}
+.badge{padding:6px 10px;border-radius:999px;font-weight:700}
+.badge.wait{background:var(--warn);color:#000}
+.badge.ok{background:var(--ok);color:#000}
