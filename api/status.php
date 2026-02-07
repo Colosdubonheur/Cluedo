@@ -16,9 +16,16 @@ if (!isset($data[$id])) {
   echo json_encode(["error" => "unknown id"]);
   exit;
 }
-
-$p = &$data[$id];
-$now = time();
+$wait = 0;
+$selfJoinedAt = $p['queue'][$index]['joined_at'];
+$selfElapsed = max(0, $now - $selfJoinedAt);
+$selfRemaining = max(0, $timePerPlayer - $selfElapsed);
+echo json_encode([
+  "queue_length" => count($p['queue']),
+  "wait_remaining" => max(0, $wait),
+  "my_remaining" => $index === 0 ? $selfRemaining : 0,
+  "can_access" => $index === 0,
+  "time_per_player" => $timePerPlayer,
 
 /* -------------------------------------------------
    1️⃣ Initialisation de la file si absente
