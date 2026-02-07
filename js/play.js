@@ -1,16 +1,18 @@
 document.addEventListener("DOMContentLoaded", async () => {
-    const TOKEN_KEY = "cluedo_player_token";
+  const TOKEN_KEY = "cluedo_player_token";
 
-let playerToken = sessionStorage.getItem(TOKEN_KEY);
-if (!playerToken) {
-  playerToken = crypto.randomUUID();
-  sessionStorage.setItem(TOKEN_KEY, playerToken);
-}
+  let playerToken = sessionStorage.getItem(TOKEN_KEY);
+  if (!playerToken) {
+    playerToken = crypto.randomUUID();
+    sessionStorage.setItem(TOKEN_KEY, playerToken);
+  }
+
+  const audio = new Audio("./assets/ding.mp3");
+  audio.preload = "auto";
 
   let unlocked = false;
   let notified = false;
-const audio = new Audio("./assets/ding.mp3");
-  audio.preload = "auto";
+
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
 
@@ -51,40 +53,34 @@ const audio = new Audio("./assets/ding.mp3");
           Patientez
         </div>
 
-        <div style="margin-top:10px;color:#aaa;font-size:14px">
-        </div>
-
         <div id="result" style="display:none;margin-top:16px">
-          <div id="message" style="font-size:22px;font-weight:bold;margin-bottom:10px"></div>
+          <div id="message" style="font-size:18px;font-weight:bold;margin-bottom:10px"></div>
           <img id="photo" style="width:100%;max-height:260px;object-fit:contain;border-radius:14px">
         </div>
       </div>
     </div>
   `;
 
-const unlock = document.createElement("div");
-unlock.textContent = "🔊 Tapotez l’écran pour activer le son";
-unlock.style.position = "fixed";
-unlock.style.bottom = "20px";
-unlock.style.left = "50%";
-unlock.style.transform = "translateX(-50%)";
-unlock.style.background = "#000";
-unlock.style.color = "#fff";
-unlock.style.padding = "10px 14px";
-unlock.style.borderRadius = "999px";
-unlock.style.fontSize = "14px";
-unlock.style.opacity = "0.85";
-unlock.style.zIndex = "999";
-
-unlock.onclick = () => {
-  unlocked = true;
-  audio.currentTime = 0;
-  audio.play().catch(()=>{});
-  unlock.remove();
-};
-
-document.body.appendChild(unlock);
-
+  const unlock = document.createElement("div");
+  unlock.textContent = "🔊 Tapotez l’écran pour activer le son";
+  unlock.style.position = "fixed";
+  unlock.style.bottom = "20px";
+  unlock.style.left = "50%";
+  unlock.style.transform = "translateX(-50%)";
+  unlock.style.background = "#000";
+  unlock.style.color = "#fff";
+  unlock.style.padding = "10px 14px";
+  unlock.style.borderRadius = "999px";
+  unlock.style.fontSize = "14px";
+  unlock.style.opacity = "0.85";
+  unlock.style.zIndex = "999";
+  unlock.onclick = () => {
+    unlocked = true;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    unlock.remove();
+  };
+  document.body.appendChild(unlock);
 
   const elName = document.getElementById("name");
   const elTimer = document.getElementById("timer");
@@ -100,70 +96,67 @@ document.body.appendChild(unlock);
     return `${m}:${s}`;
   }
 
-  let granted = false;
-
   async function loop() {
     try {
-const r = await fetch(
-  `./api/status.php?id=${id}&token=${playerToken}&t=${Date.now()}`
-);
-
+      const r = await fetch(`./api/status.php?id=${id}&token=${playerToken}&t=${Date.now()}`);
       const data = await r.json();
-      const position = data.position ?? 0;
-const queueLength = data.queue_length ?? 1;
-const waitRemaining = data.wait_remaining ?? 0;
 
+      if (data.error) {
+        elName.textContent = "Erreur serveur";
+        elStatus.textContent = data.error;
+        elStatus.style.background = "#ef4444";
+        elTimer.textContent = "00:00";
+        elResult.style.display = "none";
+        return;
+      }
+
+      const position = data.position ?? 0;
+      const queueLength = data.queue_length ?? 1;
+      const waitRemaining = data.wait_remaining ?? 0;
+      const myRemaining = data.my_remaining ?? 0;
+      const canAccess = Boolean(data.can_access);
 
       elName.textContent = data.nom || `Personnage #${id}`;
 
-      const teamElapsed = (Date.now() - startTeam) / 1000;
-      elElapsed.textContent = `Écoulé équipe : ${fmt(teamElapsed)}`;
-
-      if (data.last_access_at && data.last_access_at > 0) {
-        elCooldown.textContent = `Dernier accès : il y a ${fmt(data.since_last_access)}`;
+      if (!canAccess) {
+        elTimer.textContent = fmt(waitRemaining);
+        elStatus.textContent = `En attente (position ${position + 1})`;
+        elStatus.style.background = "#fbbf24";
+        elResult.style.display = "none";
+        notified = false;
+      } else if (myRemaining > 0) {
+        elTimer.textContent = fmt(myRemaining);
+        elStatus.textContent = "Temps en cours avec vous";
+        elStatus.style.background = "#fbbf24";
+        elResult.style.display = "none";
       } else {
-        elCooldown.textContent = "Dernier accès : jamais";
-      }
+        elTimer.textContent = "00:00";
+        elStatus.textContent = "Accès autorisé";
+        elStatus.style.background = "#4ade80";
 
-     if (waitRemaining > 0) {
-  elTimer.textContent = fmt(waitRemaining);
+        elResult.style.display = "block";
+        elMessage.textContent =
+          queueLength > 1
+            ? "⚠️ Une autre équipe arrive dans quelques secondes"
+            : `Vous pouvez parler à ${data.nom} tant qu'aucune autre équipe n'arrive.`;
 
-  if (position === 0) {
-    elStatus.textContent = "Temps en cours avec vous";
-  } else {
-    elStatus.textContent = `En attente (position ${position + 1})`;
-  }
+        if (data.photo) {
+          elPhoto.src = data.photo;
+          elPhoto.style.display = "block";
+        } else {
+          elPhoto.style.display = "none";
+        }
 
-  elStatus.style.background = "#fbbf24";
-  elResult.style.display = "none";
-
-} else {
-  elTimer.textContent = "00:00";
-
-  if (position === 0) {
-    elStatus.textContent = "Temps écoulé";
-    elStatus.style.background = "#f97316"; // orange
-
-    elResult.style.display = "block";
-    elMessage.textContent =
-      queueLength > 1
-        ? "⚠️ Une autre équipe arrive dans quelques secondes"
-        : `Votre temps est terminé, vous pouvez continuer avec ${data.nom} jusqu'à l'arrivée de l'équipe suivante ou partir quand vous souhaitez.`;
-
-    if (data.photo) elPhoto.src = data.photo;
-
-  } else {
-    elStatus.textContent = "Accès autorisé";
-    elStatus.style.background = "#4ade80";
-    elResult.style.display = "none";
-  }
-}
-
-
-
+        if (!notified && unlocked) {
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+          notified = true;
+        }
       }
     } catch (e) {
       elName.textContent = "Erreur serveur";
+      elStatus.textContent = "Impossible de récupérer le statut";
+      elStatus.style.background = "#ef4444";
     }
 
     setTimeout(loop, 1000);
