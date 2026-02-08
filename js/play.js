@@ -163,6 +163,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let hasVoluntarilyLeft = false;
   let previousState = null;
   let shouldAttemptJoin = true;
+  let canRenameOnServer = false;
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -248,6 +249,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
     const payload = await response.json();
+    if (payload?.error === "team not found in queue") {
+      const initialized = await initializeTeamNameOnServer(newName);
+      if (!initialized) {
+        window.alert("Impossible de modifier le nom d’équipe.");
+      }
+      return;
+    }
+
     if (!response.ok || !payload.ok) {
       window.alert("Impossible de modifier le nom d’équipe.");
       return;
@@ -290,6 +299,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function renameTeam() {
     const newName = askTeamName(teamName);
     if (!newName || newName === teamName) {
+      return;
+    }
+
+    if (!canRenameOnServer) {
+      const initialized = await initializeTeamNameOnServer(newName);
+      if (!initialized) {
+        window.alert("Impossible de modifier le nom d’équipe.");
+      }
       return;
     }
 
@@ -385,7 +402,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    if (nextSeconds < localTimerRemaining - 1 || nextSeconds > localTimerRemaining + 2) {
+    const drift = nextSeconds - localTimerRemaining;
+    if (drift > 0.5 || drift < -1) {
       localTimerRemaining = nextSeconds;
       localTimerLastTickAt = Date.now();
     }
@@ -514,6 +532,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const state = data.state === "free"
         ? "free"
         : (data.state === "need_name" ? "need_name" : (hasExplicitAccess ? "active" : "waiting"));
+      canRenameOnServer = inQueue && hasValidNameFromServer;
 
       if (inQueue) {
         shouldAttemptJoin = false;
