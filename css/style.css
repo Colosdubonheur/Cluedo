@@ -974,18 +974,31 @@ body {
   color: #d1ddf4;
 }
 
+.monitor-team-body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 220px);
+  gap: 12px;
+  align-items: start;
+}
+
+.monitor-team-main {
+  min-width: 0;
+}
+
 .monitor-card-message {
   background: #0f131d;
   border: 1px solid #263247;
   border-radius: 8px;
   padding: 8px;
+  width: min(100%, 480px);
+  max-width: 100%;
 }
 
 .monitor-card-message p {
   margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .monitor-last-character {
@@ -997,13 +1010,13 @@ body {
 
 .monitor-team-actions {
   display: flex;
-  flex-wrap: wrap;
+  flex-direction: column;
   gap: 8px;
-  margin-bottom: 10px;
+  margin: 0;
 }
 
 .monitor-team-actions .admin-button {
-  flex: 1 1 180px;
+  width: 100%;
 }
 
 .monitor-team-delete-btn {
@@ -1015,6 +1028,12 @@ body {
 .monitor-team-delete-btn:focus-visible {
   background: #991b1b;
   border-color: #991b1b;
+}
+
+@media (max-width: 900px) {
+  .monitor-team-body {
+    grid-template-columns: 1fr;
+  }
 }
 
 .monitor-modal {
