@@ -395,25 +395,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const row = (Array.isArray(state.global) ? state.global : []).find((entry) => String(entry.id || "") === currentCharacterId);
     const characterName = String(teamState.character_name || row?.nom || "Personnage");
-    const statusText = teamState.state === "active" ? "Avec le personnage" : "En attente";
-    const waitClass = getWaitColorClass(row || {});
+    const hasNextTeamWaiting = teamState.state === "active" && Number(teamState.queue_total || 0) > 1;
+    const statusText = teamState.state === "active"
+      ? (hasNextTeamWaiting ? "Préparez-vous à libérer la place" : "Interrogatoire en cours")
+      : "En attente";
+    const waitClass = hasNextTeamWaiting ? "is-wait-orange" : getWaitColorClass(row || {});
     const waitLabel = teamState.state === "active"
       ? "Temps restant"
       : "Temps estimé";
     const waitValue = fmt(row?.estimated_wait_seconds || 0);
-    const queueInfo = Number(teamState.queue_total || 0) > 0
-      ? `File actuelle : ${Number(teamState.queue_total || 0)} équipe(s).`
-      : "";
     const disableLeave = isBlocked || isQueueActionInProgress;
 
     currentCharacterEl.hidden = false;
     currentCharacterEl.innerHTML = `
       <div class="team-current-character-card">
         <h3>${characterName}</h3>
-        <p class="team-current-state ${teamState.state === "active" ? "is-active" : "is-waiting"}">${statusText}</p>
+        <p class="team-current-state ${teamState.state === "active" ? (hasNextTeamWaiting ? "is-alert" : "is-active") : "is-waiting"}">${statusText}</p>
         <p class="team-character-line team-character-wait ${waitClass}">⏱ ${waitLabel} : ${waitValue}</p>
-        ${queueInfo ? `<p class="team-current-meta">${queueInfo}</p>` : ""}
-        <button type="button" class="admin-button team-current-leave" ${disableLeave ? "disabled" : ""}>Quitter la file</button>
+        <button type="button" class="admin-button team-current-leave" ${disableLeave ? "disabled" : ""}>STOP</button>
       </div>
     `;
 
