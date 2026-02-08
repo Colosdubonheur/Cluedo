@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
   localStorage.setItem(TOKEN_KEY, token);
   sessionStorage.setItem(TOKEN_KEY, token);
 
-  const tokenEl = document.getElementById("team-token");
   const displayNameEl = document.getElementById("team-display-name");
   const editNameBtn = document.getElementById("team-edit-name-btn");
   const profileForm = document.getElementById("team-profile-form");
@@ -29,6 +28,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let latestState = null;
   let previousTeamState = "free";
+  let qrScanner = null;
+  let qrLastValue = "";
+  let qrIsProcessingScan = false;
+  let qrIsRunning = false;
 
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
@@ -100,8 +103,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     latestState = payload;
-    tokenEl.textContent = `Token équipe : ${token}`;
-
     const profile = payload.team?.profile || {};
     const profileName = (profile.team_name || "").trim();
     const storedName = (localStorage.getItem(TEAM_KEY) || "").trim();
@@ -115,6 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     playersWrap.innerHTML = "";
     const players = Array.isArray(profile.players) ? profile.players : [];
+    const filledPlayersCount = players.filter((name) => String(name || "").trim()).length;
     for (let i = 0; i < 10; i += 1) {
       const row = document.createElement("div");
       row.className = "team-inline";
@@ -125,9 +127,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (profile.photo) {
       photoEl.src = profile.photo;
       photoEl.style.display = "block";
+      photoGuidanceEl.textContent = "Photo d'équipe enregistrée ✅";
+      photoGuidanceEl.classList.add("is-ok");
     } else {
       photoEl.removeAttribute("src");
       photoEl.style.display = "none";
+      photoGuidanceEl.textContent = "Pensez à ajouter une photo de l’équipe pour faciliter le jeu.";
+      photoGuidanceEl.classList.remove("is-ok");
+    }
+
+    if (filledPlayersCount < 2) {
+      participantsGuidanceEl.textContent = "Merci de renseigner les participants de l’équipe avant de continuer.";
+      participantsGuidanceEl.classList.remove("is-ok");
+    } else {
+      participantsGuidanceEl.textContent = `Participants renseignés : ${filledPlayersCount}/10 ✅`;
+      participantsGuidanceEl.classList.add("is-ok");
     }
 
     const history = Array.isArray(payload.team?.history) ? payload.team.history : [];
