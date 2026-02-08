@@ -12,6 +12,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const displayNameEl = document.getElementById("team-display-name");
   const editNameBtn = document.getElementById("team-edit-name-btn");
   const profileForm = document.getElementById("team-profile-form");
+  const profileSubmitBtn = profileForm?.querySelector('button[type="submit"]');
   const teamNameInput = document.getElementById("team-name");
   const feedbackName = document.getElementById("team-name-feedback");
   const playersWrap = document.getElementById("team-players");
@@ -35,13 +36,29 @@ document.addEventListener("DOMContentLoaded", () => {
   let qrLastValue = "";
   let qrIsProcessingScan = false;
   let userEditingLockUntil = 0;
+  let isSavingTeamName = false;
+  let isTeamNameEditMode = false;
+
+  function setNameFeedback(message, status = "neutral") {
+    feedbackName.textContent = String(message || "");
+    feedbackName.classList.remove("is-success", "is-error", "is-processing");
+    if (status === "success") feedbackName.classList.add("is-success");
+    if (status === "error") feedbackName.classList.add("is-error");
+    if (status === "processing") feedbackName.classList.add("is-processing");
+  }
+
+  function setNameSavingUi(isSaving) {
+    if (!profileSubmitBtn) return;
+    profileSubmitBtn.disabled = isSaving;
+    profileSubmitBtn.textContent = isSaving ? "Enregistrement…" : "Enregistrer le nom";
+  }
 
   function markUserEditing(durationMs = 5000) {
     userEditingLockUntil = Math.max(userEditingLockUntil, Date.now() + durationMs);
   }
 
   function isUserEditing() {
-    return Date.now() < userEditingLockUntil || profileForm.contains(document.activeElement);
+    return Date.now() < userEditingLockUntil || isSavingTeamName || isTeamNameEditMode || profileForm.contains(document.activeElement);
   }
 
   function fmt(sec) {
@@ -233,7 +250,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const state = latestState?.team?.state;
     if (!state?.character_id) {
-      feedbackName.textContent = "Nom d'équipe mis à jour.";
+      setNameFeedback("Nom d'équipe mis à jour.", "success");
       refreshTeamNameUi(trimmed);
       return;
     }
@@ -250,12 +267,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const payload = await response.json().catch(() => ({ ok: false }));
     if (!response.ok || !payload.ok) {
-      feedbackName.textContent = "Nom d'équipe mis à jour localement.";
+      setNameFeedback("Nom d'équipe mis à jour localement.", "success");
       refreshTeamNameUi(trimmed);
       return;
     }
 
-    feedbackName.textContent = "Nom d'équipe mis à jour.";
+    setNameFeedback("Nom d'équipe mis à jour.", "success");
     refreshTeamNameUi(trimmed);
   }
 
@@ -300,6 +317,9 @@ document.addEventListener("DOMContentLoaded", () => {
         if (!item) return false;
         openItem(item);
         return true;
+      },
+      closeAll() {
+        openItem(null);
       },
     };
   }
@@ -480,18 +500,27 @@ document.addEventListener("DOMContentLoaded", () => {
 
   profileForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    feedbackName.textContent = "";
+    isSavingTeamName = true;
+    setNameSavingUi(true);
+    setNameFeedback("Enregistrement du nom d'équipe…", "processing");
     try {
       await renameTeam(teamNameInput.value);
+      isTeamNameEditMode = false;
+      accordionController?.closeAll();
+      teamNameInput.blur();
       await loadHub();
     } catch (_error) {
-      feedbackName.textContent = "Impossible de sauvegarder le nom pour le moment.";
+      setNameFeedback("Erreur : impossible de sauvegarder le nom d'équipe pour le moment.", "error");
+    } finally {
+      isSavingTeamName = false;
+      setNameSavingUi(false);
     }
   });
 
   let accordionController = null;
 
   editNameBtn.addEventListener("click", () => {
+    isTeamNameEditMode = true;
     accordionController?.openByTriggerId("team-accordion-trigger-participants");
 
     requestAnimationFrame(() => {
@@ -506,10 +535,10 @@ document.addEventListener("DOMContentLoaded", () => {
     markUserEditing();
     try {
       await saveProfile();
-      feedbackName.textContent = "Participants sauvegardés.";
+      setNameFeedback("Participants sauvegardés.", "success");
       await loadHub();
     } catch (_error) {
-      feedbackName.textContent = "Impossible de sauvegarder les joueurs.";
+      setNameFeedback("Impossible de sauvegarder les joueurs.", "error");
     }
   });
 

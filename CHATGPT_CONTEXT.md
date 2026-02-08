@@ -106,7 +106,7 @@ Le serveur est l’unique source de vérité pour :
 - `team.html` propose un scan QR adapté au mobile, à la tablette et au PC.
 - Les libellés et actions de scan sont localisés en français pour un usage terrain clair.
 - Un fallback par import d'image est disponible si la caméra est indisponible ou ne démarre pas.
-- Le bouton crayon sur `team.html` ouvre bien l'édition du nom d'équipe (section Participants), permet la saisie/validation sans rechargement et affiche un retour explicite en cas d'échec.
+- Le bouton crayon sur `team.html` ouvre bien l'édition du nom d'équipe (section Participants), permet la saisie/validation sans rechargement et affiche un feedback explicite pendant l'enregistrement puis en succès ou en erreur.
 
 ---
 

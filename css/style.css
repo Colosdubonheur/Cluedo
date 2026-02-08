@@ -564,6 +564,15 @@ body {
   font-size: 14px;
   min-height: 20px;
 }
+.team-feedback.is-processing {
+  color: #93c5fd;
+}
+.team-feedback.is-success {
+  color: var(--ok);
+}
+.team-feedback.is-error {
+  color: #f87171;
+}
 
 .team-qr-actions {
   display: flex;
