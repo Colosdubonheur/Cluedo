@@ -80,6 +80,31 @@ body {
 .admin-subtitle { color: var(--muted); margin-top: -6px; }
 
 
+
+.admin-top-nav {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  margin: -6px 0 12px;
+  padding: 6px 0 10px;
+  background: linear-gradient(to bottom, rgba(15, 17, 21, 0.98), rgba(15, 17, 21, 0.82), rgba(15, 17, 21, 0));
+}
+
+.admin-hub-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #334155;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.admin-hub-link:hover,
+.admin-hub-link:focus-visible { background: #3f516d; }
+
 .admin-save-wrap {
   position: fixed;
   left: 0;

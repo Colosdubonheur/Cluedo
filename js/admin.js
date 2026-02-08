@@ -46,6 +46,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   document.body.innerHTML = `
     <div class="container admin-page">
+      <nav class="admin-top-nav" aria-label="Navigation admin">
+        <a href="./index.html" class="admin-hub-link">Retour au Hub</a>
+      </nav>
       <h1>Admin Cluedo</h1>
       <p class="admin-subtitle">Gestion des personnages</p>
       ${isPinEnabled ? "" : '<p class="admin-open-access">Aucun code configuré, accès libre.</p>'}
