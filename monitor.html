@@ -24,41 +24,25 @@ cluedo_send_html_no_cache_headers();
 
     <section class="card monitor-message-controls" aria-label="Communication supervision">
       <h2>💬 Communication supervision</h2>
-      <p class="monitor-message-intro">Sélection explicite des destinataires : tout le monde, groupes complets ou cibles individuelles (équipes d’abord, puis personnages).</p>
+      <p class="monitor-message-intro">Un seul outil de messagerie : choisissez explicitement une cible, filtrez rapidement la liste, puis envoyez votre message.</p>
 
-      <div class="monitor-message-panels">
-        <article class="monitor-message-panel" aria-label="Messagerie équipes">
-          <h3>👥 Messagerie équipes</h3>
-          <p class="monitor-muted">Visible uniquement dans l'Espace Équipe.</p>
-          <div class="monitor-message-form-row">
-            <label for="team-message-target" class="admin-label">Destinataires équipes</label>
-            <select id="team-message-target" class="admin-input" multiple size="7"></select>
-            <p class="monitor-muted">Maintenez Ctrl/Cmd pour multi-sélection.</p>
-          </div>
-          <div class="monitor-message-form-row">
-            <label for="team-message-text" class="admin-label">Message équipe</label>
-            <textarea id="team-message-text" class="admin-input monitor-message-input" maxlength="300" placeholder="Ex: Fin du jeu dans 5 minutes."></textarea>
-          </div>
-          <button id="send-team-message" class="admin-button monitor-message-send-btn">Envoyer aux équipes</button>
-          <p id="team-message-feedback" class="team-feedback" aria-live="polite"></p>
-        </article>
-
-        <article class="monitor-message-panel" aria-label="Messagerie personnages">
-          <h3>🎭 Messagerie personnages</h3>
-          <p class="monitor-muted">Visible uniquement sur la page personnage ciblée.</p>
-          <div class="monitor-message-form-row">
-            <label for="character-message-target" class="admin-label">Destinataires personnages</label>
-            <select id="character-message-target" class="admin-input" multiple size="7"></select>
-            <p class="monitor-muted">Maintenez Ctrl/Cmd pour multi-sélection.</p>
-          </div>
-          <div class="monitor-message-form-row">
-            <label for="character-message-text" class="admin-label">Message personnage</label>
-            <textarea id="character-message-text" class="admin-input monitor-message-input" maxlength="300" placeholder="Ex: Merci de préparer la rotation suivante."></textarea>
-          </div>
-          <button id="send-character-message" class="admin-button monitor-message-send-btn">Envoyer aux personnages</button>
-          <p id="character-message-feedback" class="team-feedback" aria-live="polite"></p>
-        </article>
-      </div>
+      <article class="monitor-message-panel" aria-label="Messagerie unifiée">
+        <p class="monitor-muted">Les messages équipes restent visibles uniquement dans l'Espace Équipe ; les messages personnages restent visibles uniquement sur les pages personnage.</p>
+        <div class="monitor-message-form-row">
+          <label for="monitor-message-target-search" class="admin-label">Rechercher une cible</label>
+          <input id="monitor-message-target-search" class="admin-input" type="search" placeholder="Filtrer équipes / personnages" autocomplete="off" spellcheck="false"/>
+        </div>
+        <div class="monitor-message-form-row">
+          <label for="monitor-message-target" class="admin-label">Destinataire</label>
+          <select id="monitor-message-target" class="admin-input" size="8"></select>
+        </div>
+        <div class="monitor-message-form-row">
+          <label for="monitor-message-text" class="admin-label">Message</label>
+          <textarea id="monitor-message-text" class="admin-input monitor-message-input" maxlength="300" placeholder="Ex: Fin du jeu dans 5 minutes."></textarea>
+        </div>
+        <button id="send-monitor-message" class="admin-button monitor-message-send-btn">Envoyer le message</button>
+        <p id="monitor-message-feedback" class="team-feedback" aria-live="polite"></p>
+      </article>
     </section>
 
     <section id="teams" class="monitor-grid" aria-live="polite">Chargement…</section>
