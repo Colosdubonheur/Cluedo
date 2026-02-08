@@ -39,13 +39,21 @@
     const character = payload.character;
     characterNameEl.innerHTML = `Personnage : <strong>${character.nom || "(sans nom)"}</strong> (#${character.id})`;
 
-    if (!payload.current) {
+    const activeTeam = payload.current || payload.active || payload.active_team || null;
+    const waitingQueue = Array.isArray(payload.queue)
+      ? payload.queue
+      : (Array.isArray(payload.waiting_queue) ? payload.waiting_queue : []);
+
+    if (!activeTeam) {
       currentEl.innerHTML = "<h3>Équipe en cours</h3><p>Aucune équipe active.</p>";
     } else {
+      const activeTeamName = activeTeam.team || activeTeam.name || activeTeam.nom || "(sans nom)";
+      const activeState = activeTeam.state || "active";
       currentEl.innerHTML = `
         <h3>Équipe en cours</h3>
-        <p><strong>${payload.current.team}</strong></p>
-        <p>Temps restant : ${fmt(payload.current.remaining_seconds)}</p>
+        <p><strong>${activeTeamName}</strong></p>
+        <p>État : <strong>${activeState}</strong></p>
+        <p>Temps restant : ${fmt(activeTeam.remaining_seconds)}</p>
         <p>
           <button id="plus30">+30s</button>
           <button id="minus30">-30s</button>
@@ -57,13 +65,18 @@
       document.getElementById("eject").onclick = () => control("eject");
     }
 
-    if (!payload.queue.length) {
+    if (!waitingQueue.length) {
       queueEl.innerHTML = "<h3>File d'attente</h3><p>Personne en attente.</p>";
       return;
     }
 
-    queueEl.innerHTML = `<h3>File d'attente</h3>${payload.queue
-      .map((team) => `<div>${team.position}. ${team.team} (${fmt(team.estimated_seconds)})</div>`)
+    queueEl.innerHTML = `<h3>File d'attente</h3>${waitingQueue
+      .map((team, index) => {
+        const position = Number.isFinite(Number(team.position)) ? Number(team.position) : index + 1;
+        const teamName = team.team || team.name || team.nom || "(sans nom)";
+        const state = team.state || "waiting";
+        return `<div>${position}. ${teamName} — ${state} (${fmt(team.estimated_seconds)})</div>`;
+      })
       .join("")}`;
   }
 

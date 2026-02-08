@@ -351,6 +351,8 @@ Objectif : conserver un dépôt propre tout en laissant les animateurs modifier 
   - 📊 Supervision (`monitor.html`)
 - `monitor.html` : vue lecture seule de toutes les équipes actives/en attente
 - `character.html?id=X` : interface terrain par personnage
+  - consomme uniquement `GET /api/character_status.php?id=X` (API personnage dédiée), jamais `status.php` ni `supervision.php`.
+  - affiche en temps réel l'équipe `active` remontée par le serveur et la file FIFO `waiting` remontée par le serveur.
 
 ### Sécurité administration
 - Seule l'interface admin est protégée par PIN.
