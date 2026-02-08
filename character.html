@@ -22,6 +22,14 @@ cluedo_send_html_no_cache_headers();
       <input id="characterPhotoInput" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="photo character-photo-input"/>
       <button id="characterPhotoButton" type="button" class="admin-button">Modifier la photo</button>
     </section>
+    <section class="card" style="margin-top:12px">
+      <h3>Emplacement du personnage</h3>
+      <div class="team-inline">
+        <input id="characterLocationInput" class="admin-input" maxlength="160" placeholder="Ex: Hall principal / Stand 3"/>
+        <button id="characterLocationButton" type="button" class="admin-button">Mettre à jour l'emplacement</button>
+      </div>
+      <p id="characterLocationFeedback" class="team-feedback"></p>
+    </section>
     <div id="currentTeam" class="card" style="margin-top:12px"></div>
     <div id="queue" class="card" style="margin-top:12px"></div>
   </div>

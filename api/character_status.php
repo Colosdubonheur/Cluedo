@@ -76,6 +76,7 @@ echo json_encode([
     'time_per_player' => $timePerPlayer,
     'buffer_before_next' => $buffer,
     'photo' => (string) ($p['photo'] ?? ''),
+    'location' => (string) ($p['location'] ?? ''),
   ],
   'current' => $current,
   'queue' => $waiting,
