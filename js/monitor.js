@@ -144,18 +144,25 @@
     if (team.state === "active") {
       return {
         css: "is-with-character",
-        text: team.current_personnage?.nom || "Personnage",
+        text: "Avec personnage",
+        character: team.current_personnage?.nom || "Personnage",
         timeInfo: statusTimeInfo(team),
       };
     }
     if (team.state === "waiting") {
       return {
         css: "is-waiting",
-        text: team.waiting_queue?.nom || "Personnage",
+        text: "En attente",
+        character: team.waiting_queue?.nom || "Personnage",
         timeInfo: statusTimeInfo(team),
       };
     }
-    return { css: "is-free", text: "Équipe libre", timeInfo: "" };
+    return {
+      css: "is-free",
+      text: "Équipe libre",
+      character: "",
+      timeInfo: "",
+    };
   }
 
   function renderPlayers(team) {
@@ -201,6 +208,7 @@
         <div class="monitor-team-header-meta">
           <h3 class="monitor-team-name">${escapeHtml(teamName)}</h3>
           <span class="monitor-status ${status.css}">${escapeHtml(status.text)}</span>
+          ${status.character ? `<p class="monitor-character-context">${escapeHtml(status.character)}</p>` : ""}
           ${status.timeInfo ? `<p class="monitor-character-context">${escapeHtml(status.timeInfo)}</p>` : ""}
         </div>
       </header>

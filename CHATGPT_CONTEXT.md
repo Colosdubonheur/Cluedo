@@ -247,6 +247,10 @@ Le serveur est l’unique source de vérité pour :
   - **Vert** = équipe libre,
   - **Bleu** = équipe avec un personnage,
   - **Orange** = équipe en attente.
+- Dans chaque carte équipe de `monitor.html`, le statut doit afficher simultanément :
+  - une pastille de statut générique (`Équipe libre` / `Avec personnage` / `En attente`),
+  - le nom du suspect concerné quand l’équipe est `active` ou `waiting`,
+  - l’indication de temps associée (`Temps écoulé` / `Temps d'attente`).
 - Le statut doit rester purement informatif et ne change aucune règle métier serveur.
 
 ### Supervision — périmètre des équipes listées
