@@ -292,6 +292,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     openItem(null);
+
+    return {
+      openByTriggerId(triggerId) {
+        const trigger = document.getElementById(triggerId);
+        const item = trigger?.closest("[data-accordion-item]");
+        if (!item) return false;
+        openItem(item);
+        return true;
+      },
+    };
   }
 
   async function initQrScanner() {
@@ -479,9 +489,16 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  let accordionController = null;
+
   editNameBtn.addEventListener("click", () => {
-    teamNameInput.focus();
-    teamNameInput.select();
+    accordionController?.openByTriggerId("team-accordion-trigger-participants");
+
+    requestAnimationFrame(() => {
+      teamNameInput.focus();
+      teamNameInput.select();
+    });
+
     markUserEditing();
   });
 
@@ -528,7 +545,7 @@ document.addEventListener("DOMContentLoaded", () => {
     historyEl.textContent = "Les données de résumé sont temporairement indisponibles.";
     globalEl.textContent = "L'état global est temporairement indisponible.";
   });
-  initAccordion();
+  accordionController = initAccordion();
   initQrScanner();
   setInterval(() => {
     loadHub().catch(() => {
