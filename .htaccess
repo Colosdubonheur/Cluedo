@@ -18,3 +18,11 @@
 </IfModule>
 
 FileETag MTime Size
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # Internal PHP includes must never be directly accessible.
+  RewriteRule ^includes(?:/|$) - [F,L,NC]
+  RewriteRule ^api/_.*\.php$ - [F,L,NC]
+</IfModule>
