@@ -452,6 +452,52 @@ body {
   white-space: nowrap;
 }
 
+.team-audio-button.is-enabled {
+  background: #16a34a;
+}
+
+.team-audio-button.is-disabled {
+  background: #b91c1c;
+}
+
+.team-message-history {
+  margin-top: 10px;
+  max-height: 180px;
+  overflow-y: auto;
+  border: 1px solid #4b5563;
+  border-radius: 10px;
+  background: #1e293b;
+  padding: 8px;
+}
+
+.team-message-empty {
+  margin: 0;
+  color: #fef08a;
+}
+
+.team-message-item {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.team-message-item:last-child {
+  margin-bottom: 0;
+}
+
+.team-message-time {
+  color: #facc15;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.team-message-text {
+  margin: 0;
+  color: #fde047;
+  word-break: break-word;
+}
+
 .team-block h2 {
   margin: 0 0 8px;
 }
@@ -979,6 +1025,7 @@ body {
   grid-template-columns: 30% 50% 20%;
   gap: 10px;
   align-items: center;
+  overflow: hidden;
 }
 
 .team-character-col {
@@ -996,16 +1043,20 @@ body {
 
 .team-character-col-action {
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
 }
 
 .team-character-action-btn {
-  min-width: 92px;
+  width: 100%;
+  max-width: 120px;
+  min-width: 0;
   display: inline-flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   gap: 2px;
+  padding: 10px 8px;
+  line-height: 1.1;
 }
 
 .team-character-action-btn span {
@@ -1015,6 +1066,10 @@ body {
 
 .team-character-line {
   margin: 0 0 4px;
+}
+
+.team-character-location {
+  font-size: 1.05rem;
 }
 
 .team-character-wait {
@@ -1038,4 +1093,8 @@ body {
   margin-bottom: 4px;
   color: #86efac;
   font-size: 0.9rem;
+}
+
+.team-photo-preview-wrap {
+  margin-bottom: 10px;
 }

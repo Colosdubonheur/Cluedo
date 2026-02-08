@@ -24,9 +24,11 @@ cluedo_send_html_no_cache_headers();
     <section class="card team-block" aria-label="Notifications">
       <div class="team-notifications-header">
         <h2>Notifications</h2>
-        <button id="team-audio-enable-btn" type="button" class="admin-button team-audio-button" aria-pressed="false">🔔 Activer le son</button>
+        <button id="team-audio-enable-btn" type="button" class="admin-button team-audio-button is-disabled" aria-pressed="false">🔔 Activer le son</button>
       </div>
-      <p id="team-message" class="team-feedback">Aucun message reçu.</p>
+      <div id="team-message-history" class="team-message-history" aria-live="polite" aria-label="Historique des messages">
+        <p class="team-message-empty">Aucun message reçu.</p>
+      </div>
       <p id="team-end-game-banner" class="team-endgame-banner" hidden>Fin de jeu</p>
     </section>
 
@@ -70,6 +72,19 @@ cluedo_send_html_no_cache_headers();
         <button type="submit" class="admin-button">Enregistrer</button>
         <p id="team-name-feedback" class="team-feedback"></p>
       </form>
+    </section>
+
+    <section class="card team-block team-photo-block" aria-label="Photo de l'équipe">
+      <h2>Photo équipe</h2>
+      <div class="team-photo-preview-wrap">
+        <img id="team-photo-preview" class="team-photo-square" src="" alt="Photo actuelle de l'équipe" hidden/>
+        <p id="team-photo-empty" class="team-feedback">Aucune photo d'équipe.</p>
+      </div>
+      <div class="team-inline">
+        <input id="team-photo-input" type="file" class="admin-input" accept="image/png,image/jpeg,image/webp"/>
+        <button id="team-photo-upload-btn" type="button" class="admin-button">Mettre à jour la photo</button>
+      </div>
+      <p id="team-photo-feedback" class="team-feedback"></p>
     </section>
   </div>
 

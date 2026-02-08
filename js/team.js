@@ -21,9 +21,15 @@ document.addEventListener("DOMContentLoaded", () => {
   const characterFilterUnseenEl = document.getElementById("team-character-filter-unseen");
   const characterFeedbackEl = document.getElementById("team-character-feedback");
   const lockMessageEl = document.getElementById("team-lock-message");
-  const messageEl = document.getElementById("team-message");
+  const messageHistoryEl = document.getElementById("team-message-history");
   const endGameBannerEl = document.getElementById("team-end-game-banner");
   const audioEnableBtn = document.getElementById("team-audio-enable-btn");
+  const teamPhotoPreviewEl = document.getElementById("team-photo-preview");
+  const teamPhotoEmptyEl = document.getElementById("team-photo-empty");
+  const teamPhotoInputEl = document.getElementById("team-photo-input");
+  const teamPhotoUploadBtn = document.getElementById("team-photo-upload-btn");
+  const teamPhotoFeedbackEl = document.getElementById("team-photo-feedback");
+
   const messageAudio = new Audio("./assets/message.wav");
   messageAudio.preload = "auto";
   const soundOnAudio = new Audio("./assets/soundon.wav");
@@ -35,14 +41,25 @@ document.addEventListener("DOMContentLoaded", () => {
   let filterOnlyUnseen = false;
   let players = [];
   let lastMessageKey = "";
+  let lastPlayedMessageKey = "";
   let isProfileEditing = false;
   let hubRequestSequence = 0;
   let lastAppliedHubSequence = 0;
+  let pollingPausedCount = 0;
+  let audioEnabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
+  let currentTeamPhotoPath = "";
+  const messageHistory = [];
 
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
     if (s === 0) return "Disponible";
     return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
+  }
+
+  function formatTimestamp(ts) {
+    const raw = Number(ts || 0);
+    const date = raw > 0 ? new Date(raw * 1000) : new Date();
+    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   }
 
   function hasValidTeamName(name) {
@@ -60,6 +77,23 @@ document.addEventListener("DOMContentLoaded", () => {
     if (status === "success") el.classList.add("is-success");
     if (status === "error") el.classList.add("is-error");
     if (status === "processing") el.classList.add("is-processing");
+  }
+
+  function pausePolling() {
+    pollingPausedCount += 1;
+  }
+
+  function resumePolling() {
+    pollingPausedCount = Math.max(0, pollingPausedCount - 1);
+  }
+
+  async function runWithPollingPaused(callback) {
+    pausePolling();
+    try {
+      return await callback();
+    } finally {
+      resumePolling();
+    }
   }
 
   function updateTeamNameUi(name) {
@@ -102,6 +136,45 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  function renderMessageHistory() {
+    messageHistoryEl.innerHTML = "";
+    if (messageHistory.length === 0) {
+      const empty = document.createElement("p");
+      empty.className = "team-message-empty";
+      empty.textContent = "Aucun message reçu.";
+      messageHistoryEl.appendChild(empty);
+      return;
+    }
+
+    messageHistory.forEach((entry) => {
+      const row = document.createElement("div");
+      row.className = "team-message-item";
+
+      const ts = document.createElement("span");
+      ts.className = "team-message-time";
+      ts.textContent = `[${entry.time}]`;
+
+      const text = document.createElement("p");
+      text.className = "team-message-text";
+      text.textContent = entry.text;
+
+      row.append(ts, text);
+      messageHistoryEl.appendChild(row);
+    });
+
+    messageHistoryEl.scrollTop = messageHistoryEl.scrollHeight;
+  }
+
+  function pushMessageToHistory(messageText, createdAt) {
+    const text = String(messageText || "").trim();
+    if (!text) return;
+    const key = `${text}::${String(createdAt || 0)}`;
+    if (key === lastMessageKey) return;
+    lastMessageKey = key;
+    messageHistory.push({ key, text, time: formatTimestamp(createdAt) });
+    renderMessageHistory();
+  }
+
   function markProfileEditing() {
     isProfileEditing = true;
   }
@@ -134,6 +207,33 @@ document.addEventListener("DOMContentLoaded", () => {
     const result = await response.json();
     if (!response.ok || !result.ok) throw new Error(result.error || "save failed");
     return result.profile;
+  }
+
+  async function uploadTeamPhoto(file) {
+    const formData = new FormData();
+    formData.set("token", token);
+    formData.set("file", file);
+    const response = await fetch("./api/upload_team_photo.php", {
+      method: "POST",
+      body: formData,
+    });
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || "upload failed");
+    return result;
+  }
+
+  function renderTeamPhoto(photoPath) {
+    const path = String(photoPath || "").trim();
+    currentTeamPhotoPath = path;
+    if (!path) {
+      teamPhotoPreviewEl.hidden = true;
+      teamPhotoPreviewEl.removeAttribute("src");
+      teamPhotoEmptyEl.hidden = false;
+      return;
+    }
+    teamPhotoPreviewEl.src = path;
+    teamPhotoPreviewEl.hidden = false;
+    teamPhotoEmptyEl.hidden = true;
   }
 
   async function leaveQueue(characterId) {
@@ -173,9 +273,11 @@ document.addEventListener("DOMContentLoaded", () => {
     isQueueActionInProgress = true;
     try {
       if (currentCharacterId === String(characterId)) {
-        await leaveQueue(characterId);
+        await runWithPollingPaused(async () => {
+          await leaveQueue(characterId);
+        });
       } else {
-        let joinResult = await joinQueue(characterId, init.teamName, false);
+        let joinResult = await runWithPollingPaused(async () => joinQueue(characterId, init.teamName, false));
         if (joinResult?.error === "end_game_active") {
           setFeedback(characterFeedbackEl, "Fin de jeu active : impossible de rejoindre une nouvelle file.", "error");
           await loadHub();
@@ -183,9 +285,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
         if (joinResult?.state === "already_in_queue" && joinResult?.can_join_after_confirm) {
           const fromName = joinResult.current_engagement?.personnage_nom || "un autre personnage";
-          const confirmed = window.confirm(`Votre équipe est déjà en file pour « ${fromName} ». Confirmer le changement ?`);
+          const confirmed = await runWithPollingPaused(async () => window.confirm(`Votre équipe est déjà en file pour « ${fromName} ». Confirmer le changement ?`));
           if (!confirmed) return;
-          joinResult = await joinQueue(characterId, init.teamName, true);
+          joinResult = await runWithPollingPaused(async () => joinQueue(characterId, init.teamName, true));
           if (joinResult?.error === "end_game_active") {
             setFeedback(characterFeedbackEl, "Fin de jeu active : impossible de rejoindre une nouvelle file.", "error");
             await loadHub();
@@ -234,6 +336,7 @@ document.addEventListener("DOMContentLoaded", () => {
         : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
       const seenStatus = seen.has(String(row.id || "")) ? '<span class="team-seen-badge">Déjà vu</span>' : '<span class="team-seen-badge">Jamais vu</span>';
       const waitClass = getWaitColorClass(row);
+      const locationTitle = String(row.location || "").trim() || "Localisation non renseignée";
 
       item.innerHTML = `
         <div class="team-character-col team-character-col-photo">
@@ -241,7 +344,7 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="team-character-col team-character-col-meta">
           <h3>${row.nom || "Personnage"}</h3>
-          <p class="team-character-line">🏠</p>
+          <p class="team-character-line team-character-location" title="${locationTitle}" aria-label="${locationTitle}">📍</p>
           <p class="team-character-line team-character-wait ${waitClass}">⏱ ${fmt(row.estimated_wait_seconds || 0)}</p>
           ${seenStatus}
         </div>
@@ -263,12 +366,17 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function maybePlayMessageSound(messageText, createdAt) {
-    const enabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
     const key = `${messageText}::${String(createdAt || 0)}`;
-    if (!enabled || !messageText || key === lastMessageKey) return;
-    lastMessageKey = key;
+    if (!audioEnabled || !messageText || key === lastPlayedMessageKey) return;
+    lastPlayedMessageKey = key;
     messageAudio.currentTime = 0;
-    try { await messageAudio.play(); } catch (_error) { /* noop */ }
+    try {
+      await messageAudio.play();
+    } catch (_error) {
+      audioEnabled = false;
+      localStorage.setItem(AUDIO_ENABLED_KEY, "0");
+      syncAudioButtonState();
+    }
   }
 
   function renderLockState(init) {
@@ -308,6 +416,8 @@ document.addEventListener("DOMContentLoaded", () => {
       updateTeamNameUi(init.teamName);
     }
 
+    renderTeamPhoto(profile.photo || currentTeamPhotoPath || "");
+
     const isBlocked = renderLockState(init);
     renderCharactersList(state, isBlocked);
     if (isEndGameActive(state) && state.team?.state?.state === "free") {
@@ -316,10 +426,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const messagePayload = state.team?.message || {};
     const messageText = String(messagePayload.text || "").trim();
-    messageEl.textContent = messageText || "Aucun message reçu.";
+    pushMessageToHistory(messageText, messagePayload.created_at || 0);
     void maybePlayMessageSound(messageText, messagePayload.created_at || 0);
   }
-
 
   function isEndGameActive(state) {
     return !!state?.game_state?.end_game_active;
@@ -329,6 +438,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const active = isEndGameActive(state);
     endGameBannerEl.hidden = !active;
   }
+
   function addPlayerFromInput() {
     const value = String(playerInput.value || "").trim();
     if (!value) return;
@@ -342,11 +452,18 @@ document.addEventListener("DOMContentLoaded", () => {
     setFeedback(feedbackName, "", "neutral");
   }
 
+  function syncAudioButtonState() {
+    audioEnableBtn.textContent = audioEnabled ? "🔔 Son activé" : "🔔 Activer le son";
+    audioEnableBtn.classList.toggle("is-enabled", audioEnabled);
+    audioEnableBtn.classList.toggle("is-disabled", !audioEnabled);
+    audioEnableBtn.setAttribute("aria-pressed", audioEnabled ? "true" : "false");
+  }
+
   profileForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     setFeedback(feedbackName, "Sauvegarde en cours…", "processing");
     try {
-      const saved = await saveProfile();
+      const saved = await runWithPollingPaused(async () => saveProfile());
       updateTeamNameUi(saved.team_name || "");
       clearProfileEditing();
       await loadHub();
@@ -403,28 +520,51 @@ document.addEventListener("DOMContentLoaded", () => {
     markProfileEditing();
   });
 
-
-  async function syncAudioButtonState() {
-    const enabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
-    audioEnableBtn.textContent = enabled ? "🔔 Son activé" : "🔔 Activer le son";
-    audioEnableBtn.setAttribute("aria-pressed", enabled ? "true" : "false");
-  }
-
   audioEnableBtn?.addEventListener("click", async () => {
-    localStorage.setItem(AUDIO_ENABLED_KEY, "1");
-    await syncAudioButtonState();
     soundOnAudio.currentTime = 0;
-    try { await soundOnAudio.play(); } catch (_error) { /* noop */ }
+    try {
+      await runWithPollingPaused(async () => soundOnAudio.play());
+      audioEnabled = true;
+      localStorage.setItem(AUDIO_ENABLED_KEY, "1");
+    } catch (_error) {
+      audioEnabled = false;
+      localStorage.setItem(AUDIO_ENABLED_KEY, "0");
+    }
+    syncAudioButtonState();
   });
 
-  void syncAudioButtonState();
+  teamPhotoUploadBtn?.addEventListener("click", async () => {
+    const file = teamPhotoInputEl.files && teamPhotoInputEl.files[0] ? teamPhotoInputEl.files[0] : null;
+    if (!file) {
+      setFeedback(teamPhotoFeedbackEl, "Sélectionnez une image avant l'envoi.", "error");
+      return;
+    }
+
+    setFeedback(teamPhotoFeedbackEl, "Upload en cours…", "processing");
+    teamPhotoUploadBtn.disabled = true;
+    try {
+      const result = await runWithPollingPaused(async () => uploadTeamPhoto(file));
+      renderTeamPhoto(result.photo || currentTeamPhotoPath || "");
+      teamPhotoInputEl.value = "";
+      setFeedback(teamPhotoFeedbackEl, "Photo équipe mise à jour.", "success");
+      await loadHub();
+    } catch (error) {
+      const message = error instanceof Error && error.message ? error.message : "Upload impossible.";
+      setFeedback(teamPhotoFeedbackEl, message, "error");
+    } finally {
+      teamPhotoUploadBtn.disabled = false;
+    }
+  });
+
+  syncAudioButtonState();
+  renderMessageHistory();
 
   loadHub().catch(() => {
     setFeedback(feedbackName, "Impossible de charger l'espace équipe.", "error");
   });
 
   setInterval(() => {
-    if (isProfileEditing) return;
+    if (isProfileEditing || pollingPausedCount > 0) return;
     loadHub().catch(() => {
       setFeedback(characterFeedbackEl, "Rafraîchissement temporairement indisponible.", "error");
     });
