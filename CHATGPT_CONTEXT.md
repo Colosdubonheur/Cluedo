@@ -259,6 +259,8 @@ Sur `play` :
 
 - Upload photo côté admin (`admin.html`) :
   - chaque upload est persisté en runtime (`uploads/` + référence `data/personnages.json`)
+  - chaque photo personnage est **obligatoirement cropée en carré (ratio 1:1)** lors de l'upload avec validation explicite de l'admin
+  - l'image persistée est l'image cropée finale, au **format standardisé** pour tous les usages (admin / play / QR / PDF)
   - au chargement, `admin.html` relit `data/personnages.json` et réaffiche la photo configurée
   - la photo reste visible après refresh, sans fallback ni stockage temporaire côté front
 
