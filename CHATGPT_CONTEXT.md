@@ -1094,6 +1094,7 @@ Les règles d'unicité de file restent inchangées :
 
 ### Zone Messages — Espace Équipe (`team.html`)
 - Le conteneur `#team-message-history` conserve l'historique complet des messages reçus pendant la session (aucune suppression automatique côté front).
+- Les messages sont affichés du plus récent (en haut) au plus ancien (en bas).
 - L'affichage par défaut est compact : au maximum **4 lignes** de messages sont visibles sans scroll.
 - La zone est en `overflow-y: auto` pour permettre un scroll manuel vers les messages plus anciens.
 - À la réception de chaque nouveau message supervision :
