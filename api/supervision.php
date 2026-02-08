@@ -47,12 +47,40 @@ $action = trim((string) ($_POST['action'] ?? $_GET['action'] ?? ''));
 
 if ($method === 'POST' && $action === 'send_message') {
   $channel = trim((string) ($_POST['channel'] ?? ''));
-  $target = trim((string) ($_POST['target'] ?? 'all'));
+  $rawTargets = $_POST['targets'] ?? null;
+  $singleTarget = trim((string) ($_POST['target'] ?? ''));
   $message = trim((string) ($_POST['message'] ?? ''));
 
   if ($message === '') {
     http_response_code(400);
     echo json_encode(['ok' => false, 'error' => 'message vide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
+
+  if ($channel !== 'team' && $channel !== 'character') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'canal invalide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
+
+  $targets = [];
+  if (is_array($rawTargets)) {
+    foreach ($rawTargets as $target) {
+      $targetValue = trim((string) $target);
+      if ($targetValue !== '') {
+        $targets[] = $targetValue;
+      }
+    }
+  }
+
+  if (!$targets && $singleTarget !== '') {
+    $targets[] = $singleTarget;
+  }
+
+  $targets = array_values(array_unique($targets));
+  if (!$targets) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'aucun destinataire sélectionné'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
   }
 
@@ -62,39 +90,47 @@ if ($method === 'POST' && $action === 'send_message') {
     'created_at' => time(),
   ];
 
-  if ($channel === 'team' && str_starts_with($target, 'character:')) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'cible personnage invalide pour le canal équipe'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-  }
+  foreach ($targets as $target) {
+    if ($channel === 'team') {
+      if ($target === 'teams:all') {
+        $messages['team_broadcast'] = $payload;
+        continue;
+      }
 
-  if ($channel === 'character' && ($target === 'all' || str_starts_with($target, 'team:'))) {
-    http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'cible équipe invalide pour le canal personnage'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-  }
+      if (str_starts_with($target, 'team:')) {
+        $teamToken = substr($target, strlen('team:'));
+        if ($teamToken === '') {
+          http_response_code(400);
+          echo json_encode(['ok' => false, 'error' => 'destinataire équipe invalide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+          exit;
+        }
+        $messages['teams'][$teamToken] = $payload;
+        continue;
+      }
 
-  if ($target === 'all') {
-    $messages['global'] = $payload;
-  } elseif (str_starts_with($target, 'team:')) {
-    $teamToken = substr($target, strlen('team:'));
-    if ($teamToken === '') {
       http_response_code(400);
-      echo json_encode(['ok' => false, 'error' => 'destinataire équipe invalide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+      echo json_encode(['ok' => false, 'error' => 'destinataire invalide pour le canal équipe'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
       exit;
     }
-    $messages['teams'][$teamToken] = $payload;
-  } elseif (str_starts_with($target, 'character:')) {
-    $characterId = substr($target, strlen('character:'));
-    if ($characterId === '') {
-      http_response_code(400);
-      echo json_encode(['ok' => false, 'error' => 'destinataire personnage invalide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-      exit;
+
+    if ($target === 'characters:all') {
+      $messages['character_broadcast'] = $payload;
+      continue;
     }
-    $messages['characters'][$characterId] = $payload;
-  } else {
+
+    if (str_starts_with($target, 'character:')) {
+      $characterId = substr($target, strlen('character:'));
+      if ($characterId === '') {
+        http_response_code(400);
+        echo json_encode(['ok' => false, 'error' => 'destinataire personnage invalide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        exit;
+      }
+      $messages['characters'][$characterId] = $payload;
+      continue;
+    }
+
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'destinataire inconnu'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    echo json_encode(['ok' => false, 'error' => 'destinataire invalide pour le canal personnage'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     exit;
   }
 

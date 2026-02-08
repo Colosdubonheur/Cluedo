@@ -22,15 +22,16 @@ cluedo_send_html_no_cache_headers();
 
     <section class="card monitor-message-controls" aria-label="Communication supervision">
       <h2>💬 Communication supervision</h2>
-      <p class="monitor-message-intro">Choisissez explicitement votre canal&nbsp;: <strong>équipes</strong> ou <strong>personnages</strong>.</p>
+      <p class="monitor-message-intro">Sélection explicite des destinataires : tout le monde, groupes complets ou cibles individuelles (équipes d’abord, puis personnages).</p>
 
       <div class="monitor-message-panels">
         <article class="monitor-message-panel" aria-label="Messagerie équipes">
           <h3>👥 Messagerie équipes</h3>
           <p class="monitor-muted">Visible uniquement dans l'Espace Équipe.</p>
           <div class="monitor-message-form-row">
-            <label for="team-message-target" class="admin-label">Destinataire équipe</label>
-            <select id="team-message-target" class="admin-input"></select>
+            <label for="team-message-target" class="admin-label">Destinataires équipes</label>
+            <select id="team-message-target" class="admin-input" multiple size="7"></select>
+            <p class="monitor-muted">Maintenez Ctrl/Cmd pour multi-sélection.</p>
           </div>
           <div class="monitor-message-form-row">
             <label for="team-message-text" class="admin-label">Message équipe</label>
@@ -44,8 +45,9 @@ cluedo_send_html_no_cache_headers();
           <h3>🎭 Messagerie personnages</h3>
           <p class="monitor-muted">Visible uniquement sur la page personnage ciblée.</p>
           <div class="monitor-message-form-row">
-            <label for="character-message-target" class="admin-label">Destinataire personnage</label>
-            <select id="character-message-target" class="admin-input"></select>
+            <label for="character-message-target" class="admin-label">Destinataires personnages</label>
+            <select id="character-message-target" class="admin-input" multiple size="7"></select>
+            <p class="monitor-muted">Maintenez Ctrl/Cmd pour multi-sélection.</p>
           </div>
           <div class="monitor-message-form-row">
             <label for="character-message-text" class="admin-label">Message personnage</label>

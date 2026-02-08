@@ -21,59 +21,56 @@
       .replaceAll("'", "&#39;");
   }
 
-  function statusLabel(team) {
+  function formatTime(ts) {
+    const date = new Date((Number(ts) || 0) * 1000);
+    if (Number.isNaN(date.getTime())) return "--:--:--";
+    return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+  }
+
+  function statusInfo(team) {
     if (team.state === "active") {
-      const characterName = team.current_personnage?.nom || "Personnage";
-      return {
-        css: "is-active",
-        text: `active · avec ${characterName}`,
-      };
+      return { css: "is-with-character", text: "Avec personnage", characterName: team.current_personnage?.nom || "" };
     }
-
     if (team.state === "waiting") {
-      return {
-        css: "is-waiting",
-        text: "waiting · en attente",
-      };
+      return { css: "is-waiting", text: "En attente", characterName: team.waiting_queue?.nom || "" };
     }
-
-    return {
-      css: "is-free",
-      text: "free · libre",
-    };
+    return { css: "is-free", text: "Équipe libre", characterName: "" };
   }
 
   function renderPlayers(team) {
     const players = Array.isArray(team.players) ? team.players.filter((name) => String(name || "").trim() !== "") : [];
-    if (!players.length) {
-      return '<p class="monitor-muted">Prénoms non renseignés.</p>';
-    }
-
-    return `<p class="monitor-players">${players.map((name) => escapeHtml(name)).join(" · ")}</p>`;
+    return players.length
+      ? `<p class="monitor-players">${players.map((name) => escapeHtml(name)).join(" · ")}</p>`
+      : '<p class="monitor-muted">Membres non renseignés.</p>';
   }
 
   function renderHistory(team) {
-    const seen = Array.isArray(team.encountered_personnages) ? team.encountered_personnages.slice(0, 8) : [];
-    if (!seen.length) {
-      return '<p class="monitor-muted">Aucune rencontre historisée.</p>';
+    const rows = Array.isArray(team.history) ? team.history.slice().reverse().slice(0, 8) : [];
+    if (!rows.length) {
+      return '<p class="monitor-muted">Aucun passage enregistré.</p>';
     }
 
-    return `<ul class="monitor-history-list">${seen
-      .map((entry) => `<li>${escapeHtml(entry.nom || "Personnage")}</li>`)
+    return `<ul class="monitor-history-list">${rows
+      .map((entry) => {
+        const charName = escapeHtml(entry?.personnage?.nom || "Personnage");
+        const start = formatTime(entry?.started_at || 0);
+        const duration = Math.max(0, Number(entry?.duration_seconds || 0));
+        return `<li><span>${charName}</span><span>Début ${start}</span><span>${duration}s</span></li>`;
+      })
       .join("")}</ul>`;
   }
 
   function renderMessageSummary(team) {
-    if (!team.message?.text) {
-      return '<p class="monitor-muted">Aucun message en cours.</p>';
+    const text = String(team.message?.text || "").trim();
+    if (!text) {
+      return '<p class="monitor-muted">Aucun message reçu.</p>';
     }
 
-    const source = team.message.scope === "team" ? "Message individuel" : "Message global";
-    return `<div class="monitor-card-message"><strong>${source}</strong><p>${escapeHtml(team.message.text)}</p></div>`;
+    return `<div class="monitor-card-message"><p>${escapeHtml(text)}</p></div>`;
   }
 
   function renderCard(team) {
-    const status = statusLabel(team);
+    const status = statusInfo(team);
     const photoHtml = team.photo
       ? `<img src="${escapeHtml(team.photo)}" alt="Photo ${escapeHtml(team.team_name || "équipe")}" class="monitor-team-photo"/>`
       : '<div class="monitor-team-photo monitor-team-photo-placeholder" aria-hidden="true"></div>';
@@ -81,75 +78,85 @@
     return `<article class="card monitor-team-card">
       <header class="monitor-team-header">
         ${photoHtml}
-        <div>
+        <div class="monitor-team-header-meta">
           <h3 class="monitor-team-name">${escapeHtml(team.team_name || "Équipe sans nom")}</h3>
           <span class="monitor-status ${status.css}">${escapeHtml(status.text)}</span>
+          ${status.characterName ? `<p class="monitor-character-context">${escapeHtml(status.characterName)}</p>` : ""}
         </div>
       </header>
       <section>
-        <h4>Membres</h4>
-        ${renderPlayers(team)}
+        <h4>Dernier message reçu</h4>
+        ${renderMessageSummary(team)}
       </section>
       <section>
-        <h4>Historique simplifié</h4>
+        <h4>Historique des passages</h4>
         ${renderHistory(team)}
       </section>
       <section>
-        <h4>Dernier message visible côté équipe</h4>
-        ${renderMessageSummary(team)}
+        <h4>Membres de l'équipe</h4>
+        ${renderPlayers(team)}
       </section>
     </article>`;
   }
 
+  function getSelectedValues(selectEl) {
+    return Array.from(selectEl.selectedOptions || [])
+      .map((option) => option.value)
+      .filter((value) => String(value || "").trim() !== "");
+  }
+
+  function setSelection(selectEl, values, fallback) {
+    const wanted = new Set(values || []);
+    let matched = 0;
+    Array.from(selectEl.options).forEach((option) => {
+      option.selected = wanted.has(option.value);
+      if (option.selected) matched += 1;
+    });
+
+    if (matched > 0 || !fallback) return;
+    Array.from(selectEl.options).forEach((option) => {
+      option.selected = option.value === fallback;
+    });
+  }
+
   function fillMessageTargets(teams, characters) {
-    const previousTeamTarget = teamMessageTargetEl.value;
-    const previousCharacterTarget = characterMessageTargetEl.value;
+    const previousTeamTargets = getSelectedValues(teamMessageTargetEl);
+    const previousCharacterTargets = getSelectedValues(characterMessageTargetEl);
 
     const teamOptions = [
-      '<option value="all">🌐 Toutes les équipes (global)</option>',
+      '<option value="teams_and_characters:all">🌐 Tout le monde (équipes + personnages)</option>',
+      '<option value="teams:all">👥 Toutes les équipes</option>',
       ...teams.map((team) => `<option value="team:${escapeHtml(team.token)}">👥 ${escapeHtml(team.team_name || "Équipe sans nom")}</option>`),
     ];
 
-    const characterOptions = characters.length
-      ? characters.map((character) => `<option value="character:${escapeHtml(character.id)}">🎭 ${escapeHtml(character.id)} - ${escapeHtml(character.nom || "Personnage")}</option>`)
-      : ['<option value="">Aucun personnage actif</option>'];
+    const characterOptions = [
+      '<option value="teams_and_characters:all">🌐 Tout le monde (équipes + personnages)</option>',
+      '<option value="characters:all">🎭 Tous les personnages</option>',
+      ...characters.map((character) => `<option value="character:${escapeHtml(character.id)}">🎭 ${escapeHtml(character.nom || "Personnage")}</option>`),
+    ];
 
     teamMessageTargetEl.innerHTML = teamOptions.join("");
     characterMessageTargetEl.innerHTML = characterOptions.join("");
 
-    const teamStillExists = teamOptions.some((option) => option.includes(`value="${escapeHtml(previousTeamTarget)}"`));
-    teamMessageTargetEl.value = teamStillExists ? previousTeamTarget : "all";
-
-    const characterStillExists = characterOptions.some((option) => option.includes(`value="${escapeHtml(previousCharacterTarget)}"`));
-    characterMessageTargetEl.value = characterStillExists ? previousCharacterTarget : (characterOptions[0].includes('value=""') ? "" : characterMessageTargetEl.value);
-
-    const hasCharacterTarget = !!characterMessageTargetEl.value;
-    characterMessageTargetEl.disabled = !hasCharacterTarget;
-    sendCharacterMessageBtn.disabled = !hasCharacterTarget;
-    if (!hasCharacterTarget) {
-      characterMessageFeedbackEl.textContent = "Aucun personnage actif disponible pour la messagerie.";
-    }
+    setSelection(teamMessageTargetEl, previousTeamTargets, "teams:all");
+    setSelection(characterMessageTargetEl, previousCharacterTargets, "characters:all");
   }
 
-  async function sendMessage({ channel, target, text, feedbackEl, buttonEl, successText }) {
+  async function sendMessage({ channel, targets, text, feedbackEl, buttonEl, successText }) {
     if (!text) {
       feedbackEl.textContent = "Veuillez saisir un message avant l'envoi.";
       return;
     }
 
-    if (!target) {
-      feedbackEl.textContent = "Veuillez sélectionner un destinataire valide.";
+    if (!Array.isArray(targets) || !targets.length) {
+      feedbackEl.textContent = "Veuillez sélectionner au moins un destinataire.";
       return;
     }
 
     buttonEl.disabled = true;
 
-    const body = new URLSearchParams({
-      action: "send_message",
-      channel,
-      target,
-      message: text,
-    });
+    const body = new URLSearchParams({ action: "send_message", channel, message: text });
+    targets.forEach((target) => body.append("targets[]", target));
 
     const response = await fetch("./api/supervision.php", {
       method: "POST",
@@ -189,17 +196,13 @@
   }
 
   resetBtn.addEventListener("click", async () => {
-    if (!window.confirm("Remettre tout l'historique à zéro ?")) {
-      return;
-    }
+    if (!window.confirm("Remettre tout l'historique à zéro ?")) return;
 
     resetBtn.disabled = true;
-    const body = new URLSearchParams({ action: "reset_history" });
-
     const response = await fetch("./api/supervision.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: body.toString(),
+      body: new URLSearchParams({ action: "reset_history" }).toString(),
     });
 
     const payload = await response.json().catch(() => ({}));
@@ -214,37 +217,73 @@
   });
 
   sendTeamMessageBtn.addEventListener("click", async () => {
-    const target = teamMessageTargetEl.value || "all";
+    const targets = getSelectedValues(teamMessageTargetEl);
     const text = (teamMessageInputEl.value || "").trim();
 
-    await sendMessage({
-      channel: "team",
-      target,
-      text,
-      feedbackEl: teamMessageFeedbackEl,
-      buttonEl: sendTeamMessageBtn,
-      successText: target === "all" ? "Message global envoyé à toutes les équipes." : "Message envoyé à l'équipe ciblée.",
-    });
+    const includesAll = targets.includes("teams_and_characters:all");
+    const normalizedTargets = includesAll ? ["teams:all", "characters:all"] : targets;
+    const teamTargets = normalizedTargets.filter((target) => target === "teams:all" || target.startsWith("team:"));
+    const characterTargets = normalizedTargets.filter((target) => target === "characters:all" || target.startsWith("character:"));
 
-    if (text) {
+    if (teamTargets.length) {
+      await sendMessage({
+        channel: "team",
+        targets: teamTargets,
+        text,
+        feedbackEl: teamMessageFeedbackEl,
+        buttonEl: sendTeamMessageBtn,
+        successText: "Message envoyé aux cibles équipes sélectionnées.",
+      });
+    }
+
+    if (characterTargets.length) {
+      await sendMessage({
+        channel: "character",
+        targets: characterTargets,
+        text,
+        feedbackEl: teamMessageFeedbackEl,
+        buttonEl: sendTeamMessageBtn,
+        successText: "Message envoyé aux cibles personnages sélectionnées.",
+      });
+    }
+
+    if (text && (teamTargets.length || characterTargets.length)) {
       teamMessageInputEl.value = "";
     }
   });
 
   sendCharacterMessageBtn.addEventListener("click", async () => {
-    const target = characterMessageTargetEl.value || "";
+    const targets = getSelectedValues(characterMessageTargetEl);
     const text = (characterMessageInputEl.value || "").trim();
 
-    await sendMessage({
-      channel: "character",
-      target,
-      text,
-      feedbackEl: characterMessageFeedbackEl,
-      buttonEl: sendCharacterMessageBtn,
-      successText: "Message envoyé au personnage ciblé.",
-    });
+    const includesAll = targets.includes("teams_and_characters:all");
+    const normalizedTargets = includesAll ? ["teams:all", "characters:all"] : targets;
+    const teamTargets = normalizedTargets.filter((target) => target === "teams:all" || target.startsWith("team:"));
+    const characterTargets = normalizedTargets.filter((target) => target === "characters:all" || target.startsWith("character:"));
 
-    if (text) {
+    if (teamTargets.length) {
+      await sendMessage({
+        channel: "team",
+        targets: teamTargets,
+        text,
+        feedbackEl: characterMessageFeedbackEl,
+        buttonEl: sendCharacterMessageBtn,
+        successText: "Message envoyé aux cibles équipes sélectionnées.",
+      });
+    }
+
+    if (characterTargets.length) {
+      await sendMessage({
+        channel: "character",
+        targets: characterTargets,
+        text,
+        feedbackEl: characterMessageFeedbackEl,
+        buttonEl: sendCharacterMessageBtn,
+        successText: "Message envoyé aux cibles personnages sélectionnées.",
+      });
+    }
+
+    if (text && (teamTargets.length || characterTargets.length)) {
       characterMessageInputEl.value = "";
     }
   });

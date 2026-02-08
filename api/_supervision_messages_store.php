@@ -8,51 +8,59 @@ function cluedo_supervision_messages_path(): string
 function cluedo_load_supervision_messages(): array
 {
   $path = cluedo_supervision_messages_path();
+  $defaults = [
+    'team_broadcast' => ['text' => '', 'created_at' => 0],
+    'character_broadcast' => ['text' => '', 'created_at' => 0],
+    'teams' => [],
+    'characters' => [],
+  ];
+
   if (!file_exists($path)) {
-    return [
-      'global' => ['text' => '', 'created_at' => 0],
-      'teams' => [],
-      'characters' => [],
-    ];
+    return $defaults;
   }
 
   $decoded = json_decode((string) file_get_contents($path), true);
   if (!is_array($decoded)) {
-    return [
-      'global' => ['text' => '', 'created_at' => 0],
-      'teams' => [],
-      'characters' => [],
-    ];
+    return $defaults;
   }
 
-  if (!isset($decoded['global']) || !is_array($decoded['global'])) {
-    $decoded['global'] = ['text' => '', 'created_at' => 0];
+  // Compatibilité des anciennes données : "global" visait le canal équipe.
+  if (!isset($decoded['team_broadcast']) || !is_array($decoded['team_broadcast'])) {
+    $legacyGlobal = $decoded['global'] ?? null;
+    if (is_array($legacyGlobal)) {
+      $decoded['team_broadcast'] = [
+        'text' => trim((string) ($legacyGlobal['text'] ?? '')),
+        'created_at' => (int) ($legacyGlobal['created_at'] ?? 0),
+      ];
+    } else {
+      $decoded['team_broadcast'] = $defaults['team_broadcast'];
+    }
   }
 
-  if (!isset($decoded['teams']) || !is_array($decoded['teams'])) {
-    $decoded['teams'] = [];
+  if (!isset($decoded['character_broadcast']) || !is_array($decoded['character_broadcast'])) {
+    $decoded['character_broadcast'] = $defaults['character_broadcast'];
   }
 
-  if (!isset($decoded['characters']) || !is_array($decoded['characters'])) {
-    $decoded['characters'] = [];
-  }
+  $decoded['teams'] = isset($decoded['teams']) && is_array($decoded['teams']) ? $decoded['teams'] : [];
+  $decoded['characters'] = isset($decoded['characters']) && is_array($decoded['characters']) ? $decoded['characters'] : [];
 
   return $decoded;
 }
 
 function cluedo_save_supervision_messages(array $messages): bool
 {
-  if (!isset($messages['global']) || !is_array($messages['global'])) {
-    $messages['global'] = ['text' => '', 'created_at' => 0];
-  }
+  $messages['team_broadcast'] = isset($messages['team_broadcast']) && is_array($messages['team_broadcast'])
+    ? $messages['team_broadcast']
+    : ['text' => '', 'created_at' => 0];
 
-  if (!isset($messages['teams']) || !is_array($messages['teams'])) {
-    $messages['teams'] = [];
-  }
+  $messages['character_broadcast'] = isset($messages['character_broadcast']) && is_array($messages['character_broadcast'])
+    ? $messages['character_broadcast']
+    : ['text' => '', 'created_at' => 0];
 
-  if (!isset($messages['characters']) || !is_array($messages['characters'])) {
-    $messages['characters'] = [];
-  }
+  $messages['teams'] = isset($messages['teams']) && is_array($messages['teams']) ? $messages['teams'] : [];
+  $messages['characters'] = isset($messages['characters']) && is_array($messages['characters']) ? $messages['characters'] : [];
+
+  unset($messages['global']);
 
   return file_put_contents(
     cluedo_supervision_messages_path(),
@@ -71,12 +79,12 @@ function cluedo_resolve_team_message(array $messages, string $token): array
     ];
   }
 
-  $globalMessage = $messages['global'] ?? null;
-  if (is_array($globalMessage) && trim((string) ($globalMessage['text'] ?? '')) !== '') {
+  $teamBroadcast = $messages['team_broadcast'] ?? null;
+  if (is_array($teamBroadcast) && trim((string) ($teamBroadcast['text'] ?? '')) !== '') {
     return [
-      'scope' => 'global',
-      'text' => trim((string) ($globalMessage['text'] ?? '')),
-      'created_at' => (int) ($globalMessage['created_at'] ?? 0),
+      'scope' => 'team_broadcast',
+      'text' => trim((string) ($teamBroadcast['text'] ?? '')),
+      'created_at' => (int) ($teamBroadcast['created_at'] ?? 0),
     ];
   }
 
@@ -87,7 +95,6 @@ function cluedo_resolve_team_message(array $messages, string $token): array
   ];
 }
 
-
 function cluedo_resolve_character_message(array $messages, string $characterId): array
 {
   $characterMessage = $messages['characters'][$characterId] ?? null;
@@ -96,6 +103,15 @@ function cluedo_resolve_character_message(array $messages, string $characterId):
       'scope' => 'character',
       'text' => trim((string) ($characterMessage['text'] ?? '')),
       'created_at' => (int) ($characterMessage['created_at'] ?? 0),
+    ];
+  }
+
+  $characterBroadcast = $messages['character_broadcast'] ?? null;
+  if (is_array($characterBroadcast) && trim((string) ($characterBroadcast['text'] ?? '')) !== '') {
+    return [
+      'scope' => 'character_broadcast',
+      'text' => trim((string) ($characterBroadcast['text'] ?? '')),
+      'created_at' => (int) ($characterBroadcast['created_at'] ?? 0),
     ];
   }
 

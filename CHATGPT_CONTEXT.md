@@ -131,18 +131,39 @@ Le serveur est l’unique source de vérité pour :
 
 ### Messagerie supervision (équipes + personnages)
 - Le point d'émission unique est **Supervision** (`monitor.html`) avec deux canaux explicites et séparés :
-  - **Messagerie équipes** : envoi global à toutes les équipes ou envoi individuel à une équipe.
-  - **Messagerie personnages** : envoi individuel à un personnage (`character.html?id=X`).
+  - **Canal équipes** : cibles possibles = `teams:all` (toutes les équipes) + `team:<token>` (équipe individuelle).
+  - **Canal personnages** : cibles possibles = `characters:all` (tous les personnages) + `character:<id>` (personnage individuel).
+- Le ciblage multi-destinataires est explicite :
+  - « Tout le monde » correspond à la combinaison explicite des deux diffusions `teams:all` + `characters:all`.
+  - « Fin du jeu » n'est jamais implicite : chaque cible doit être sélectionnée explicitement.
 - Les canaux sont strictement isolés :
   - un message équipe n'est jamais visible côté personnage,
   - un message personnage n'est jamais visible côté équipe,
-  - un message commun (ex: « Fin du jeu ») nécessite deux envois explicites (un par canal).
+  - aucun double envoi implicite n'est autorisé.
+- Résolution côté lecture :
+  - `team.html` lit d'abord le message individuel équipe, puis le message de diffusion équipes,
+  - `character.html?id=X` lit d'abord le message individuel personnage, puis le message de diffusion personnages.
 - Diffusion et rafraîchissement :
   - les messages équipe sont lus par polling dans `team.html`,
   - les messages personnage sont lus par polling dans `character.html`.
 - Comportement sonore associé :
   - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son (`cluedo_team_audio_enabled`) ; son de notification : `assets/message.wav`,
   - côté personnage, notification sonore sur nouveau message ciblé avec `assets/message.wav`.
+
+### Supervision — statuts visuels verrouillés
+- Affichage statut équipe (couleur obligatoire) :
+  - **Vert** = équipe libre,
+  - **Bleu** = équipe avec un personnage,
+  - **Orange** = équipe en attente.
+- Le statut doit rester purement informatif et ne change aucune règle métier serveur.
+
+### Supervision — historique des passages
+- L'historique affiché dans `monitor.html` est **informatif uniquement**.
+- Pour chaque passage, l'UI montre :
+  - nom du personnage,
+  - heure de début,
+  - durée passée avec ce personnage (en secondes).
+- L'historique est simplifié, lisible, non interactif et sans impact sur files/timers/transitions.
 
 ### Donnée personnage `location`
 - Chaque personnage expose un champ texte libre `location` (emplacement physique).
