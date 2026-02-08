@@ -555,3 +555,19 @@ Contraintes non négociables :
 - Sur iPhone, le recadrage carré doit rester **obligatoire et visible** avant tout upload : aucun envoi serveur sans validation explicite du crop.
 - Les formats `HEIC/HEIF` fournis par iOS ne sont pas traités dans le pipeline client actuel sans bibliothèque externe dédiée ; ils sont donc **refusés explicitement** côté UI avec un message clair demandant une image `JPEG/PNG`.
 - En cas de format non supporté, `admin.html` doit bloquer l'appel à `POST /api/upload.php` et afficher une explication utilisateur (pas de message générique `error upload`).
+
+---
+
+## 11. Upload photo personnage (admin) — politique iOS officielle
+
+- Le flux photo admin reste **obligatoirement** : sélection image → recadrage carré côté client → upload PHP → standardisation serveur en JPEG 600x600 (qualité ~84).
+- Le front doit bloquer explicitement les formats non supportés avant upload, avec message clair (pas d’"Erreur upload" générique).
+- Comportement iOS/Safari attendu :
+  - Si la photo est JPEG/PNG/WEBP : le recadrage s’ouvre puis l’upload continue normalement.
+  - Si la photo est HEIC/HEIF (mime, extension, ou signature binaire détectée) : refus explicite avec message utilisateur demandant JPEG/PNG.
+- Formats officiellement acceptés pour le pipeline de crop/upload : `image/jpeg`, `image/png`, `image/webp`.
+- Formats officiellement refusés : `image/heic`, `image/heif` et variantes (`heic-sequence`, `heif-sequence`).
+- Contraintes techniques connues :
+  - En environnement actuel sans bibliothèque externe de transcodage HEIC, Safari iOS peut fournir des fichiers non décodables par le pipeline canvas/GD.
+  - Le serveur (`upload.php`) n’accepte que JPEG/PNG/WEBP et rejette tout autre mime.
+  - Le message d’erreur doit exposer une raison explicite (format non supporté, réseau, réponse serveur), jamais un échec opaque.
