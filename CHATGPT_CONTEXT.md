@@ -681,6 +681,8 @@ Contraintes non négociables :
   - `X` démarre à `1` au début de chaque nouveau mois (`AAMM`),
   - puis augmente de `+1` à chaque évolution livrée (correctif, UX, ajout, correction).
 - Source de vérité unique : version définie côté dépôt/serveur dans `data/app_version.txt`, lue et exposée par `api/version.php`.
+- Le front (`index.html`) consomme `./api/version.php` sans paramètre temporel ; aucun timestamp client ne doit être injecté dans la récupération de version.
+- La valeur est **manuelle et volontaire** : modification explicite de `data/app_version.txt` lors d’une évolution fonctionnelle (incrément de `X`), jamais via calcul automatique.
 - Interdiction verrouillée : la version est indépendante du poste utilisateur (pas d’horloge client, pas de génération via `Date.now()` ou équivalent).
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
 
