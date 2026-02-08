@@ -431,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderCharactersList(state, isBlocked) {
     const seen = new Set(
       (state.team?.history || [])
-        .filter((entry) => Number(entry?.duration_seconds || 0) > SEEN_THRESHOLD_SECONDS)
+        .filter((entry) => Number(entry?.duration_seconds || 0) >= SEEN_THRESHOLD_SECONDS)
         .map((entry) => String(entry.id || "")),
     );
     const currentCharacterId = String(state.team?.state?.character_id || "");

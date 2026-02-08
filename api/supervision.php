@@ -448,6 +448,31 @@ foreach ($knownTokens as $token) {
     $characterTotals[$key]['duration_seconds'] += $duration;
   }
 
+  $currentPassage = is_array($teamHistory[$token]['current'] ?? null) ? $teamHistory[$token]['current'] : null;
+  if ($currentPassage !== null) {
+    $currentCharacterId = (string) ($currentPassage['personnage_id'] ?? '');
+    if ($currentCharacterId !== '' && isset($activeCharacterIds[$currentCharacterId])) {
+      $currentCharacterName = (string) ($currentPassage['personnage_nom'] ?? '');
+      $currentStartedAt = (int) ($currentPassage['started_at'] ?? $now);
+      $currentDuration = max(0, $now - $currentStartedAt);
+      $key = $currentCharacterId . '|' . $currentCharacterName;
+
+      if (!isset($characterTotals[$key])) {
+        $characterTotals[$key] = [
+          'personnage' => [
+            'id' => $currentCharacterId,
+            'nom' => $currentCharacterName,
+          ],
+          'duration_seconds' => 0,
+        ];
+      }
+
+      $characterTotals[$key]['duration_seconds'] += $currentDuration;
+    }
+  }
+
+  $seenThresholdSeconds = 30;
+
   $state = 'free';
   $waitingQueue = null;
   $activeCharacter = null;
@@ -478,6 +503,20 @@ foreach ($knownTokens as $token) {
     ];
   }
 
+  $seenByCharacter = [];
+  foreach ($characterTotals as $entry) {
+    $characterId = (string) ($entry['personnage']['id'] ?? '');
+    $characterName = (string) ($entry['personnage']['nom'] ?? '');
+    $duration = (int) ($entry['duration_seconds'] ?? 0);
+    if ($characterId === '' || $duration < $seenThresholdSeconds) {
+      continue;
+    }
+    $seenByCharacter[$characterId] = [
+      'id' => $characterId,
+      'nom' => $characterName,
+    ];
+  }
+
   $teamsPayload[] = [
     'token' => (string) $token,
     'team_name' => (string) ($teamHistory[$token]['team_name'] ?? ''),
@@ -495,6 +534,7 @@ foreach ($knownTokens as $token) {
     'players' => $profile['players'],
     'photo' => $profile['photo'],
     'encountered_personnages' => array_values($encounteredByCharacter),
+    'seen_personnages' => array_values($seenByCharacter),
     'message' => cluedo_resolve_team_message($messagesStore, (string) $token),
   ];
 }

@@ -225,26 +225,29 @@ cluedo_team_hub_save_history($history);
 $teamHistory = $history['teams'][$token] ?? ['history' => [], 'current' => null];
 $rows = isset($teamHistory['history']) && is_array($teamHistory['history']) ? $teamHistory['history'] : [];
 $rows = array_values(array_filter($rows, function ($row) {
-  return isset($row['personnage']) && is_array($row['personnage']);
+  return is_array($row) && trim((string) ($row['personnage_id'] ?? '')) !== '';
 }));
 
 $totalsByCharacter = [];
 foreach ($rows as $row) {
-  $character = $row['personnage'];
-  $characterId = (string) ($character['id'] ?? '');
+  $characterId = (string) ($row['personnage_id'] ?? '');
   if ($characterId === '' || !isset($activeCharacterIds[$characterId])) {
     continue;
   }
 
+  $startedAt = (int) ($row['started_at'] ?? 0);
+  $endedAt = (int) ($row['ended_at'] ?? $startedAt);
+  $duration = max(0, $endedAt - $startedAt);
+
   if (!isset($totalsByCharacter[$characterId])) {
     $totalsByCharacter[$characterId] = [
       'id' => $characterId,
-      'nom' => (string) ($character['nom'] ?? ''),
+      'nom' => (string) ($row['personnage_nom'] ?? ''),
       'duration_seconds' => 0,
     ];
   }
 
-  $totalsByCharacter[$characterId]['duration_seconds'] += max(0, (int) ($row['duration_seconds'] ?? 0));
+  $totalsByCharacter[$characterId]['duration_seconds'] += $duration;
 }
 
 $currentPassage = is_array($teamHistory['current'] ?? null) ? $teamHistory['current'] : null;

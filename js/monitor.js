@@ -36,6 +36,8 @@
   }
 
   function getEncounterCountMetric(team) {
+    const seen = Array.isArray(team?.seen_personnages) ? team.seen_personnages.length : null;
+    if (seen !== null) return Math.max(0, seen);
     const encountered = Array.isArray(team?.encountered_personnages) ? team.encountered_personnages.length : 0;
     return Math.max(0, encountered);
   }

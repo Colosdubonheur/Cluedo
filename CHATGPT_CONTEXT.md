@@ -1099,9 +1099,10 @@ Règle d'affichage du temps :
 - Filtre : suspects jamais vus par l'équipe (selon historique).
 
 ### Règle verrouillée « Déjà vu / Jamais vu »
-- Un suspect est affiché **« Déjà vu »** si et seulement si le cumul réel de temps d'interrogatoire de l'équipe avec ce suspect est **strictement supérieur à 30 secondes**.
-- Si le cumul est inférieur ou égal à 30 secondes, le suspect reste **« Jamais vu »**.
+- Un suspect est affiché **« Déjà vu »** si et seulement si le cumul réel de temps d'interrogatoire de l'équipe avec ce suspect est **supérieur ou égal à 30 secondes**.
+- Si le cumul est strictement inférieur à 30 secondes, le suspect reste **« Jamais vu »**.
 - Le calcul repose sur l'historique runtime serveur (timestamps réels `started_at` / `ended_at`) et inclut aussi le passage actif en cours (`current`) sans approximation front.
+- Un personnage est considéré comme **« déjà vu »** par une équipe dès que celle-ci a passé **au moins 30 secondes cumulées** avec lui, indépendamment de la manière dont l'interrogatoire se termine (sortie manuelle, relève automatique, changement immédiat ou fin anticipée).
 - Le simple fait d'ouvrir une page, de cliquer un suspect ou d'être en attente ne compte jamais comme « déjà vu ».
 
 Les règles d'unicité de file restent inchangées :
