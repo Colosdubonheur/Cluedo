@@ -21,6 +21,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const characterFilterUnseenEl = document.getElementById("team-character-filter-unseen");
   const characterFeedbackEl = document.getElementById("team-character-feedback");
   const lockMessageEl = document.getElementById("team-lock-message");
+  const currentCharacterEl = document.getElementById("team-current-character");
   const messageHistoryEl = document.getElementById("team-message-history");
   const endGameBannerEl = document.getElementById("team-end-game-banner");
   const audioEnableBtn = document.getElementById("team-audio-enable-btn");
@@ -303,14 +304,17 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderCharactersList(state, isBlocked) {
     const seen = new Set((state.team?.history || []).map((entry) => String(entry.id || "")));
+    const currentCharacterId = String(state.team?.state?.character_id || "");
     let rows = Array.isArray(state.global) ? [...state.global] : [];
+
+    rows = rows.filter((row) => String(row.id || "") !== currentCharacterId);
 
     if (filterOnlyUnseen) {
       rows = rows.filter((row) => !seen.has(String(row.id || "")));
     }
 
     rows.sort((a, b) => {
-      if (characterSortMode === "wait") return (a.estimated_wait_seconds || 0) - (b.estimated_wait_seconds || 0);
+      if (characterSortMode === "time") return (a.estimated_wait_seconds || 0) - (b.estimated_wait_seconds || 0);
       return String(a.nom || "").localeCompare(String(b.nom || ""), "fr");
     });
 
@@ -319,7 +323,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const currentCharacterId = String(state.team?.state?.character_id || "");
     const list = document.createElement("ul");
     list.className = "team-character-list";
 
@@ -379,6 +382,50 @@ document.addEventListener("DOMContentLoaded", () => {
     charactersEl.appendChild(list);
   }
 
+
+  function renderCurrentCharacterPanel(state, isBlocked) {
+    const teamState = state.team?.state || {};
+    const currentCharacterId = String(teamState.character_id || "");
+
+    if (!currentCharacterId) {
+      currentCharacterEl.hidden = true;
+      currentCharacterEl.innerHTML = "";
+      return;
+    }
+
+    const row = (Array.isArray(state.global) ? state.global : []).find((entry) => String(entry.id || "") === currentCharacterId);
+    const characterName = String(teamState.character_name || row?.nom || "Personnage");
+    const statusText = teamState.state === "active" ? "Avec le personnage" : "En attente";
+    const waitClass = getWaitColorClass(row || {});
+    const waitLabel = teamState.state === "active"
+      ? "Temps restant"
+      : "Temps estimé";
+    const waitValue = fmt(row?.estimated_wait_seconds || 0);
+    const queueInfo = Number(teamState.queue_total || 0) > 0
+      ? `File actuelle : ${Number(teamState.queue_total || 0)} équipe(s).`
+      : "";
+    const disableLeave = isBlocked || isQueueActionInProgress;
+
+    currentCharacterEl.hidden = false;
+    currentCharacterEl.innerHTML = `
+      <div class="team-current-character-card">
+        <h3>${characterName}</h3>
+        <p class="team-current-state ${teamState.state === "active" ? "is-active" : "is-waiting"}">${statusText}</p>
+        <p class="team-character-line team-character-wait ${waitClass}">⏱ ${waitLabel} : ${waitValue}</p>
+        ${queueInfo ? `<p class="team-current-meta">${queueInfo}</p>` : ""}
+        <button type="button" class="admin-button team-current-leave" ${disableLeave ? "disabled" : ""}>Quitter la file</button>
+      </div>
+    `;
+
+    const leaveBtn = currentCharacterEl.querySelector(".team-current-leave");
+    leaveBtn?.addEventListener("click", () => {
+      if (disableLeave) return;
+      const confirmed = window.confirm(`Confirmer : quitter la file de « ${characterName} » ?`);
+      if (!confirmed) return;
+      void onQueueAction(currentCharacterId);
+    });
+  }
+
   async function maybePlayMessageSound(messageText, createdAt) {
     const key = `${messageText}::${String(createdAt || 0)}`;
     if (!audioEnabled || !messageText || key === lastPlayedMessageKey) return;
@@ -404,7 +451,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setFeedback(characterFeedbackEl, "Actions sur les files bloquées tant que les informations de l'équipe ne sont pas complètes.", "error");
     } else {
       setFeedback(lockMessageEl, "", "neutral");
-      setFeedback(characterFeedbackEl, "Cliquez sur une tuile suspect pour rejoindre ou quitter sa file.", "success");
+      setFeedback(characterFeedbackEl, "Cliquez sur une tuile de suspect pour rejoindre une file.", "success");
     }
 
     return isBlocked;
@@ -433,6 +480,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTeamPhoto(profile.photo || currentTeamPhotoPath || "");
 
     const isBlocked = renderLockState(init);
+    renderCurrentCharacterPanel(state, isBlocked);
     renderCharactersList(state, isBlocked);
     if (isEndGameActive(state) && state.team?.state?.state === "free") {
       setFeedback(characterFeedbackEl, "Fin de jeu active : vous ne pouvez plus rejoindre de file.", "error");
@@ -511,7 +559,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   characterSortEl?.addEventListener("change", () => {
-    characterSortMode = characterSortEl.value === "wait" ? "wait" : "name";
+    characterSortMode = characterSortEl.value === "time" ? "time" : "name";
     if (!latestState) return;
     const init = resolveInitialization({ team_name: teamNameInput.value, players });
     renderCharactersList(latestState, !init.isReady);
@@ -535,6 +583,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   audioEnableBtn?.addEventListener("click", async () => {
+    if (audioEnabled) {
+      audioEnabled = false;
+      localStorage.setItem(AUDIO_ENABLED_KEY, "0");
+      syncAudioButtonState();
+      return;
+    }
+
     soundOnAudio.currentTime = 0;
     try {
       await runWithPollingPaused(async () => soundOnAudio.play());
