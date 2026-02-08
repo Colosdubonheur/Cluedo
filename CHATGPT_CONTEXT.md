@@ -232,12 +232,14 @@ Règles d’identité :
 
 ### Fichiers de données runtime (non versionnés)
 - `data/personnages.json` : état vivant des files, noms d’équipes, photos et timing pendant l’exploitation terrain.
+- `uploads/` : fichiers uploadés en exploitation (ex: photos de personnages), jamais versionnés.
 
 ### Règle terrain à appliquer
 1. Garder `data/personnages.sample.json` comme référence Git.
 2. Ne jamais committer `data/personnages.json` (fichier ignoré par Git).
-3. En environnement terrain, l’application lit/écrit `data/personnages.json`.
-4. Si `data/personnages.json` est absent, il est recréé automatiquement depuis `data/personnages.sample.json`.
+3. Ne jamais committer les fichiers uploadés dans `uploads/` (seul un placeholder `.gitkeep` est autorisé).
+4. En environnement terrain, l’application lit/écrit `data/personnages.json` et `uploads/`.
+5. Si `data/personnages.json` est absent, il est recréé automatiquement depuis `data/personnages.sample.json`.
 
 ### Comportement attendu au démarrage (admin)
 - `admin.html` consomme `GET /api/get.php`, qui lit **toujours** `data/personnages.json`.
