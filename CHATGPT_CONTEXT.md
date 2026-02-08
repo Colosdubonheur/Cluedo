@@ -130,13 +130,19 @@ Le serveur est l’unique source de vérité pour :
 - Aucune sortie de file ne doit être déclenchée par des événements navigateur (`close`, `blur`, `sleep`, `visibilitychange`).
 
 ### Messagerie supervision (équipes + personnages)
-- La supervision (`monitor.html`) permet d'envoyer des messages ciblés :
-  - globaux vers toutes les équipes,
-  - individuels vers une équipe,
-  - individuels vers un personnage.
-- Le point d'entrée est la zone **Communication supervision** de `monitor.html`.
-- Côté `character.html?id=X`, le message ciblé personnage est affiché dans une zone dédiée **Messages supervision** et rafraîchi par polling.
-- Cette messagerie personnage est isolée de la messagerie équipe (stockages séparés par portée) pour éviter tout conflit de diffusion.
+- Le point d'émission unique est **Supervision** (`monitor.html`) avec deux canaux explicites et séparés :
+  - **Messagerie équipes** : envoi global à toutes les équipes ou envoi individuel à une équipe.
+  - **Messagerie personnages** : envoi individuel à un personnage (`character.html?id=X`).
+- Les canaux sont strictement isolés :
+  - un message équipe n'est jamais visible côté personnage,
+  - un message personnage n'est jamais visible côté équipe,
+  - un message commun (ex: « Fin du jeu ») nécessite deux envois explicites (un par canal).
+- Diffusion et rafraîchissement :
+  - les messages équipe sont lus par polling dans `team.html`,
+  - les messages personnage sont lus par polling dans `character.html`.
+- Comportement sonore associé :
+  - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son (`cluedo_team_audio_enabled`) ; son de notification : `assets/message.wav`,
+  - côté personnage, notification sonore sur nouveau message ciblé avec `assets/message.wav`.
 
 ### Donnée personnage `location`
 - Chaque personnage expose un champ texte libre `location` (emplacement physique).
