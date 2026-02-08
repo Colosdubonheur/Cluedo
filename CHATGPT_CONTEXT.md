@@ -675,15 +675,21 @@ Contraintes non négociables :
 ## 12. Versionnement
 
 - Toutes les pages principales (`index.html`, `admin.html`, `play.html`, `team.html`, `character.html`) affichent la même version applicative visible (zone en haut à droite), purement informative.
-- Le format officiel est strictement `V AAMM.X` (affichage sans espace : ex. `V2602.4`).
-- `AA` = année sur 2 chiffres ; `MM` = mois sur 2 chiffres ; `X` = compteur incrémental.
-- Règle d’incrémentation verrouillée :
-  - `X` démarre à `1` au début de chaque nouveau mois (`AAMM`),
-  - puis augmente de `+1` à chaque évolution livrée (correctif, UX, ajout, correction).
-- Source de vérité unique : version définie côté dépôt/serveur dans `data/app_version.txt`, lue et exposée par `api/version.php`.
-- Source front unique : `js/app-version.js` consomme `./api/version.php` sans paramètre temporel et alimente tous les emplacements `[data-app-version]` sur `index.html`, `admin.html`, `play.html`, `team.html`, `character.html`.
-- La valeur est **manuelle et volontaire** : modification explicite de `data/app_version.txt` lors d’une évolution fonctionnelle (incrément de `X`), jamais via calcul automatique.
-- Interdiction verrouillée : la version est indépendante du poste utilisateur (pas d’horloge client, pas de génération via `Date.now()` ou équivalent).
+- Format officiel : `MAJEUR.MINEUR.PATCH`.
+- Source de vérité unique : `data/version.json` avec un compteur entier global `n` (ex: `{ "n": 5 }`).
+- `n` est incrémenté **manuellement de +1** à chaque évolution validée.
+- Le calcul de version est dérivé uniquement de `n` (aucune date/heure, aucun Git, aucun navigateur) :
+  - `MAJEUR = floor(n / 100) + 1`
+  - `MINEUR = floor((n % 100) / 10)`
+  - `PATCH = n % 10`
+- Exemples :
+  - `n = 4` → `1.0.4`
+  - `n = 10` → `1.1.0`
+  - `n = 58` → `1.5.8`
+  - `n = 100` → `2.0.0`
+  - `n = 158` → `2.5.8`
+- Source front unique : `js/app-version.js` consomme `./api/version.php` et alimente tous les emplacements `[data-app-version]`.
+- Interdiction verrouillée : ne jamais coder la version en dur côté front ou côté back.
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
 
 ## 11. Team UX technique (stabilité terrain)
