@@ -52,6 +52,7 @@ cluedo_send_html_no_cache_headers();
       const fallbackName = (id) => `Personnage ${id}`;
       const characterEntries = [];
       let qrPreviewObjectUrl = null;
+      let selectedQrCharacter = null;
 
 
       const sanitizeForFilename = (value) => value
@@ -118,6 +119,28 @@ cluedo_send_html_no_cache_headers();
       const qrPreviewImage = qrPreviewModal.querySelector("#hub-qr-preview-image");
       const qrPreviewCloseButton = qrPreviewModal.querySelector("#hub-qr-preview-close");
 
+      const qrActionModal = document.createElement("div");
+      qrActionModal.className = "hub-qr-action-modal";
+      qrActionModal.setAttribute("aria-hidden", "true");
+      qrActionModal.innerHTML = `
+        <div class="hub-qr-action-dialog" role="dialog" aria-modal="true" aria-label="Choix de l'action QR code">
+          <h3 id="hub-qr-action-title">QR code</h3>
+          <p id="hub-qr-action-message" class="hub-qr-action-message">Choisissez une action.</p>
+          <div class="hub-qr-action-buttons">
+            <button id="hub-qr-action-show" type="button" class="hub-button">Afficher</button>
+            <button id="hub-qr-action-download" type="button" class="hub-button hub-button-qr">Télécharger</button>
+            <button id="hub-qr-action-cancel" type="button" class="hub-button hub-button-secondary">Annuler</button>
+          </div>
+        </div>
+      `;
+      document.body.appendChild(qrActionModal);
+
+      const qrActionTitle = qrActionModal.querySelector("#hub-qr-action-title");
+      const qrActionMessage = qrActionModal.querySelector("#hub-qr-action-message");
+      const qrActionShowButton = qrActionModal.querySelector("#hub-qr-action-show");
+      const qrActionDownloadButton = qrActionModal.querySelector("#hub-qr-action-download");
+      const qrActionCancelButton = qrActionModal.querySelector("#hub-qr-action-cancel");
+
       const closeQrPreview = () => {
         qrPreviewModal.classList.remove("is-open");
         qrPreviewModal.setAttribute("aria-hidden", "true");
@@ -128,11 +151,60 @@ cluedo_send_html_no_cache_headers();
         qrPreviewImage.removeAttribute("src");
       };
 
+      const closeQrActionModal = () => {
+        qrActionModal.classList.remove("is-open");
+        qrActionModal.setAttribute("aria-hidden", "true");
+        selectedQrCharacter = null;
+      };
+
+      const openQrActionModal = (id, name) => {
+        selectedQrCharacter = { id, name };
+        qrActionTitle.textContent = `${id} - ${name}`;
+        qrActionMessage.textContent = isDesktopForQr()
+          ? "Choisissez l'action à effectuer pour ce QR code."
+          : "Choisissez l'action à effectuer pour ce QR code (affichage conseillé sur mobile).";
+        qrActionModal.classList.add("is-open");
+        qrActionModal.setAttribute("aria-hidden", "false");
+      };
+
       qrPreviewCloseButton.addEventListener("click", closeQrPreview);
       qrPreviewModal.addEventListener("click", (event) => {
         if (event.target === qrPreviewModal) {
           closeQrPreview();
         }
+      });
+
+      qrActionCancelButton.addEventListener("click", closeQrActionModal);
+      qrActionModal.addEventListener("click", (event) => {
+        if (event.target === qrActionModal) {
+          closeQrActionModal();
+        }
+      });
+
+      qrActionShowButton.addEventListener("click", async () => {
+        if (!selectedQrCharacter) {
+          return;
+        }
+        const { id, name } = selectedQrCharacter;
+        closeQrActionModal();
+        const qrBlob = await buildQrImage(id, name);
+        if (qrPreviewObjectUrl) {
+          URL.revokeObjectURL(qrPreviewObjectUrl);
+        }
+        qrPreviewObjectUrl = URL.createObjectURL(qrBlob);
+        qrPreviewTitle.textContent = `${id} - ${name}`;
+        qrPreviewImage.src = qrPreviewObjectUrl;
+        qrPreviewModal.classList.add("is-open");
+        qrPreviewModal.setAttribute("aria-hidden", "false");
+      });
+
+      qrActionDownloadButton.addEventListener("click", async () => {
+        if (!selectedQrCharacter) {
+          return;
+        }
+        const { id, name } = selectedQrCharacter;
+        closeQrActionModal();
+        await downloadQr(id, name);
       });
 
       const buildQrCanvas = async (id, name) => {
@@ -252,22 +324,7 @@ cluedo_send_html_no_cache_headers();
         qrButton.type = "button";
         qrButton.className = "hub-button hub-button-qr";
         qrButton.textContent = "QR Code";
-        qrButton.addEventListener("click", async () => {
-          if (isDesktopForQr()) {
-            await downloadQr(id, name);
-            return;
-          }
-
-          const qrBlob = await buildQrImage(id, name);
-          if (qrPreviewObjectUrl) {
-            URL.revokeObjectURL(qrPreviewObjectUrl);
-          }
-          qrPreviewObjectUrl = URL.createObjectURL(qrBlob);
-          qrPreviewTitle.textContent = `${id} - ${name}`;
-          qrPreviewImage.src = qrPreviewObjectUrl;
-          qrPreviewModal.classList.add("is-open");
-          qrPreviewModal.setAttribute("aria-hidden", "false");
-        });
+        qrButton.addEventListener("click", () => openQrActionModal(id, name));
 
         actions.append(playLink, characterLink, qrButton);
         card.append(identity, actions);

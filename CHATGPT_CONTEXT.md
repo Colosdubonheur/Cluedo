@@ -739,6 +739,15 @@ Contraintes non négociables :
 4. Si Cloudflare actif, valider que les règles Cache Rules ci-dessus sont en place.
 5. Ne pas lancer de purge globale ; uniquement purge ciblée exceptionnelle si un fichier non versionné subsiste.
 
+
+### Règles UX Hub (`index.html`)
+- Dans chaque carte personnage, le nom du personnage doit apparaître **une seule fois** au format `ID - Nom` (aucune répétition du nom dans les actions).
+- L’action `QR Code` doit d’abord proposer un choix explicite `Afficher` / `Télécharger` avant exécution de l’action.
+- Comportement attendu :
+  - mobile : `Afficher` est l’option recommandée pour consulter le QR code à l’écran ;
+  - desktop : `Télécharger` est l’option recommandée pour récupérer le QR code.
+- La logique de génération des QR codes ne doit pas être modifiée par ces ajustements UX.
+
 ---
 
 ## 12. Convention dossiers + déploiement FTP + cache (post-déploiement)
