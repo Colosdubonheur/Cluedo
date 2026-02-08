@@ -8,11 +8,41 @@ require_once __DIR__ . '/_character_visibility.php';
 require_once __DIR__ . '/_supervision_messages_store.php';
 require_once __DIR__ . '/_game_state_store.php';
 require_once __DIR__ . '/_team_presence_store.php';
+require_once __DIR__ . '/_deleted_team_tokens_store.php';
 
 $token = trim((string) ($_GET['token'] ?? ''));
 if ($token === '') {
   http_response_code(400);
   echo json_encode(['ok' => false, 'error' => 'missing token']);
+  exit;
+}
+
+
+if (cluedo_is_team_token_deleted($token)) {
+  echo json_encode([
+    'ok' => true,
+    'team' => [
+      'token' => $token,
+      'token_invalidated' => true,
+      'state' => [
+        'state' => 'free',
+        'character_id' => null,
+        'character_name' => null,
+        'position' => null,
+        'queue_total' => null,
+      ],
+      'profile' => [
+        'team_name' => '',
+        'players' => [],
+        'photo' => '',
+      ],
+      'history' => [],
+      'message' => ['text' => '', 'created_at' => 0],
+      'is_new_team_session' => true,
+    ],
+    'global' => [],
+    'game_state' => cluedo_load_game_state(),
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   exit;
 }
 

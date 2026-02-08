@@ -123,6 +123,22 @@ document.addEventListener("DOMContentLoaded", () => {
     renderPlayers();
   }
 
+
+  function rotateInvalidatedTeamToken() {
+    token = crypto.randomUUID();
+    localStorage.setItem(TOKEN_KEY, token);
+    sessionStorage.setItem(TOKEN_KEY, token);
+    lastAppliedHubSequence = 0;
+    hubRequestSequence = 0;
+    clearProfileEditing();
+    resetRuntimeStateForFreshTeam();
+    currentTeamPhotoPath = "";
+    teamNameInput.value = "";
+    updateTeamNameUi("");
+    renderTeamPhoto("");
+    setFeedback(feedbackName, "Cette équipe a été supprimée par la supervision. Merci de réinitialiser votre équipe.", "error");
+  }
+
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
     if (s === 0) return "Disponible";
@@ -282,6 +298,7 @@ document.addEventListener("DOMContentLoaded", () => {
       body: JSON.stringify(payload),
     });
     const result = await response.json();
+    if (response.status === 410 || result?.token_invalidated) throw new Error("token invalidated");
     if (!response.ok || !result.ok) throw new Error(result.error || "save failed");
     return result.profile;
   }
@@ -295,6 +312,7 @@ document.addEventListener("DOMContentLoaded", () => {
       body: formData,
     });
     const result = await response.json();
+    if (response.status === 410 || result?.token_invalidated) throw new Error("token invalidated");
     if (!response.ok || !result.ok) throw new Error(result.error || "upload failed");
     return result;
   }
@@ -314,11 +332,18 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function leaveQueue(characterId) {
-    await fetch("./api/leave_queue.php", {
+    const response = await fetch("./api/leave_queue.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ id: characterId, token }),
     });
+    let result = {};
+    try {
+      result = await response.json();
+    } catch (_error) {
+      result = {};
+    }
+    if (response.status === 410 || result?.token_invalidated) throw new Error("token invalidated");
   }
 
   async function joinQueue(characterId, teamName, forceSwitch = false) {
@@ -330,7 +355,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     if (forceSwitch) params.set("force_switch", "1");
     const response = await fetch(`./api/status.php?${params.toString()}`);
-    return response.json();
+    const result = await response.json();
+    if (response.status === 410 || result?.token_invalidated) throw new Error("token invalidated");
+    return result;
   }
 
   async function onQueueAction(characterId) {
@@ -373,6 +400,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
       await loadHub();
+    } catch (error) {
+      if (error instanceof Error && error.message === "token invalidated") {
+        rotateInvalidatedTeamToken();
+        await loadHub();
+        return;
+      }
+      throw error;
     } finally {
       isQueueActionInProgress = false;
     }
@@ -587,6 +621,27 @@ document.addEventListener("DOMContentLoaded", () => {
     const requestSequence = ++hubRequestSequence;
     const response = await fetch(`./api/team_hub.php?token=${encodeURIComponent(token)}`);
     const state = await response.json();
+    if (response.status === 410 || state?.token_invalidated || state?.team?.token_invalidated) {
+      rotateInvalidatedTeamToken();
+      const retriedState = await fetch(`./api/team_hub.php?token=${encodeURIComponent(token)}`);
+      const retriedPayload = await retriedState.json();
+      if (!retriedState.ok || !retriedPayload.ok) throw new Error(retriedPayload.error || "hub failed");
+      latestState = retriedPayload;
+      renderEndGameBanner(retriedPayload);
+      const retriedProfile = retriedPayload.team?.profile || {};
+      const retriedInit = resolveInitialization(retriedProfile);
+      if (!isProfileEditing) {
+        teamNameInput.value = retriedInit.teamName;
+        players = [...retriedInit.players];
+        renderPlayers();
+        updateTeamNameUi(retriedInit.teamName);
+      }
+      renderTeamPhoto(retriedProfile.photo || "");
+      const retriedBlocked = renderLockState(retriedInit);
+      renderCurrentCharacterPanel(retriedPayload, null);
+      renderCharactersList(retriedPayload, retriedBlocked);
+      return;
+    }
     if (!response.ok || !state.ok) throw new Error(state.error || "hub failed");
     if (requestSequence < lastAppliedHubSequence) return;
     lastAppliedHubSequence = requestSequence;

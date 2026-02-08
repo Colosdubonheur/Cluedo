@@ -8,6 +8,7 @@ require_once __DIR__ . '/_team_profiles_store.php';
 require_once __DIR__ . '/_supervision_messages_store.php';
 require_once __DIR__ . '/_game_state_store.php';
 require_once __DIR__ . '/_team_presence_store.php';
+require_once __DIR__ . '/_deleted_team_tokens_store.php';
 
 function cluedo_history_path(): string
 {
@@ -241,6 +242,7 @@ if ($method === 'POST' && $action === 'delete_team') {
     cluedo_save_team_profiles($profilesStore);
     cluedo_save_team_presence($presenceStore);
     cluedo_save_supervision_messages($messagesStore);
+    cluedo_mark_team_token_deleted($token);
 
     if ($photoPath !== '' && str_starts_with($photoPath, 'uploads/')) {
       $uploadsDir = realpath(__DIR__ . '/../uploads');
