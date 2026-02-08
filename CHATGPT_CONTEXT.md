@@ -122,6 +122,15 @@ Le serveur est l’unique source de vérité pour :
   - l'équipe rejoint la nouvelle file demandée.
 - Aucune sortie de file ne doit être déclenchée par des événements navigateur (`close`, `blur`, `sleep`, `visibilitychange`).
 
+### Messagerie supervision (équipes + personnages)
+- La supervision (`monitor.html`) permet d'envoyer des messages ciblés :
+  - globaux vers toutes les équipes,
+  - individuels vers une équipe,
+  - individuels vers un personnage.
+- Le point d'entrée est la zone **Communication supervision** de `monitor.html`.
+- Côté `character.html?id=X`, le message ciblé personnage est affiché dans une zone dédiée **Messages supervision** et rafraîchi par polling.
+- Cette messagerie personnage est isolée de la messagerie équipe (stockages séparés par portée) pour éviter tout conflit de diffusion.
+
 ### Donnée personnage `location`
 - Chaque personnage expose un champ texte libre `location` (emplacement physique).
 - `location` est éditable :
