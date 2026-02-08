@@ -266,11 +266,15 @@ Contraintes :
 
 ### Hub (`index.html`)
 - Le Hub liste uniquement les personnages **actifs** (les inactifs restent visibles seulement en admin).
-- Chaque personnage affiche son **ID** et son **nom courant** issu de `data/personnages.json`.
+- Chaque personnage est affiché sous forme de **carte** avec une zone d’identité unique contenant **ID + nom courant**.
+- Chaque carte personnage affiche la **photo** du personnage (si configurée) sous forme **ronde**.
 - Chaque personnage expose deux accès explicites :
   - joueur : `play.html?id=X`
   - personnage : `character.html?id=X`
-- Sur desktop, chaque personnage propose un bouton **Télécharger le QR code** pour l’accès joueur (`play.html?id=X`).
+- Les actions par carte sont limitées à **3 actions** : **Joueur**, **Personnage**, **QR Code**.
+- Le bouton **QR Code** conserve strictement le même contenu/route (`play.html?id=X`) avec un comportement visuel différent selon device :
+  - desktop : téléchargement du PNG QR ;
+  - mobile/tablette tactile : affichage du QR à l’écran.
 - Sur desktop, les cartes personnages du Hub sont affichées en **grille 3 colonnes**.
 - Le Hub propose une zone **Accès rapide** avec un bouton par personnage (`ID - Nom`) pour naviguer directement vers sa carte.
 - Le Hub propose des exports QR codes à la demande :
