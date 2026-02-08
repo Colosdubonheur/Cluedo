@@ -438,7 +438,14 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
 
-  function renderCurrentCharacterPanel(state, isBlocked) {
+  async function loadQueueStatus(characterId) {
+    const response = await fetch(`./api/status.php?id=${encodeURIComponent(characterId)}&token=${encodeURIComponent(token)}`);
+    const result = await response.json();
+    if (!response.ok || !result?.ok) throw new Error(result?.error || "status failed");
+    return result;
+  }
+
+  function renderCurrentCharacterPanel(state, queueStatus) {
     const teamState = state.team?.state || {};
     const currentCharacterId = String(teamState.character_id || "");
 
@@ -456,17 +463,19 @@ document.addEventListener("DOMContentLoaded", () => {
     const characterPhoto = row?.photo
       ? `<img src="${row.photo}" alt="${characterName}" class="team-character-photo"/>`
       : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
-    const remainingSeconds = Math.max(0, Number(row?.estimated_wait_seconds || 0));
+    const remainingSeconds = Math.max(0, Number(queueStatus?.timers?.active_remaining_before_takeover_seconds ?? row?.estimated_wait_seconds ?? 0));
     const hasNextTeamWaiting = teamState.state === "active" && Number(teamState.queue_total || 0) > 1;
+    const nextTeamName = String(queueStatus?.file?.next_team_name || "").trim();
     const isCriticalExitAlert = teamState.state === "active" && hasNextTeamWaiting && remainingSeconds < 15;
     const statusText = teamState.state === "active"
-      ? (isCriticalExitAlert ? "Libérez la place" : (hasNextTeamWaiting ? "Préparez-vous à libérer la place" : "Interrogatoire en cours"))
+      ? (hasNextTeamWaiting && nextTeamName
+        ? `Préparez-vous à libérer la place à l’équipe ${nextTeamName} dans ${fmt(remainingSeconds)}`
+        : "Interrogatoire en cours")
       : "";
     const waitClass = teamState.state === "active"
       ? (isCriticalExitAlert ? "is-wait-critical" : (hasNextTeamWaiting ? "is-wait-orange" : "is-wait-green"))
       : "";
     const waitValue = fmt(remainingSeconds);
-    const disableLeave = isBlocked || isQueueActionInProgress;
     const stateClass = teamState.state === "active"
       ? (isCriticalExitAlert ? "is-critical" : (hasNextTeamWaiting ? "is-alert" : "is-active"))
       : "is-waiting";
@@ -501,17 +510,8 @@ document.addEventListener("DOMContentLoaded", () => {
             <p class="team-character-line team-character-wait ${waitClass}">${teamState.state === "active" ? "⏱ Temps restant :" : "⏱ Votre interrogatoire commence dans environ :"} ${waitValue}</p>
           </div>
         </div>
-        <button type="button" class="admin-button team-current-leave" ${disableLeave ? "disabled" : ""}>STOP</button>
       </div>
     `;
-
-    const leaveBtn = currentCharacterEl.querySelector(".team-current-leave");
-    leaveBtn?.addEventListener("click", () => {
-      if (disableLeave) return;
-      const confirmed = window.confirm(`Confirmer : quitter l’interrogatoire avec « ${characterName} » ?`);
-      if (!confirmed) return;
-      void onQueueAction(currentCharacterId);
-    });
   }
 
   async function maybePlayMessageSound(messageText, createdAt) {
@@ -580,7 +580,17 @@ document.addEventListener("DOMContentLoaded", () => {
     renderTeamPhoto(profile.photo || currentTeamPhotoPath || "");
 
     const isBlocked = renderLockState(init);
-    renderCurrentCharacterPanel(state, isBlocked);
+    let queueStatus = null;
+    const currentCharacterId = String(state.team?.state?.character_id || "");
+    if (currentCharacterId) {
+      try {
+        queueStatus = await loadQueueStatus(currentCharacterId);
+      } catch (_error) {
+        queueStatus = null;
+      }
+    }
+
+    renderCurrentCharacterPanel(state, queueStatus);
     renderCharactersList(state, isBlocked);
     if (isEndGameActive(state) && state.team?.state?.state === "free") {
       setFeedback(characterFeedbackEl, "Fin de jeu active : vous ne pouvez plus interroger de suspect.", "error");
@@ -683,12 +693,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   audioEnableBtn?.addEventListener("click", async () => {
-    if (audioEnabled) {
-      audioEnabled = false;
-      localStorage.setItem(AUDIO_ENABLED_KEY, "0");
-      syncAudioButtonState();
-      return;
-    }
+    if (audioEnabled) return;
 
     soundOnAudio.currentTime = 0;
     try {
