@@ -25,7 +25,11 @@
         <h2>Accès personnages (1 à 15)</h2>
         <div class="hub-bulk-actions hub-desktop-only">
           <button id="hub-download-zip-qr" type="button" class="hub-button hub-button-qr">Télécharger tous les QR codes (ZIP)</button>
-          <button id="hub-download-pdf-qr" type="button" class="hub-button hub-button-secondary">Télécharger en PDF (A4 – 4 QR codes par page)</button>
+          <button id="hub-download-pdf-qr" type="button" class="hub-button hub-button-secondary">Télécharger en PDF (A4 – 6 QR codes par page)</button>
+        </div>
+        <div class="hub-quick-access">
+          <h3>Accès rapide</h3>
+          <div id="hub-quick-access-list" class="hub-quick-access-list">Chargement…</div>
         </div>
         <div id="hub-character-list" class="hub-character-list">Chargement…</div>
       </section>
@@ -35,6 +39,7 @@
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       const container = document.getElementById("hub-character-list");
+      const quickAccessContainer = document.getElementById("hub-quick-access-list");
       const downloadZipButton = document.getElementById("hub-download-zip-qr");
       const downloadPdfButton = document.getElementById("hub-download-pdf-qr");
       const fallbackName = (id) => `Personnage ${id}`;
@@ -127,6 +132,7 @@
       }
 
       const fragment = document.createDocumentFragment();
+      const quickAccessFragment = document.createDocumentFragment();
 
       for (let id = 1; id <= 15; id += 1) {
         const rawName = personnages[String(id)]?.nom;
@@ -135,6 +141,14 @@
 
         const card = document.createElement("article");
         card.className = "hub-character-card";
+        card.id = `hub-character-${id}`;
+
+        const quickAccessButton = document.createElement("a");
+        quickAccessButton.className = "hub-quick-access-button";
+        quickAccessButton.href = `#hub-character-${id}`;
+        quickAccessButton.textContent = `${id} - ${name}`;
+        quickAccessButton.rel = "noopener";
+        quickAccessFragment.appendChild(quickAccessButton);
 
         const title = document.createElement("h3");
         title.className = "hub-character-title";
@@ -168,6 +182,8 @@
 
       container.innerHTML = "";
       container.appendChild(fragment);
+      quickAccessContainer.innerHTML = "";
+      quickAccessContainer.appendChild(quickAccessFragment);
 
       downloadZipButton.addEventListener("click", () => setButtonBusy(downloadZipButton, "Préparation du ZIP…", async () => {
         if (!window.JSZip) {
@@ -197,17 +213,18 @@
         const margin = 12;
         const gap = 8;
         const columns = 2;
-        const rows = 2;
+        const rows = 3;
+        const pageSlots = columns * rows;
         const cellWidth = (pageWidth - (margin * 2) - gap) / columns;
-        const cellHeight = (pageHeight - (margin * 2) - gap) / rows;
+        const cellHeight = (pageHeight - (margin * 2) - (gap * (rows - 1))) / rows;
 
         for (let index = 0; index < characterEntries.length; index += 1) {
-          if (index > 0 && index % 4 === 0) {
+          if (index > 0 && index % pageSlots === 0) {
             pdf.addPage();
           }
 
           const entry = characterEntries[index];
-          const slot = index % 4;
+          const slot = index % pageSlots;
           const col = slot % columns;
           const row = Math.floor(slot / columns);
           const x = margin + col * (cellWidth + gap);
@@ -218,13 +235,17 @@
           pdf.setDrawColor(200);
           pdf.rect(x, y, cellWidth, cellHeight);
           pdf.setFont("helvetica", "bold");
-          pdf.setFontSize(11);
-          pdf.text(`${entry.id} - ${entry.name}`, x + (cellWidth / 2), y + 8, { align: "center" });
+          pdf.setFontSize(10);
+          pdf.text(`${entry.id} - ${entry.name}`, x + (cellWidth / 2), y + 7, { align: "center" });
 
-          const qrSize = Math.min(cellWidth - 12, cellHeight - 20);
+          const qrSize = Math.min(cellWidth - 12, cellHeight - 25);
           const qrX = x + (cellWidth - qrSize) / 2;
-          const qrY = y + 12;
+          const qrY = y + 10;
           pdf.addImage(dataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(9);
+          pdf.text(`play.html?id=${entry.id}`, x + (cellWidth / 2), y + cellHeight - 5, { align: "center" });
         }
 
         const pdfBlob = pdf.output("blob");
