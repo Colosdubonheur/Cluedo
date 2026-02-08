@@ -236,6 +236,14 @@ Transition attendue :
   (sans attendre une action supplémentaire) et rester bloqué hors file tant que le nom n’est pas valide.
 - En `need_name` initial, la saisie du nom réalise une **initialisation** via `status.php?team_name=...`
   (pas un renommage). Le bouton `Modifier` utilise `rename_team.php` uniquement après initialisation.
+- **Verrou front requis sur la saisie auto** : la demande automatique du nom d'équipe ne doit se déclencher
+  qu'une seule fois par phase `need_name`, puis rester verrouillée dès qu'un nom valide existe.
+  Le polling ne doit jamais réouvrir ce prompt tant que le nom valide est conservé.
+- **Countdown front local obligatoire** : l'affichage du décompte doit être piloté côté front avec
+  un timer local (décrément fluide `-1/s`) basé sur `temps_attente_estime_seconds` (ou `my_remaining`
+  en `active`).
+- **Polling non destructif** : le polling met à jour l'état métier/valeurs serveur mais ne recrée pas le
+  timer local à chaque tick ; il ne fait qu'ajuster/synchroniser la valeur si nécessaire.
 
 Règles d’identité :
 - utiliser `equipe.id` (token) comme identifiant technique
