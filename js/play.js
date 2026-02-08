@@ -79,9 +79,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
 
         <div id="freeActions" style="display:none;margin-top:12px;text-align:center;">
-          <button id="closeWindowBtn" style="padding:10px 14px;border-radius:10px">Fermer la fenêtre</button>
+          <button id="goToTeamBtn" style="padding:10px 14px;border-radius:10px;margin-right:8px;">Aller à la page équipe</button>
+          <button id="closeWindowBtn" style="padding:10px 14px;border-radius:10px">Fermer cette page</button>
           <div id="closeHint" style="display:none;margin-top:10px;color:#cbd5e1;font-size:14px;line-height:1.4;">
-            Votre navigateur bloque la fermeture automatique. Vous pouvez fermer cet onglet manuellement.
+            Votre navigateur bloque la fermeture automatique. Choisissez une action ci-dessus.
           </div>
         </div>
 
@@ -155,6 +156,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const elLeaveActive = document.getElementById("leaveActive");
   const elLeaveActiveBtn = document.getElementById("leaveActiveBtn");
   const elFreeActions = document.getElementById("freeActions");
+  const elGoToTeamBtn = document.getElementById("goToTeamBtn");
   const elCloseWindowBtn = document.getElementById("closeWindowBtn");
   const elCloseHint = document.getElementById("closeHint");
   const elElapsedWrap = document.getElementById("elapsedWrap");
@@ -176,6 +178,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let canRenameOnServer = false;
   let forceSwitchOnNextJoin = false;
   let hasDeclinedQueueSwitch = false;
+  let hasHandledFreeTransition = false;
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -369,40 +372,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function closePlayWindow(reason) {
-    if (pollTimeoutId) {
-      clearTimeout(pollTimeoutId);
-      pollTimeoutId = null;
-    }
-    hasVoluntarilyLeft = true;
-
-    // Tentative standard : fonctionne surtout si l'onglet a été ouvert par script.
+  function tryCloseWindowWithFallback(onBlocked) {
     window.close();
 
-    // Fallback explicite (pas de contournement silencieux) pour navigateurs qui bloquent `window.close()`.
     setTimeout(() => {
       if (!document.hidden) {
-        elStatus.textContent = reason;
-        elStatus.style.background = "#94a3b8";
-        elResult.style.display = "none";
-        elLeaveQueue.style.display = "none";
-        elLeaveActive.style.display = "none";
-        elFreeActions.style.display = "none";
-        elElapsedWrap.style.display = "none";
-        elQueueDetails.style.display = "none";
-        elTimer.textContent = "--:--";
+        if (typeof onBlocked === "function") {
+          onBlocked();
+        }
+        elCloseHint.style.display = "block";
       }
     }, 250);
   }
 
-  function tryCloseWindowWithFallback() {
-    window.close();
+  function handleBecameFree() {
+    if (hasHandledFreeTransition) {
+      return;
+    }
 
-    setTimeout(() => {
-      if (!document.hidden) {
-        elCloseHint.style.display = "block";
-      }
-    }, 250);
+    hasHandledFreeTransition = true;
+    tryCloseWindowWithFallback(() => {
+      elFreeActions.style.display = "block";
+    });
   }
 
   function stopLocalTimer() {
@@ -503,11 +494,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   elLeaveActiveBtn.onclick = async () => {
     await leaveQueue();
-    closePlayWindow("Sortie effectuée. Fermez cette fenêtre si elle ne s’est pas fermée automatiquement.");
+  };
+
+  elGoToTeamBtn.onclick = () => {
+    window.location.href = "./team.html";
   };
 
   elCloseWindowBtn.onclick = () => {
-    tryCloseWindowWithFallback();
+    tryCloseWindowWithFallback(() => {
+      elFreeActions.style.display = "block";
+    });
   };
 
   async function loop() {
@@ -604,10 +600,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
       // (`state === "active"` ou `can_access === true`). Sans signal explicite => `waiting`.
       const hasExplicitAccess = data.state === "active" || data.can_access === true;
-      const isEffectivelyFree = data.state === "free" || (!hasExplicitAccess && !inQueue && data.state !== "need_name");
-      const state = isEffectivelyFree
+      const hasExplicitNeedName = data.state === "need_name";
+      const hasExplicitFree = data.state === "free";
+      const state = hasExplicitFree
         ? "free"
-        : (data.state === "need_name" ? "need_name" : (hasExplicitAccess ? "active" : "waiting"));
+        : (hasExplicitNeedName ? "need_name" : (hasExplicitAccess ? "active" : "waiting"));
       canRenameOnServer = inQueue && hasValidNameFromServer;
 
       if (inQueue) {
@@ -620,19 +617,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         elNeedName.style.display = "none";
         elLeaveQueue.style.display = "none";
         elLeaveActive.style.display = "none";
-        elFreeActions.style.display = "block";
+        elFreeActions.style.display = "none";
         elCloseHint.style.display = "none";
         elElapsedWrap.style.display = "none";
         elQueueDetails.style.display = "none";
         elTimerLabel.textContent = "Session terminée";
         elTimer.textContent = "--:--";
         elTimer.style.color = "white";
-        elStatus.textContent = `Le temps avec ${personnageNom} est terminé. Vous êtes maintenant libre.`;
+        elStatus.textContent = `Sortie effectuée avec ${personnageNom}.`;
         elStatus.style.background = "#94a3b8";
         elResult.style.display = "none";
+        if (previousState !== "free") {
+          handleBecameFree();
+        }
         pollTimeoutId = setTimeout(loop, 1000);
         return;
       }
+
+      hasHandledFreeTransition = false;
 
       if (state === "need_name" && hasValidUserTeamName(teamName)) {
         await initializeTeamNameOnServer(teamName);
