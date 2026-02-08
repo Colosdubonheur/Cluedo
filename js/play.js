@@ -164,6 +164,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let previousState = null;
   let shouldAttemptJoin = true;
   let canRenameOnServer = false;
+  let forceSwitchOnNextJoin = false;
+  let hasDeclinedQueueSwitch = false;
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -492,6 +494,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       });
       if (shouldAttemptJoin) {
         query.set("join", "1");
+        if (forceSwitchOnNextJoin) {
+          query.set("force_switch", "1");
+        }
       }
       if (hasValidUserTeamName(teamName)) {
         query.set("team_name", teamName);
@@ -514,6 +519,47 @@ document.addEventListener("DOMContentLoaded", async () => {
         showFatalError(readableError);
         return;
       }
+
+      if (data.state === "already_in_queue") {
+        const currentCharacter = data.current_engagement?.personnage_nom || "un autre personnage";
+        const currentState = data.current_engagement?.state === "active" ? "active" : "waiting";
+
+        if (!hasDeclinedQueueSwitch) {
+          const confirmed = window.confirm(
+            `Vous êtes déjà dans la file de ${currentCharacter} (état : ${currentState}).\n\n` +
+            "Souhaitez-vous quitter cette file et perdre votre place pour rejoindre la nouvelle ?"
+          );
+
+          if (confirmed) {
+            forceSwitchOnNextJoin = true;
+            shouldAttemptJoin = true;
+            pollTimeoutId = setTimeout(loop, 100);
+            return;
+          }
+
+          hasDeclinedQueueSwitch = true;
+          shouldAttemptJoin = false;
+        }
+
+        forceSwitchOnNextJoin = false;
+        stopLocalTimer();
+        elNeedName.style.display = "none";
+        elLeaveQueue.style.display = "none";
+        elLeaveActive.style.display = "none";
+        elElapsedWrap.style.display = "none";
+        elQueueDetails.style.display = "none";
+        elTimerLabel.textContent = "Inscription bloquée";
+        elTimer.textContent = "--:--";
+        elTimer.style.color = "white";
+        elStatus.textContent = `Vous restez dans la file de ${currentCharacter}.`;
+        elStatus.style.background = "#f59e0b";
+        elResult.style.display = "none";
+        pollTimeoutId = setTimeout(loop, 1000);
+        return;
+      }
+
+      forceSwitchOnNextJoin = false;
+      hasDeclinedQueueSwitch = false;
 
       const personnageNom = data.personnage?.nom || data.nom || `Interlocuteur #${id}`;
       const equipeNom = data.equipe?.nom || teamName;
