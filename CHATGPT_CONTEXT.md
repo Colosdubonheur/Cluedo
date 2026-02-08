@@ -667,5 +667,6 @@ Contraintes non négociables :
 
 - La page Hub (`index.html`) affiche une version applicative en haut à droite, de façon discrète et purement informative.
 - Le format est strictement `YYYY.MM.DD.HH.mm` (année 4 chiffres, mois/jour/heure/minute sur 2 chiffres).
-- Source unique de vérité : `data/app_version.txt`, lu côté serveur par `api/version.php` puis affiché côté UI.
+- Règle verrouillée : toute livraison implique une incrémentation du numéro de version, sans exception.
+- Source unique de vérité et emplacement de définition : `data/app_version.txt`, lu côté serveur par `api/version.php` puis affiché côté UI.
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
