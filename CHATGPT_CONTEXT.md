@@ -219,6 +219,13 @@ Sur `play` :
   - `position`
   - `temps_attente_estime_seconds`
   - `equipe_precedente`
+- En état `active` :
+  - ne pas afficher la notion de file (`position`, `1/1`, etc.)
+  - afficher un compteur `⏱️ Temps passé avec {personnage.nom}` incrémenté localement chaque seconde
+  - afficher ce compteur en couleur normale tant que `temps_passé < time_per_player`, puis en rouge au dépassement
+  - remplacer le message principal par :
+    `Vous pouvez continuer à échanger avec {personnage.nom}, mais à tout instant une équipe peut vous prendre la place.`
+  - ne jamais afficher littéralement le mot `personnage` dans les messages UI : utiliser systématiquement `{personnage.nom}`
 - États UI :
   - `need_name` : nom d’équipe absent
   - `waiting` : équipe dans la file en attente
