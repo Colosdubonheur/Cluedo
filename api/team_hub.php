@@ -7,6 +7,7 @@ require_once __DIR__ . '/_team_profiles_store.php';
 require_once __DIR__ . '/_character_visibility.php';
 require_once __DIR__ . '/_supervision_messages_store.php';
 require_once __DIR__ . '/_game_state_store.php';
+require_once __DIR__ . '/_team_presence_store.php';
 
 $token = trim((string) ($_GET['token'] ?? ''));
 if ($token === '') {
@@ -39,6 +40,7 @@ $profilesStore = cluedo_load_team_profiles();
 $profile = cluedo_get_team_profile($profilesStore, $token);
 
 $now = time();
+cluedo_touch_team_presence($token, $now);
 $maxWait = 600;
 $teamState = [
   'state' => 'free',

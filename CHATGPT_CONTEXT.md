@@ -156,12 +156,30 @@ Le serveur est l’unique source de vérité pour :
   - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son (`cluedo_team_audio_enabled`) ; son de notification : `assets/message.wav`,
   - côté personnage, notification sonore sur nouveau message ciblé avec `assets/message.wav`.
 
+### Supervision — état global de la partie (indicateur)
+- La barre d'actions de `monitor.html` affiche sur une seule ligne :
+  - `Retour au Hub`,
+  - `Remettre l'historique à zéro`,
+  - `Fin de jeu`.
+- Un indicateur texte est affiché immédiatement à droite du bouton `Fin de jeu` et reste toujours visible :
+  - **Vert** + texte **« Partie active »** quand `end_game_active = false`,
+  - **Rouge** + texte **« Partie terminée »** quand `end_game_active = true`.
+- Cet indicateur est strictement informatif (aucun comportement métier supplémentaire).
+
 ### Supervision — statuts visuels verrouillés
 - Affichage statut équipe (couleur obligatoire) :
   - **Vert** = équipe libre,
   - **Bleu** = équipe avec un personnage,
   - **Orange** = équipe en attente.
 - Le statut doit rester purement informatif et ne change aucune règle métier serveur.
+
+### Supervision — périmètre des équipes listées
+- `monitor.html` doit lister toutes les équipes connues côté runtime, y compris celles sans engagement en file.
+- Une équipe est référencée dès qu'elle ouvre `team.html` (heartbeat serveur lié au token équipe).
+- Les équipes connectées ne doivent jamais être invisibles, même si elles sont :
+  - libres,
+  - dans aucune file,
+  - sans passage historique.
 
 ### Supervision — historique des passages
 - L'historique affiché dans `monitor.html` est **informatif uniquement**.

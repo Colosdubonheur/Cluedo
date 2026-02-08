@@ -706,9 +706,11 @@ body {
 
 .monitor-header-row {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
+  overflow-x: auto;
 }
 
 .monitor-hub-btn,
@@ -718,11 +720,29 @@ body {
   padding: 10px 14px;
   font-size: 14px;
   cursor: pointer;
+  white-space: nowrap;
 }
 
-.monitor-hub-btn { background: #334155; color: #fff; }
+.monitor-hub-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #334155;
+  color: #fff;
+  text-decoration: none;
+  font-weight: 700;
+}
+.monitor-hub-btn:hover,
+.monitor-hub-btn:focus-visible {
+  background: #3f516d;
+}
 .monitor-reset-btn { background: #475569; color: #fff; }
 
+.monitor-endgame-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
 
 .monitor-endgame-btn {
   border: none;
@@ -730,6 +750,7 @@ body {
   padding: 10px 14px;
   font-size: 14px;
   cursor: pointer;
+  white-space: nowrap;
   background: #b91c1c;
   color: #fff;
 }
@@ -739,9 +760,17 @@ body {
 }
 
 .monitor-endgame-status {
-  margin: 0 0 12px;
+  margin: 0;
   font-weight: 700;
-  color: #fecaca;
+  white-space: nowrap;
+}
+
+.monitor-endgame-status.is-inactive {
+  color: #86efac;
+}
+
+.monitor-endgame-status.is-active {
+  color: #f87171;
 }
 
 .team-endgame-banner {
