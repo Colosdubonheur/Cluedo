@@ -212,22 +212,26 @@
           ${status.timeInfo ? `<p class="monitor-character-context">${escapeHtml(status.timeInfo)}</p>` : ""}
         </div>
       </header>
-      <section class="monitor-team-actions" aria-label="Actions équipe">
-        <button type="button" class="admin-button monitor-team-qr-btn" data-action="show-team-qr" data-token="${escapeHtml(team.token)}" data-team-name="${escapeHtml(teamName)}">QR Code de l'équipe</button>
-        <button type="button" class="admin-button monitor-team-delete-btn" data-action="delete-team" data-token="${escapeHtml(team.token)}" data-team-name="${escapeHtml(teamName)}">Supprimer l'équipe</button>
-      </section>
-      <section>
-        <h4>Dernier message reçu</h4>
-        ${renderMessageSummary(team)}
-      </section>
-      <section>
-        <h4>Dernier suspect vu</h4>
-        ${renderLastSeenCharacter(team)}
-      </section>
-      <section>
-        <h4>Membres de l'équipe</h4>
-        ${renderPlayers(team)}
-      </section>
+      <div class="monitor-team-body">
+        <div class="monitor-team-main">
+          <section>
+            <h4>Dernier message reçu</h4>
+            ${renderMessageSummary(team)}
+          </section>
+          <section>
+            <h4>Dernier suspect vu</h4>
+            ${renderLastSeenCharacter(team)}
+          </section>
+          <section>
+            <h4>Membres de l'équipe</h4>
+            ${renderPlayers(team)}
+          </section>
+        </div>
+        <aside class="monitor-team-actions" aria-label="Actions équipe">
+          <button type="button" class="admin-button monitor-team-qr-btn" data-action="show-team-qr" data-token="${escapeHtml(team.token)}" data-team-name="${escapeHtml(teamName)}">QR Code de l'équipe</button>
+          <button type="button" class="admin-button monitor-team-delete-btn" data-action="delete-team" data-token="${escapeHtml(team.token)}" data-team-name="${escapeHtml(teamName)}">Supprimer l'équipe</button>
+        </aside>
+      </div>
     </article>`;
   }
 

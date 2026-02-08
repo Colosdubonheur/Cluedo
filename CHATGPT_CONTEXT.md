@@ -269,6 +269,19 @@ Le serveur est l’unique source de vérité pour :
   - durée passée avec ce personnage (en secondes).
 - L'historique est simplifié, lisible, non interactif et sans impact sur files/timers/transitions.
 
+### Supervision — lisibilité des cartes équipe (monitor.html)
+- Les ajustements de lisibilité ci-dessous s'appliquent **uniquement** à `monitor.html`.
+- Zone « Dernier message reçu » :
+  - largeur maximale fixe dans la carte équipe,
+  - aucun agrandissement horizontal forcé de la tuile,
+  - retour à la ligne automatique des messages longs,
+  - aucun débordement horizontal, quelle que soit la langue/longueur.
+- Zone actions équipe :
+  - les boutons **« QR Code de l'équipe »** et **« Supprimer l'équipe »** sont affichés verticalement,
+  - une colonne dédiée aux actions est conservée sur desktop,
+  - sur tablette/mobile la disposition reste cohérente avec empilement vertical des actions.
+- Ces règles sont purement UI/CSS et ne modifient aucune logique métier.
+
 ### Donnée personnage `location`
 - Chaque personnage expose un champ texte libre `location` (emplacement physique).
 - `location` est éditable :
