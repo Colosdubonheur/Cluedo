@@ -17,13 +17,22 @@
         <h1 id="team-display-name" class="team-display-name">Équipe sans nom</h1>
         <button id="team-edit-name-btn" type="button" class="admin-button team-edit-name-btn">✏️ Modifier</button>
       </div>
-      <div id="team-token" class="team-token"></div>
       <p id="team-name-feedback" class="team-feedback"></p>
     </header>
 
+    <section class="card team-guidance" aria-label="Guidage équipe">
+      <h2 class="team-guidance-title">✅ Vérifications avant de jouer</h2>
+      <p id="team-guidance-participants" class="team-guidance-message" role="status" aria-live="polite"></p>
+      <p id="team-guidance-photo" class="team-guidance-message" role="status" aria-live="polite"></p>
+    </section>
+
     <section class="card team-block team-qr-block" aria-label="Scanner QR code">
       <h2>📱 Scanner QR code</h2>
-      <p class="team-feedback">Scannez puis ouvrez immédiatement le lien du personnage.</p>
+      <p class="team-feedback">1) Autorisez la caméra, 2) visez le QR code du personnage, 3) ouverture automatique.</p>
+      <div class="team-qr-actions">
+        <button id="team-qr-start" type="button" class="admin-button team-qr-action">Scanner un QR code</button>
+        <button id="team-qr-stop" type="button" class="admin-button team-qr-action team-qr-stop" disabled>Arrêter la caméra</button>
+      </div>
       <div id="team-qr-reader"></div>
       <p id="team-qr-feedback" class="team-feedback"></p>
     </section>
@@ -32,7 +41,7 @@
       <article class="card team-block team-accordion-item" data-accordion-item>
         <h2 class="team-accordion-heading">
           <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-stats" id="team-accordion-trigger-stats">
-            <span>📊 Résumé & état du jeu</span>
+            <span>📊 Résumé & état du jeu <span class="team-accordion-hint">(appuyer pour ouvrir)</span></span>
             <span class="team-accordion-icon" aria-hidden="true">▾</span>
           </button>
         </h2>
@@ -48,7 +57,7 @@
       <article class="card team-block team-accordion-item" data-accordion-item>
         <h2 class="team-accordion-heading">
           <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-participants" id="team-accordion-trigger-participants">
-            <span>👥 Participants</span>
+            <span>👥 Participants <span class="team-accordion-hint">(appuyer pour ouvrir)</span></span>
             <span class="team-accordion-icon" aria-hidden="true">▾</span>
           </button>
         </h2>
@@ -68,7 +77,7 @@
       <article class="card team-block team-accordion-item" data-accordion-item>
         <h2 class="team-accordion-heading">
           <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-photo" id="team-accordion-trigger-photo">
-            <span>📷 Photo d'équipe</span>
+            <span>📷 Photo d'équipe <span class="team-accordion-hint">(appuyer pour ouvrir)</span></span>
             <span class="team-accordion-icon" aria-hidden="true">▾</span>
           </button>
         </h2>

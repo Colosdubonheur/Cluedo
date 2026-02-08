@@ -334,11 +334,14 @@ body {
 .team-hero {
   margin-bottom: 14px;
   text-align: center;
+  padding: 12px 14px;
 }
 .team-kicker {
   margin: 0 0 8px;
   color: var(--muted);
-  font-size: 14px;
+  font-size: 13px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 .team-hero-main {
   display: flex;
@@ -349,11 +352,49 @@ body {
 }
 .team-display-name {
   margin: 0;
-  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  font-size: clamp(1.4rem, 6vw, 2rem);
   line-height: 1.1;
 }
 .team-edit-name-btn {
-  padding: 10px 12px;
+  padding: 7px 10px;
+  font-size: 13px;
+  background: #334155;
+}
+.team-guidance {
+  margin-bottom: 14px;
+  border: 1px solid #2a3142;
+}
+.team-guidance-title {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+.team-guidance-message {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  color: #cfe0ff;
+}
+.team-guidance-message:last-child {
+  margin-bottom: 0;
+}
+.team-guidance-message.is-ok {
+  color: #9fe6ba;
+}
+.team-qr-actions {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.team-qr-action {
+  width: 100%;
+  min-height: 44px;
+  font-weight: 700;
+}
+.team-qr-stop {
+  background: #475569;
+}
+.team-qr-stop:disabled {
+  opacity: 0.6;
 }
 .team-qr-block h2 {
   margin: 0 0 8px;
@@ -370,11 +411,16 @@ body {
   border: 0;
   background: transparent;
   color: var(--text);
-  padding: 0;
+  padding: 4px 0;
   font-size: 1.15rem;
   font-weight: 700;
   text-align: left;
   cursor: pointer;
+}
+.team-accordion-hint {
+  color: var(--muted);
+  font-size: 0.85rem;
+  font-weight: 500;
 }
 .team-accordion-trigger:focus-visible {
   outline: 2px solid var(--accent);
@@ -400,12 +446,6 @@ body {
 .team-accordion-panel h3 + div {
   margin-bottom: 12px;
 }
-.team-token {
-  font-size: 13px;
-  color: var(--muted);
-  margin-bottom: 12px;
-  word-break: break-all;
-}
 .team-form h3 { margin: 14px 0 8px; }
 .team-inline {
   display: grid;
@@ -424,6 +464,7 @@ body {
   overflow: hidden;
   border: 2px solid transparent;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  min-height: 250px;
 }
 #team-qr-reader.is-success {
   border-color: var(--ok);
