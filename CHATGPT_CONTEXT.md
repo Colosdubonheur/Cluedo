@@ -114,6 +114,13 @@ Le serveur est l’unique source de vérité pour :
 - Le fallback par import d'image reste disponible comme solution secondaire uniquement (pas comme comportement principal masquant un bug caméra).
 - Le bouton crayon sur `team.html` ouvre bien l'édition du nom d'équipe (section Participants), permet la saisie/validation sans rechargement et affiche un retour explicite en cas d'échec.
 
+### Complément UX team.html (notification sonore supervision)
+- Les navigateurs (Chrome, Safari, iOS inclus) imposent une interaction utilisateur explicite avant toute lecture audio fiable.
+- `team.html` doit exposer un bouton visible **« Activer le son »** permettant de valider cette autorisation audio une fois pour la session.
+- Après validation réussie, l'état **son autorisé** doit être persisté côté client (`localStorage` ou équivalent) pour éviter de redemander inutilement l'action.
+- À chaque nouveau message supervision reçu automatiquement (polling), un son de notification doit être joué immédiatement si l'audio est autorisé.
+- En cas de blocage navigateur, l'UI doit afficher un retour clair pour relancer explicitement l'activation, sans erreurs console ni comportement aléatoire.
+
 ---
 
 ## 6. Architecture technique
