@@ -45,56 +45,97 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   document.body.innerHTML = `
-    <div style="max-width:600px;margin:20px auto;color:white;font-family:Arial">
+    <div class="container admin-page">
       <h1>Admin Cluedo</h1>
-      <p style="color:#aaa">Gestion des personnages</p>
-      ${isPinEnabled ? "" : '<p style="color:#6ee7b7;margin-top:-6px">Aucun code configuré, accès libre.</p>'}
-      <div id="list">Chargement…</div>
-      <button id="save" style="width:100%;padding:14px;font-size:18px;margin-top:20px">
-        💾 Enregistrer
-      </button>
+      <p class="admin-subtitle">Gestion des personnages</p>
+      ${isPinEnabled ? "" : '<p class="admin-open-access">Aucun code configuré, accès libre.</p>'}
+
+      <section id="quick-nav" class="card admin-quick-nav">
+        <h2>Accès rapide</h2>
+        <div id="quick-nav-list" class="admin-quick-nav-list">Chargement…</div>
+      </section>
+
+      <section class="card admin-global-actions">
+        <h2>Actions globales</h2>
+        <div class="admin-global-actions-row">
+          <label for="global-time" class="admin-label">Temps de passage pour tous (secondes)</label>
+          <div class="admin-global-actions-controls">
+            <input id="global-time" type="number" min="1" value="120" class="admin-input" />
+            <button id="apply-global-time" class="admin-button">Appliquer à tous</button>
+          </div>
+        </div>
+      </section>
+
+      <div id="list" class="admin-grid">Chargement…</div>
+
+      <button id="save" class="admin-save-button">💾 Enregistrer</button>
     </div>
   `;
 
   const list = document.getElementById("list");
+  const quickNavList = document.getElementById("quick-nav-list");
+
   const res = await adminFetch("./api/get.php?ts=" + Date.now());
   if (!res.ok) {
     list.innerHTML = "<p>Accès refusé.</p>";
+    quickNavList.innerHTML = "<p>Accès refusé.</p>";
     return;
   }
 
   const data = await res.json();
   list.innerHTML = "";
+  quickNavList.innerHTML = "";
 
-  for (const id in data) {
+  const ids = Object.keys(data).sort((a, b) => Number(a) - Number(b));
+
+  for (const id of ids) {
     const p = data[id];
 
-    const div = document.createElement("div");
-    div.style.background = "#171a21";
-    div.style.padding = "14px";
-    div.style.marginBottom = "16px";
-    div.style.borderRadius = "12px";
+    const navButton = document.createElement("button");
+    navButton.className = "admin-nav-button";
+    navButton.type = "button";
+    navButton.textContent = `${id} - ${p.nom || "Sans nom"}`;
+    navButton.addEventListener("click", () => {
+      const target = document.getElementById(`player-${id}`);
+      if (target) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    });
+    quickNavList.appendChild(navButton);
 
-    div.innerHTML = `
+    const card = document.createElement("section");
+    card.id = `player-${id}`;
+    card.className = "card admin-player-card";
+
+    card.innerHTML = `
       <h3>#${id}</h3>
 
-      <label>Nom</label>
-      <input class="nom" data-id="${id}" value="${p.nom || ""}"
-        style="width:100%;padding:12px;font-size:16px;margin-bottom:10px">
+      <label class="admin-label">Nom</label>
+      <input class="nom admin-input" data-id="${id}" value="${p.nom || ""}" />
 
-      <label>Photo</label><br>
-      ${p.photo ? `<img src="${p.photo}" style="width:100%;max-height:200px;object-fit:contain;border-radius:10px;margin-bottom:8px">` : ""}
-      <input type="file" accept="image/*" class="photo" data-id="${id}"
-        style="font-size:16px;margin-bottom:10px">
+      <label class="admin-label">Photo</label>
+      ${p.photo ? `<img src="${p.photo}" alt="Photo ${p.nom || `personnage ${id}`}" class="admin-photo" />` : ""}
+      <input type="file" accept="image/*" class="photo" data-id="${id}" />
 
-      <label>Temps de passage (secondes)</label>
-      <input type="number" min="1" class="time-per-player" data-id="${id}"
-        value="${p.time_per_player ?? 120}"
-        style="width:100%;padding:12px;font-size:16px">
+      <label class="admin-label">Temps de passage (secondes)</label>
+      <input type="number" min="1" class="time-per-player admin-input" data-id="${id}" value="${p.time_per_player ?? 120}" />
     `;
 
-    list.appendChild(div);
+    list.appendChild(card);
   }
+
+  document.getElementById("apply-global-time").addEventListener("click", () => {
+    const input = document.getElementById("global-time");
+    const parsed = parseInt(input.value, 10);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      alert("Veuillez saisir une valeur valide (> 0).");
+      return;
+    }
+
+    document.querySelectorAll(".time-per-player").forEach((field) => {
+      field.value = parsed;
+    });
+  });
 
   document.querySelectorAll(".photo").forEach((input) => {
     input.addEventListener("change", async () => {
@@ -125,13 +166,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   document.getElementById("save").onclick = async () => {
-    document.querySelectorAll(".nom").forEach((i) => {
-      data[i.dataset.id].nom = i.value;
+    document.querySelectorAll(".nom").forEach((input) => {
+      data[input.dataset.id].nom = input.value;
     });
 
-    document.querySelectorAll(".time-per-player").forEach((i) => {
-      const parsed = parseInt(i.value, 10);
-      data[i.dataset.id].time_per_player = Number.isFinite(parsed) && parsed > 0 ? parsed : 120;
+    document.querySelectorAll(".time-per-player").forEach((input) => {
+      const parsed = parseInt(input.value, 10);
+      data[input.dataset.id].time_per_player = Number.isFinite(parsed) && parsed > 0 ? parsed : 120;
     });
 
     const r = await adminFetch("./api/save.php", {
