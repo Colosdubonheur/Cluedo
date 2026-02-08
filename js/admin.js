@@ -1,4 +1,32 @@
 document.addEventListener("DOMContentLoaded", async () => {
+  const PIN_KEY = "cluedo_admin_pin";
+  let adminPin = sessionStorage.getItem(PIN_KEY) || "";
+
+  async function verifyPin(pin) {
+    const response = await fetch(`./api/admin_auth.php?admin_pin=${encodeURIComponent(pin)}&t=${Date.now()}`);
+    if (!response.ok) {
+      return false;
+    }
+
+    const payload = await response.json();
+    return !!payload.ok;
+  }
+
+  while (!adminPin || !(await verifyPin(adminPin))) {
+    adminPin = window.prompt("Code administration :", adminPin || "") || "";
+    if (!adminPin) {
+      document.body.innerHTML = "<p style='color:white;padding:20px'>Accès refusé.</p>";
+      return;
+    }
+  }
+
+  sessionStorage.setItem(PIN_KEY, adminPin);
+
+  const adminFetch = (url, options = {}) => {
+    const headers = { ...(options.headers || {}), "X-Admin-Pin": adminPin };
+    return fetch(url, { ...options, headers });
+  };
+
   document.body.innerHTML = `
     <div style="max-width:600px;margin:20px auto;color:white;font-family:Arial">
       <h1>Admin Cluedo</h1>
@@ -11,7 +39,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   `;
 
   const list = document.getElementById("list");
-  const res = await fetch("./api/get.php?ts=" + Date.now());
+  const res = await adminFetch("./api/get.php?ts=" + Date.now());
+  if (!res.ok) {
+    list.innerHTML = "<p>Accès refusé.</p>";
+    return;
+  }
+
   const data = await res.json();
   list.innerHTML = "";
 
@@ -45,8 +78,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     list.appendChild(div);
   }
 
-  // upload photo
-  document.querySelectorAll(".photo").forEach(input => {
+  document.querySelectorAll(".photo").forEach((input) => {
     input.addEventListener("change", async () => {
       const id = input.dataset.id;
       const file = input.files[0];
@@ -58,9 +90,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       alert("Upload en cours…");
 
-      const r = await fetch("./api/upload.php", {
+      const r = await adminFetch("./api/upload.php", {
         method: "POST",
-        body: fd
+        body: fd,
       });
 
       const j = await r.json();
@@ -74,21 +106,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   });
 
-  // save config
   document.getElementById("save").onclick = async () => {
-    document.querySelectorAll(".nom").forEach(i => {
+    document.querySelectorAll(".nom").forEach((i) => {
       data[i.dataset.id].nom = i.value;
     });
 
-    document.querySelectorAll(".time-per-player").forEach(i => {
+    document.querySelectorAll(".time-per-player").forEach((i) => {
       const parsed = parseInt(i.value, 10);
       data[i.dataset.id].time_per_player = Number.isFinite(parsed) && parsed > 0 ? parsed : 120;
     });
 
-    const r = await fetch("./api/save.php", {
+    const r = await adminFetch("./api/save.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(data)
+      body: JSON.stringify(data),
     });
 
     alert(r.ok ? "Configuration sauvegardée ✅" : "Erreur sauvegarde");
