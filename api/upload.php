@@ -189,7 +189,6 @@ if ($oldPhotoPath !== null && $oldPhotoPath !== '' && $oldPhotoPath !== $relativ
 
 echo json_encode([
   'ok' => true,
+  'photo' => $relativePath,
   'path' => $relativePath,
-]);
-
 ]);
