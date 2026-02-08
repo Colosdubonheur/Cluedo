@@ -40,7 +40,8 @@ $profilesStore = cluedo_load_team_profiles();
 $profile = cluedo_get_team_profile($profilesStore, $token);
 
 $now = time();
-cluedo_touch_team_presence($token, $now);
+$presenceEntry = cluedo_touch_team_presence($token, $now);
+$isNewTeamSession = !empty($presenceEntry['is_new']);
 $maxWait = 600;
 $teamState = [
   'state' => 'free',
@@ -150,6 +151,7 @@ echo json_encode([
     'profile' => $profile,
     'history' => $recap,
     'message' => $teamMessage,
+    'is_new_team_session' => $isNewTeamSession,
   ],
   'global' => $global,
   'game_state' => cluedo_load_game_state(),

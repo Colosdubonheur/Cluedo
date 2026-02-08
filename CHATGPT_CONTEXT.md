@@ -1052,7 +1052,7 @@ Les règles d'unicité de file restent inchangées :
   - présence (heartbeat),
   - message supervision individuel.
 - Cette action est réservée à la supervision et n'affecte jamais les autres équipes.
-- La récupération d'une équipe supprimée nécessite une nouvelle connexion (nouveau token).
+- Après suppression, une réouverture avec l'ancien token ne restaure aucune donnée : l'équipe repart comme une première arrivée.
 
 ### Supervision — QR Code de récupération de token équipe
 - `monitor.html` expose l'action **« QR Code de l'équipe »** dans chaque carte équipe.
@@ -1060,3 +1060,18 @@ Les règles d'unicité de file restent inchangées :
 - Scanner ce QR code sur un autre appareil reconnecte la même équipe (même token, même historique) sans créer d'entrée supplémentaire.
 - L'UI de supervision affiche le QR code dans une modale et permet son téléchargement.
 - Cette fonctionnalité est strictement réservée à la supervision.
+
+### Supervision — suppression définitive d’une équipe
+- Depuis `monitor.html`, l’action **Supprimer l’équipe** est définitive sur les données runtime.
+- La suppression runtime retire systématiquement :
+  - le profil équipe (nom + participants),
+  - la photo équipe (référence profile + fichier `uploads/...` si présent),
+  - les messages de supervision ciblés pour ce token,
+  - l’historique des passages de l’équipe,
+  - la présence runtime de l’équipe,
+  - toute entrée de cette équipe dans les files personnages (active / waiting / free recalculé par le runtime).
+- La suppression est appliquée dans une section critique côté serveur (verrou runtime) pour éviter l’exposition d’états intermédiaires.
+- Conséquence côté joueur (`team.html`) :
+  - si la page est rafraîchie ou réouverte avec l’ancien token, l’équipe est traitée comme nouvelle,
+  - aucune récupération implicite des anciennes données runtime,
+  - le parcours repart de zéro (nom d’équipe + participants à ressaisir, historique vide).
