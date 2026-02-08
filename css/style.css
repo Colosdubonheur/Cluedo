@@ -436,6 +436,32 @@ body {
   line-height: 1;
 }
 
+
+.team-notifications-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.team-notifications-header h2 {
+  margin: 0;
+}
+
+.team-audio-button {
+  white-space: nowrap;
+}
+
+.team-block h2 {
+  margin: 0 0 8px;
+}
+
+.team-character-hint {
+  margin: 0 0 8px;
+  color: #94a3b8;
+  font-size: 0.92rem;
+}
+
 .team-input-row {
   display: grid;
   gap: 6px;
@@ -934,7 +960,7 @@ body {
   flex-wrap: wrap;
   align-items: center;
   gap: 10px;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
 }
 
 .team-character-list {
@@ -950,17 +976,41 @@ body {
   border-radius: 10px;
   padding: 10px;
   display: grid;
-  grid-template-columns: auto 1fr;
-  gap: 12px;
-  align-items: start;
+  grid-template-columns: 30% 50% 20%;
+  gap: 10px;
+  align-items: center;
 }
 
-.team-character-action {
-  margin-top: 6px;
+.team-character-col {
+  min-width: 0;
 }
 
-.team-character-meta h3 {
+.team-character-col-photo {
+  display: flex;
+  align-items: center;
+}
+
+.team-character-col-meta h3 {
   margin: 0 0 6px;
+}
+
+.team-character-col-action {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.team-character-action-btn {
+  min-width: 92px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.team-character-action-btn span {
+  font-size: 0.9em;
+  line-height: 1;
 }
 
 .team-character-line {
@@ -985,7 +1035,7 @@ body {
 
 .team-seen-badge {
   display: inline-block;
-  margin-bottom: 8px;
+  margin-bottom: 4px;
   color: #86efac;
   font-size: 0.9rem;
 }
