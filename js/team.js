@@ -9,7 +9,6 @@ document.addEventListener("DOMContentLoaded", () => {
   localStorage.setItem(TOKEN_KEY, token);
   sessionStorage.setItem(TOKEN_KEY, token);
 
-  const tokenEl = document.getElementById("team-token");
   const displayNameEl = document.getElementById("team-display-name");
   const editNameBtn = document.getElementById("team-edit-name-btn");
   const profileForm = document.getElementById("team-profile-form");
@@ -21,11 +20,19 @@ document.addEventListener("DOMContentLoaded", () => {
   const photoInput = document.getElementById("team-photo-input");
   const qrFeedback = document.getElementById("team-qr-feedback");
   const qrReader = document.getElementById("team-qr-reader");
+  const qrStartBtn = document.getElementById("team-qr-start");
+  const qrStopBtn = document.getElementById("team-qr-stop");
+  const participantsGuidanceEl = document.getElementById("team-guidance-participants");
+  const photoGuidanceEl = document.getElementById("team-guidance-photo");
   const historyEl = document.getElementById("team-history");
   const globalEl = document.getElementById("team-global");
 
   let latestState = null;
   let previousTeamState = "free";
+  let qrScanner = null;
+  let qrLastValue = "";
+  let qrIsProcessingScan = false;
+  let qrIsRunning = false;
 
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
@@ -97,8 +104,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     latestState = payload;
-    tokenEl.textContent = `Token équipe : ${token}`;
-
     const profile = payload.team?.profile || {};
     const profileName = (profile.team_name || "").trim();
     const storedName = (localStorage.getItem(TEAM_KEY) || "").trim();
@@ -112,6 +117,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     playersWrap.innerHTML = "";
     const players = Array.isArray(profile.players) ? profile.players : [];
+    const filledPlayersCount = players.filter((name) => String(name || "").trim()).length;
     for (let i = 0; i < 10; i += 1) {
       const row = document.createElement("div");
       row.className = "team-inline";
@@ -122,9 +128,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (profile.photo) {
       photoEl.src = profile.photo;
       photoEl.style.display = "block";
+      photoGuidanceEl.textContent = "Photo d'équipe enregistrée ✅";
+      photoGuidanceEl.classList.add("is-ok");
     } else {
       photoEl.removeAttribute("src");
       photoEl.style.display = "none";
+      photoGuidanceEl.textContent = "Pensez à ajouter une photo de l’équipe pour faciliter le jeu.";
+      photoGuidanceEl.classList.remove("is-ok");
+    }
+
+    if (filledPlayersCount < 2) {
+      participantsGuidanceEl.textContent = "Merci de renseigner les participants de l’équipe avant de continuer.";
+      participantsGuidanceEl.classList.remove("is-ok");
+    } else {
+      participantsGuidanceEl.textContent = `Participants renseignés : ${filledPlayersCount}/10 ✅`;
+      participantsGuidanceEl.classList.add("is-ok");
     }
 
     const history = Array.isArray(payload.team?.history) ? payload.team.history : [];
@@ -305,47 +323,139 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    const scanner = new window.Html5QrcodeScanner("team-qr-reader", { fps: 10, qrbox: 220 }, false);
-    let lastValue = "";
-    let isProcessingScan = false;
+    qrScanner = new window.Html5QrcodeScanner(
+      "team-qr-reader",
+      {
+        fps: 10,
+        qrbox: 220,
+        rememberLastUsedCamera: true,
+        supportedScanTypes: [window.Html5QrcodeScanType?.SCAN_TYPE_CAMERA].filter(Boolean),
+      },
+      false
+    );
 
-    scanner.render(
-      async (decodedText) => {
-        if (!decodedText || decodedText === lastValue || isProcessingScan) {
+    const safeClearQrReader = () => {
+      const root = document.getElementById("team-qr-reader");
+      if (!root) return;
+      while (root.firstChild) {
+        root.removeChild(root.firstChild);
+      }
+    };
+
+    const onScanSuccess = async (decodedText) => {
+      if (!decodedText || decodedText === qrLastValue || qrIsProcessingScan) {
+        return;
+      }
+
+      qrIsProcessingScan = true;
+      qrLastValue = decodedText;
+
+      try {
+        const target = parseQrTarget(decodedText);
+        if (!target?.id || !target?.url) {
+          setQrFeedback("QR invalide : lien personnage introuvable.", "error");
           return;
         }
 
-        isProcessingScan = true;
-        lastValue = decodedText;
-
-        try {
-          const target = parseQrTarget(decodedText);
-          if (!target?.id || !target?.url) {
-            setQrFeedback("QR invalide : URL play.html?id=X introuvable.", "error");
-            return;
-          }
-
-          const teamName = profileTeamName();
-          if (teamName) {
-            localStorage.setItem(TEAM_KEY, teamName);
-          }
-          sessionStorage.setItem(TOKEN_KEY, token);
-          localStorage.setItem(TOKEN_KEY, token);
-
-          setQrFeedback(`QR détecté (${target.id}) : ouverture…`, "success");
-          setTimeout(() => {
-            window.location.assign(target.url);
-          }, 450);
-        } finally {
-          setTimeout(() => {
-            lastValue = "";
-            isProcessingScan = false;
-            qrReader.classList.remove("is-processing");
-          }, 1500);
+        const teamName = profileTeamName();
+        if (teamName) {
+          localStorage.setItem(TEAM_KEY, teamName);
         }
-      },
-      () => {}
-    );
+        sessionStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(TOKEN_KEY, token);
+
+        setQrFeedback(`QR détecté (${target.id}) : ouverture…`, "success");
+        setTimeout(() => {
+          window.location.assign(target.url);
+        }, 450);
+      } finally {
+        setTimeout(() => {
+          qrLastValue = "";
+          qrIsProcessingScan = false;
+          qrReader.classList.remove("is-processing");
+        }, 1500);
+      }
+    };
+
+    const onScanError = () => {};
+
+    const restoreQrActionButtons = () => {
+      qrStartBtn.disabled = false;
+      qrStopBtn.disabled = !qrIsRunning;
+    };
+
+    const patchLibraryLabelsToFrench = () => {
+      const region = document.getElementById("team-qr-reader");
+      if (!region) return;
+
+      const spanNodes = region.querySelectorAll("span");
+      for (const node of spanNodes) {
+        const text = (node.textContent || "").trim();
+        if (!text) continue;
+        if (text === "Request Camera Permissions") node.textContent = "Autoriser la caméra";
+        if (text === "Scan an Image File") node.textContent = "Scanner une image";
+        if (text === "Stop Scanning") node.textContent = "Arrêter le scan";
+        if (text === "Start Scanning") node.textContent = "Démarrer le scan";
+      }
+
+      const buttonNodes = region.querySelectorAll("button");
+      for (const btn of buttonNodes) {
+        const text = (btn.textContent || "").trim();
+        if (text === "Request Camera Permissions") btn.textContent = "Autoriser la caméra";
+        if (text === "Stop Scanning") btn.textContent = "Arrêter le scan";
+        if (text === "Start Scanning") btn.textContent = "Démarrer le scan";
+      }
+    };
+
+    const startQrScanner = async () => {
+      if (!qrScanner || qrIsRunning) return;
+      qrStartBtn.disabled = true;
+      setQrFeedback("Ouverture de la caméra…", "processing");
+      try {
+        qrScanner.render(onScanSuccess, onScanError);
+        qrIsRunning = true;
+        setQrFeedback("Caméra active. Placez le QR code dans le cadre.", "neutral");
+        setTimeout(patchLibraryLabelsToFrench, 120);
+      } catch (_error) {
+        safeClearQrReader();
+        setQrFeedback("Impossible de démarrer la caméra. Vérifiez les autorisations.", "error");
+      } finally {
+        restoreQrActionButtons();
+      }
+    };
+
+    const stopQrScanner = async () => {
+      if (!qrScanner || !qrIsRunning) return;
+      qrStopBtn.disabled = true;
+      setQrFeedback("Caméra arrêtée.", "neutral");
+      try {
+        await qrScanner.clear();
+      } catch (_error) {
+        safeClearQrReader();
+      } finally {
+        qrIsRunning = false;
+        qrLastValue = "";
+        qrIsProcessingScan = false;
+        restoreQrActionButtons();
+      }
+    };
+
+    qrStartBtn.addEventListener("click", () => {
+      startQrScanner().catch(() => {
+        setQrFeedback("Impossible de démarrer la caméra. Vérifiez les autorisations.", "error");
+        restoreQrActionButtons();
+      });
+    });
+
+    qrStopBtn.addEventListener("click", () => {
+      stopQrScanner().catch(() => {
+        setQrFeedback("Arrêt du scan incomplet.", "error");
+        restoreQrActionButtons();
+      });
+    });
+
+    restoreQrActionButtons();
+    setQrFeedback("Appuyez sur « Scanner un QR code » pour lancer la caméra.", "neutral");
   }
 
   async function uploadTeamPhotoWithCrop(file) {
