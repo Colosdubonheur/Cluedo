@@ -990,3 +990,13 @@ Règle d'affichage du temps :
 Les règles d'unicité de file restent inchangées :
 - une équipe ne peut être engagée que dans une seule file à la fois,
 - confirmation obligatoire avant changement de suspect.
+
+### Zone Messages — Espace Équipe (`team.html`)
+- Le conteneur `#team-message-history` conserve l'historique complet des messages reçus pendant la session (aucune suppression automatique côté front).
+- L'affichage par défaut est compact : au maximum **4 lignes** de messages sont visibles sans scroll.
+- La zone est en `overflow-y: auto` pour permettre un scroll manuel vers les messages plus anciens.
+- À la réception de chaque nouveau message supervision :
+  - une nouvelle ligne est ajoutée à l'historique,
+  - la zone est recentrée automatiquement en haut (`scrollTop = 0`),
+  - les **4 derniers messages** redeviennent immédiatement visibles, même si l'utilisateur consultait l'historique.
+- Ce recentrage est systématique et prioritaire (aucune exception liée à une interaction utilisateur en cours).
