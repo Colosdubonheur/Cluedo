@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let qrCurrentStartToken = 0;
   let qrLastValue = "";
   let qrIsProcessingScan = false;
+  let qrHasActiveVideo = false;
   let userEditingLockUntil = 0;
   let isSavingTeamName = false;
   let isTeamNameEditMode = false;
@@ -95,10 +96,25 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setQrFeedback(message, status = "neutral") {
     qrFeedback.textContent = message;
+    qrFeedback.classList.remove("is-success", "is-error", "is-processing");
     qrReader.classList.remove("is-success", "is-error", "is-processing");
-    if (status === "success") qrReader.classList.add("is-success");
-    if (status === "error") qrReader.classList.add("is-error");
-    if (status === "processing") qrReader.classList.add("is-processing");
+    if (status === "success") {
+      qrReader.classList.add("is-success");
+      qrFeedback.classList.add("is-success");
+    }
+    if (status === "error") {
+      qrReader.classList.add("is-error");
+      qrFeedback.classList.add("is-error");
+    }
+    if (status === "processing") {
+      qrReader.classList.add("is-processing");
+      qrFeedback.classList.add("is-processing");
+    }
+  }
+
+  function setQrReaderVisibility(isVisible) {
+    qrHasActiveVideo = Boolean(isVisible);
+    qrReader.classList.toggle("is-active", qrHasActiveVideo);
   }
 
   function parseQrTarget(decodedText) {
@@ -401,6 +417,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       qrIsRunning = false;
       qrScanner = null;
+      setQrReaderVisibility(false);
 
       if (resetDom) {
         qrReader.replaceChildren();
@@ -409,7 +426,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     async function applyMobileVideoAttributes() {
       const video = qrReader.querySelector("video");
-      if (!video) return;
+      if (!video) return null;
 
       video.setAttribute("playsinline", "true");
       video.setAttribute("webkit-playsinline", "true");
@@ -419,6 +436,31 @@ document.addEventListener("DOMContentLoaded", () => {
       video.autoplay = true;
       video.muted = true;
       await video.play().catch(() => {});
+      return video;
+    }
+
+    function waitForActiveVideo(timeoutMs = 5000) {
+      const startedAt = Date.now();
+
+      return new Promise((resolve, reject) => {
+        function checkVideoReady() {
+          const video = qrReader.querySelector("video");
+          if (video && video.srcObject && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA && !video.paused) {
+            setQrReaderVisibility(true);
+            resolve(video);
+            return;
+          }
+
+          if (Date.now() - startedAt >= timeoutMs) {
+            reject(new Error("VIDEO_NOT_ACTIVE"));
+            return;
+          }
+
+          requestAnimationFrame(checkVideoReady);
+        }
+
+        checkVideoReady();
+      });
     }
 
     async function startWithTimeout(cameraConfig, timeoutMs = 12000) {
@@ -487,6 +529,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       let started = false;
       let timeoutDetected = false;
+      let permissionDeniedDetected = false;
       for (const attempt of attempts) {
         if (qrCurrentStartToken !== startToken) {
           await stopScannerIfNeeded();
@@ -496,6 +539,7 @@ document.addEventListener("DOMContentLoaded", () => {
         try {
           await startWithTimeout(attempt.cameraConfig);
           await applyMobileVideoAttributes();
+          await waitForActiveVideo();
           started = true;
           qrIsRunning = true;
           if (preferred?.id) {
@@ -504,15 +548,19 @@ document.addEventListener("DOMContentLoaded", () => {
           setQrFeedback("Caméra activée. Présentez le QR code devant l'objectif.", "neutral");
           break;
         } catch (error) {
-          timeoutDetected = timeoutDetected || String(error?.message || "").includes("CAMERA_START_TIMEOUT") || /timeout starting video source/i.test(String(error?.message || ""));
+          const errorMessage = String(error?.message || "");
+          timeoutDetected = timeoutDetected || errorMessage.includes("CAMERA_START_TIMEOUT") || /timeout starting video source/i.test(errorMessage) || errorMessage.includes("VIDEO_NOT_ACTIVE");
+          permissionDeniedDetected = permissionDeniedDetected || /notallowederror|permission denied|permission dismissed/i.test(errorMessage);
           await stopScannerIfNeeded();
         }
       }
 
       if (!started) {
-        const message = timeoutDetected
-          ? "La caméra ne démarre pas correctement sur cet appareil. Utilisez « Importer une image » pour scanner le QR code."
-          : "Impossible de démarrer la caméra pour le moment. Utilisez « Importer une image ».";
+        const message = permissionDeniedDetected
+          ? "Accès caméra refusé par le navigateur. Utilisez « Importer une image » pour scanner le QR code."
+          : timeoutDetected
+            ? "La caméra est autorisée mais le flux vidéo ne démarre pas (timeout). Utilisez « Importer une image » pour continuer."
+            : "Impossible de démarrer la caméra pour le moment. Utilisez « Importer une image ».";
         setQrFeedback(message, "error");
       }
     }
@@ -523,7 +571,8 @@ document.addEventListener("DOMContentLoaded", () => {
       setQrFeedback("Analyse de l'image en cours…", "processing");
 
       try {
-        const decodedText = await qrScanner.scanFile(file, true);
+        const scanner = ensureScannerInstance();
+        const decodedText = await scanner.scanFile(file, true);
         await onScanSuccess(decodedText);
       } catch (_error) {
         setQrFeedback("Aucun QR valide détecté dans l'image. Vérifiez la netteté puis réessayez.", "error");
@@ -547,7 +596,8 @@ document.addEventListener("DOMContentLoaded", () => {
       await scanFromImageFile(file);
     });
 
-    setQrFeedback("Choisissez une action : « Scanner un QR code » ou « Importer une image ».", "neutral");
+    setQrReaderVisibility(false);
+    setQrFeedback("Choisissez une action : « Scanner un QR code (caméra) » ou « Importer une image ».", "neutral");
   }
 
   async function uploadTeamPhotoWithCrop(file) {
