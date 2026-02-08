@@ -28,12 +28,13 @@
 
     <section class="card team-block team-qr-block" aria-label="Scanner QR code">
       <h2>📱 Scanner QR code</h2>
-      <p class="team-feedback">1) Autorisez la caméra, 2) visez le QR code du personnage, 3) ouverture automatique.</p>
-      <div class="team-qr-actions">
-        <button id="team-qr-start" type="button" class="admin-button team-qr-action">Scanner un QR code</button>
-        <button id="team-qr-stop" type="button" class="admin-button team-qr-action team-qr-stop" disabled>Arrêter la caméra</button>
+      <p class="team-feedback">Scannez puis ouvrez immédiatement le lien du personnage.</p>
+      <div class="team-qr-actions" aria-label="Actions de scan QR">
+        <button id="team-qr-start-camera" type="button" class="admin-button team-qr-primary-btn">Scanner un QR code</button>
+        <button id="team-qr-import-btn" type="button" class="admin-button team-qr-secondary-btn">Importer une image</button>
+        <input id="team-qr-file-input" type="file" accept="image/*" class="team-qr-file-input"/>
       </div>
-      <div id="team-qr-reader"></div>
+      <div id="team-qr-reader" aria-live="polite"></div>
       <p id="team-qr-feedback" class="team-feedback"></p>
     </section>
 

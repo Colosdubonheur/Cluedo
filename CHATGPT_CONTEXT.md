@@ -102,6 +102,11 @@ Le serveur est l’unique source de vérité pour :
 6. Passage avec le personnage
 7. Sortie de la file
 
+### Complément UX team.html (scan QR PC / mobile)
+- `team.html` propose un scan QR adapté au mobile, à la tablette et au PC.
+- Les libellés et actions de scan sont localisés en français pour un usage terrain clair.
+- Un fallback par import d'image est disponible si la caméra est indisponible ou ne démarre pas.
+
 ---
 
 ## 6. Architecture technique
