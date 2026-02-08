@@ -1,4 +1,4 @@
-name: Deploy to PlanetHoster
+name: DEBUG Project Structure
 
 on:
   workflow_dispatch:
@@ -7,30 +7,18 @@ on:
       - main
 
 jobs:
-  deploy:
+  debug:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repository
+      - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Build project
-        run: npm run build
-
-      - name: Upload to PlanetHoster
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.4
-        with:
-          server: ${{ secrets.FTP_SERVER }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: dist/
-          server-dir: ${{ secrets.FTP_PATH }}
-          log-level: verbose
+      - name: Show root tree
+        run: |
+          echo "=== PWD ==="
+          pwd
+          echo "=== ROOT FILES ==="
+          ls -la
+          echo "=== SEARCH package.json ==="
+          find . -type f -name package.json
