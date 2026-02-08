@@ -102,6 +102,16 @@ Le serveur est l’unique source de vérité pour :
 6. Passage avec le personnage
 7. Sortie de la file
 
+### Comportement UX play.html après sortie (état `free`)
+- Le front de `play.html` doit réagir uniquement sur le signal serveur (`state = free`).
+- Dès le passage en `free` (sortie volontaire confirmée côté serveur ou relève automatique), le front doit :
+  1. tenter immédiatement `window.close()`,
+  2. si la fermeture est bloquée par le navigateur, afficher des actions explicites :
+     - `Aller à la page équipe` (redirection vers `team.html`),
+     - `Fermer cette page` (nouvelle tentative de fermeture).
+- La session équipe (token) et le nom d’équipe restent conservés (pas de recréation d’équipe, pas de ressaisie de nom).
+- Aucun état bloquant ne doit subsister côté joueur après passage en `free` (mobile et desktop, Safari iOS inclus).
+
 ### Complément UX team.html (scan QR PC / mobile)
 - `team.html` propose un scan QR adapté au mobile, à la tablette et au PC.
 - Les libellés et actions de scan sont localisés en français pour un usage terrain clair.
@@ -175,7 +185,7 @@ Toute évolution doit respecter ces principes.
   légitimement (équipe non encore initialisée) et afficher une erreur inutile.
 
 **Sortie contractuelle à consommer côté front**
-- `state`: `need_name` | `waiting` | `active`
+- `state`: `need_name` | `waiting` | `active` | `free`
 - `legacy_state`: `waiting` | `done` (compatibilité rétroactive)
 - `personnage`: `{ id, nom }`
 - `equipe`: `{ id, nom }`
