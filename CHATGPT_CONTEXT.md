@@ -419,7 +419,7 @@ Ces règles sont **non négociables** et doivent rester alignées avec `api/stat
 
 ## 11. Navigation Hub
 
-- `admin.html` dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`.
+- `admin.html` dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`, visible en permanence en haut de l’interface admin.
 - `supervision.html` (implémentée via `monitor.html`) dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`.
 ---
 
