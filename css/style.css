@@ -1106,6 +1106,24 @@ body {
   margin: 0 0 6px;
 }
 
+.team-current-character-layout {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.team-current-character-photo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-current-character-meta {
+  min-width: 0;
+}
+
 .team-current-state {
   margin: 0 0 6px;
   font-weight: 700;

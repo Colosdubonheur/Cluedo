@@ -186,12 +186,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function getWaitColorClass(row) {
-    const queueTotal = Number(row.queue_total || 0);
-    const waitingCount = Number(row.waiting_count || 0);
-    const hasActiveTeam = queueTotal >= 1;
-    if (hasActiveTeam && waitingCount >= 2) return "is-wait-red";
-    if (hasActiveTeam && waitingCount === 1) return "is-wait-orange";
-    return "is-wait-green";
+    const waitSeconds = Math.max(0, Number(row?.estimated_wait_seconds || 0));
+    if (waitSeconds === 0) return "";
+    if (waitSeconds < 30) return "is-wait-green";
+    if (waitSeconds < 150) return "is-wait-orange";
+    return "is-wait-red";
   }
 
   async function saveProfile() {
@@ -346,6 +345,7 @@ document.addEventListener("DOMContentLoaded", () => {
         : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
       const seenStatus = seen.has(String(row.id || "")) ? '<span class="team-seen-badge">Déjà vu</span>' : '<span class="team-seen-badge">Jamais vu</span>';
       const waitClass = getWaitColorClass(row);
+      const waitValue = fmt(row.estimated_wait_seconds || 0);
       const locationTitle = String(row.location || "").trim() || "Localisation non renseignée";
 
       item.innerHTML = `
@@ -355,7 +355,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="team-character-col team-character-col-meta">
           <h3>${row.nom || "Personnage"}</h3>
           <p class="team-character-line team-character-location" title="${locationTitle}" aria-label="${locationTitle}">📍 ${locationTitle}</p>
-          <p class="team-character-line team-character-wait ${waitClass}">⏱ ${fmt(row.estimated_wait_seconds || 0)}</p>
+          <p class="team-character-line team-character-wait ${waitClass}">⏱ ${waitValue}</p>
           ${seenStatus}
         </div>
       `;
@@ -396,23 +396,30 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const row = (Array.isArray(state.global) ? state.global : []).find((entry) => String(entry.id || "") === currentCharacterId);
     const characterName = String(teamState.character_name || row?.nom || "Personnage");
+    const locationText = String(row?.location || "").trim() || "Localisation non renseignée";
+    const characterPhoto = row?.photo
+      ? `<img src="${row.photo}" alt="${characterName}" class="team-character-photo"/>`
+      : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
     const hasNextTeamWaiting = teamState.state === "active" && Number(teamState.queue_total || 0) > 1;
     const statusText = teamState.state === "active"
       ? (hasNextTeamWaiting ? "Préparez-vous à libérer la place" : "Interrogatoire en cours")
-      : "En attente";
-    const waitClass = hasNextTeamWaiting ? "is-wait-orange" : getWaitColorClass(row || {});
-    const waitLabel = teamState.state === "active"
-      ? "Temps restant"
-      : "Temps estimé";
+      : "";
+    const waitClass = teamState.state === "active" ? (hasNextTeamWaiting ? "is-wait-orange" : "is-wait-green") : "";
     const waitValue = fmt(row?.estimated_wait_seconds || 0);
     const disableLeave = isBlocked || isQueueActionInProgress;
 
     currentCharacterEl.hidden = false;
     currentCharacterEl.innerHTML = `
       <div class="team-current-character-card">
-        <h3>${characterName}</h3>
-        <p class="team-current-state ${teamState.state === "active" ? (hasNextTeamWaiting ? "is-alert" : "is-active") : "is-waiting"}">${statusText}</p>
-        <p class="team-character-line team-character-wait ${waitClass}">⏱ ${waitLabel} : ${waitValue}</p>
+        <div class="team-current-character-layout">
+          <div class="team-current-character-photo-wrap">${characterPhoto}</div>
+          <div class="team-current-character-meta">
+            <h3>${characterName}</h3>
+            <p class="team-character-line team-character-location" title="${locationText}" aria-label="${locationText}">📍 ${locationText}</p>
+            ${statusText ? `<p class="team-current-state ${teamState.state === "active" ? (hasNextTeamWaiting ? "is-alert" : "is-active") : "is-waiting"}">${statusText}</p>` : ""}
+            <p class="team-character-line team-character-wait ${waitClass}">${teamState.state === "active" ? "⏱ Temps restant :" : "⏱ Votre interrogatoire commence dans environ :"} ${waitValue}</p>
+          </div>
+        </div>
         <button type="button" class="admin-button team-current-leave" ${disableLeave ? "disabled" : ""}>STOP</button>
       </div>
     `;
