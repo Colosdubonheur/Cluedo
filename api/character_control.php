@@ -44,10 +44,10 @@ if ($activeIndex === null) {
 
 switch ($action) {
   case 'plus_30':
-    $queue[$activeIndex]['joined_at'] = (int) ($queue[$activeIndex]['joined_at'] ?? $now) - 30;
+    $queue[$activeIndex]['joined_at'] = (int) ($queue[$activeIndex]['joined_at'] ?? $now) + 30;
     break;
   case 'minus_30':
-    $queue[$activeIndex]['joined_at'] = (int) ($queue[$activeIndex]['joined_at'] ?? $now) + 30;
+    $queue[$activeIndex]['joined_at'] = (int) ($queue[$activeIndex]['joined_at'] ?? $now) - 30;
     break;
   case 'eject':
     array_splice($queue, $activeIndex, 1);

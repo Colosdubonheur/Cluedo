@@ -367,6 +367,7 @@ Objectif : conserver un dépôt propre tout en laissant les animateurs modifier 
 - `GET /api/supervision.php` : expose la liste globale des équipes en jeu (lecture seule).
 - `GET /api/character_status.php?id=X` : état courant d’un personnage (équipe active + file).
 - `POST /api/character_control.php` : actions terrain personnage (`plus_30`, `minus_30`, `eject`).
+- Sur `character.html`, les actions manuelles de temps sont strictement alignées avec leurs libellés : `+30s` envoie `plus_30` et ajoute 30s réelles, `-30s` envoie `minus_30` et retire 30s réelles.
 
 ### Endpoints admin sécurisés (PIN requis)
 - `GET /api/get.php`
