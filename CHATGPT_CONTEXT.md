@@ -236,6 +236,9 @@ Le serveur est l’unique source de vérité pour :
 - Comportement sonore associé :
   - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son (`cluedo_team_audio_enabled`) ; son de notification : `assets/message.wav`,
   - côté personnage, notification sonore sur nouveau message ciblé avec `assets/message.wav`.
+- Priorité d'affichage sur `character.html` (UI uniquement) :
+  - les **messages de supervision** sont affichés avant le bloc de l'**équipe active** ;
+  - ordre attendu : messages de supervision → équipe active → équipes en attente → paramètres secondaires (photo, lieu, etc.).
 - Suppression globale de l’historique des messages (supervision uniquement) :
   - `monitor.html` expose un bouton dédié **« Effacer l’historique des messages »** distinct de `Remettre l'historique à zéro`,
   - l’action est protégée par une confirmation explicite et ne s’exécute jamais sans validation,
