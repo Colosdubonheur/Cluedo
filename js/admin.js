@@ -138,6 +138,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       <label class="admin-label">Temps de passage (secondes)</label>
       <input type="number" min="1" class="time-per-player admin-input" data-id="${id}" value="${p.time_per_player ?? 120}" />
+
+      <label class="admin-label admin-toggle-label">
+        <input type="checkbox" class="active-flag" data-id="${id}" ${p.active !== false ? "checked" : ""} />
+        Personnage actif
+      </label>
     `;
 
     list.appendChild(card);
@@ -205,6 +210,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.querySelectorAll(".time-per-player").forEach((input) => {
       const parsed = parseInt(input.value, 10);
       data[input.dataset.id].time_per_player = Number.isFinite(parsed) && parsed > 0 ? parsed : 120;
+    });
+
+    document.querySelectorAll(".active-flag").forEach((input) => {
+      data[input.dataset.id].active = input.checked;
     });
 
     const r = await adminFetch("./api/save.php", {

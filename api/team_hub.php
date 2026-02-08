@@ -3,6 +3,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_queue_runtime.php';
 require_once __DIR__ . '/_team_profiles_store.php';
+require_once __DIR__ . '/_character_visibility.php';
 
 $token = trim((string) ($_GET['token'] ?? ''));
 if ($token === '') {
@@ -16,6 +17,8 @@ $data = json_decode((string) file_get_contents($dataPath), true);
 if (!is_array($data)) {
   $data = [];
 }
+
+$changed = cluedo_enforce_character_visibility($data);
 
 $historyPath = __DIR__ . '/../data/team_history.json';
 $history = ['teams' => []];
@@ -42,8 +45,12 @@ $teamState = [
   'queue_total' => null,
 ];
 $global = [];
+$activeCharacterIds = array_fill_keys(array_map('strval', array_keys(cluedo_get_active_characters($data))), true);
 
 foreach ($data as $characterId => $character) {
+  if (!cluedo_character_is_active($character)) {
+    continue;
+  }
   $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
   $queue = cluedo_clean_character_queue($queue, $now, $maxWait);
   $timePerPlayer = max(1, (int) ($character['time_per_player'] ?? 120));
@@ -102,7 +109,7 @@ $totalsByCharacter = [];
 foreach ($rows as $row) {
   $character = $row['personnage'];
   $characterId = (string) ($character['id'] ?? '');
-  if ($characterId === '') {
+  if ($characterId === '' || !isset($activeCharacterIds[$characterId])) {
     continue;
   }
 

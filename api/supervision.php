@@ -2,6 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_queue_runtime.php';
+require_once __DIR__ . '/_character_visibility.php';
 
 function cluedo_history_path(): string
 {
@@ -52,11 +53,16 @@ if (!is_array($data)) {
   $data = [];
 }
 
+$changed = cluedo_enforce_character_visibility($data);
 $now = time();
 $maxWait = 600;
 $currentStates = [];
+$activeCharacterIds = array_fill_keys(array_map('strval', array_keys(cluedo_get_active_characters($data))), true);
 
 foreach ($data as $characterId => $character) {
+  if (!cluedo_character_is_active($character)) {
+    continue;
+  }
   $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
   $queue = cluedo_clean_character_queue($queue, $now, $maxWait);
 
@@ -162,6 +168,11 @@ foreach ($knownTokens as $token) {
   $characterTotals = [];
 
   foreach ($teamHistory[$token]['history'] as $passage) {
+    $passageCharacterId = (string) ($passage['personnage_id'] ?? '');
+    if ($passageCharacterId === '' || !isset($activeCharacterIds[$passageCharacterId])) {
+      continue;
+    }
+
     $start = (int) ($passage['started_at'] ?? 0);
     $end = (int) ($passage['ended_at'] ?? $start);
     $duration = max(0, $end - $start);
@@ -169,7 +180,7 @@ foreach ($knownTokens as $token) {
 
     $historyRows[] = [
       'personnage' => [
-        'id' => (string) ($passage['personnage_id'] ?? ''),
+        'id' => $passageCharacterId,
         'nom' => $characterName,
       ],
       'started_at' => $start,
@@ -177,11 +188,11 @@ foreach ($knownTokens as $token) {
       'duration_seconds' => $duration,
     ];
 
-    $key = ((string) ($passage['personnage_id'] ?? '')) . '|' . $characterName;
+    $key = $passageCharacterId . '|' . $characterName;
     if (!isset($characterTotals[$key])) {
       $characterTotals[$key] = [
         'personnage' => [
-          'id' => (string) ($passage['personnage_id'] ?? ''),
+          'id' => $passageCharacterId,
           'nom' => $characterName,
         ],
         'duration_seconds' => 0,

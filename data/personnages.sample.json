@@ -5,7 +5,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "2": {
         "nom": "Personnage 2",
@@ -13,7 +14,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "3": {
         "nom": "Personnage 3",
@@ -21,7 +23,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "4": {
         "nom": "Personnage 4",
@@ -29,7 +32,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "5": {
         "nom": "Personnage 5",
@@ -37,7 +41,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "6": {
         "nom": "Personnage 6",
@@ -45,7 +50,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "7": {
         "nom": "Personnage 7",
@@ -53,7 +59,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "8": {
         "nom": "Personnage 8",
@@ -61,7 +68,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "9": {
         "nom": "Personnage 9",
@@ -69,7 +77,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "10": {
         "nom": "Personnage 10",
@@ -77,7 +86,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "11": {
         "nom": "Personnage 11",
@@ -85,7 +95,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "12": {
         "nom": "Personnage 12",
@@ -93,7 +104,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "13": {
         "nom": "Personnage 13",
@@ -101,7 +113,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "14": {
         "nom": "Personnage 14",
@@ -109,7 +122,8 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     },
     "15": {
         "nom": "Personnage 15",
@@ -117,6 +131,7 @@
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": []
+        "queue": [],
+        "active": true
     }
 }

@@ -90,7 +90,12 @@
     const payload = await response.json();
 
     if (!response.ok || !payload.ok) {
-      characterNameEl.textContent = "Erreur de chargement.";
+      const errorCode = String(payload.error || "").toLowerCase();
+      characterNameEl.textContent = errorCode.includes("character unavailable")
+        ? "Personnage indisponible."
+        : "Erreur de chargement.";
+      currentEl.innerHTML = "";
+      queueEl.innerHTML = "";
       return;
     }
 
