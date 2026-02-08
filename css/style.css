@@ -375,6 +375,37 @@ body {
 
 
 .team-page { padding-bottom: 40px; }
+
+.team-hero-name {
+  margin: 4px 0 16px;
+  text-align: center;
+  font-size: clamp(2rem, 9vw, 3rem);
+  font-weight: 800;
+}
+
+.team-input-row {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.team-character-photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #1f2937;
+}
+
+.team-character-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 8px;
+}
 .team-hero {
   margin-bottom: 14px;
   text-align: center;

@@ -853,3 +853,37 @@ Contraintes non négociables :
   - affichage côté `team.html`,
   - **informatif uniquement** : aucun impact sur gameplay, files, rotations ou timers.
 Si une dépendance liée à un ancien mécanisme visuel/code devait réapparaître, elle doit être explicitement validée côté métier avant réintroduction.
+
+## 10. Espace Équipe — verrouillage d'initialisation (obligatoire)
+
+### Initialisation requise à la première arrivée
+- L'équipe doit renseigner un **nom d'équipe valide**.
+- L'équipe doit renseigner les **prénoms des participants**.
+- Contraintes participants :
+  - **minimum : 2**
+  - **maximum : 10**
+
+### Blocage strict tant que profil incomplet
+Tant que les prérequis d'initialisation ne sont pas satisfaits :
+- impossible de rejoindre une file d'attente personnage,
+- toutes les actions liées aux personnages sont désactivées côté UI,
+- le blocage est explicite et visible (message de verrouillage + contrôles désactivés).
+
+### Règles d'affichage des personnages dans `team.html`
+Chaque entrée personnage doit afficher :
+- le nom,
+- la photo,
+- la localisation (`location`),
+- le temps d'attente estimé (valeur serveur),
+- une action explicite pour rejoindre/quitter la file.
+
+### Tri et filtre obligatoires
+- Tri :
+  - par nom,
+  - par temps d'attente estimé.
+- Filtre :
+  - afficher uniquement les personnages jamais vus par l'équipe (déduit de l'historique équipe).
+
+Les règles d'unicité de file restent inchangées :
+- une équipe ne peut être engagée que dans une seule file à la fois,
+- confirmation obligatoire avant changement de personnage.
