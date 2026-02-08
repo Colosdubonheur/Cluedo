@@ -100,6 +100,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     "image/heif-sequence",
   ]);
   const SUPPORTED_INPUT_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+  const HEIC_SIGNATURES = ["ftypheic", "ftypheix", "ftyphevc", "ftyphevx", "ftypmif1", "ftypmsf1"];
+  const MIME_SIGNATURES = {
+    jpeg: [0xff, 0xd8, 0xff],
+    png: [0x89, 0x50, 0x4e, 0x47],
+    webp: [0x52, 0x49, 0x46, 0x46],
+  };
 
   const getFileExtension = (filename) => {
     const name = typeof filename === "string" ? filename.trim().toLowerCase() : "";
@@ -122,6 +128,30 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const ext = getFileExtension(file?.name || "");
     return ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "webp";
+  };
+
+  const fileStartsWith = (bytes, signature) => signature.every((value, index) => bytes[index] === value);
+
+  const detectMimeFromHeader = async (file) => {
+    const headerBuffer = await file.slice(0, 32).arrayBuffer();
+    const bytes = new Uint8Array(headerBuffer);
+
+    if (fileStartsWith(bytes, MIME_SIGNATURES.jpeg)) {
+      return "image/jpeg";
+    }
+    if (fileStartsWith(bytes, MIME_SIGNATURES.png)) {
+      return "image/png";
+    }
+    if (fileStartsWith(bytes, MIME_SIGNATURES.webp) && String.fromCharCode(...bytes.slice(8, 12)) === "WEBP") {
+      return "image/webp";
+    }
+
+    const boxType = String.fromCharCode(...bytes.slice(4, 12)).toLowerCase();
+    if (HEIC_SIGNATURES.includes(boxType)) {
+      return "image/heic";
+    }
+
+    return "";
   };
 
   const loadImageFromFile = (file) =>
@@ -353,7 +383,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       <label class="admin-label">Photo</label>
       <img alt="Photo ${p.nom || `personnage ${id}`}" class="admin-photo is-hidden" />
-      <input type="file" accept="image/*" class="photo" data-id="${id}" />
+      <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="photo" data-id="${id}" />
 
       <label class="admin-label">Temps de passage (secondes)</label>
       <input type="number" min="1" class="time-per-player admin-input" data-id="${id}" value="${p.time_per_player ?? 120}" />
@@ -388,13 +418,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      if (isHeicLikeFile(file)) {
+      const sniffedMime = await detectMimeFromHeader(file).catch(() => "");
+      const effectiveMime = String(file.type || sniffedMime || "").toLowerCase();
+      const normalizedFile =
+        effectiveMime && effectiveMime !== file.type
+          ? new File([file], file.name || `photo_${Date.now()}`, { type: effectiveMime })
+          : file;
+
+      if (isHeicLikeFile(normalizedFile) || effectiveMime === "image/heic" || effectiveMime === "image/heif") {
         alert("Format d'image non supporté sur iPhone (HEIC/HEIF). Merci d'utiliser une photo JPEG ou PNG.");
         input.value = "";
         return;
       }
 
-      if (!isSupportedImageForCrop(file)) {
+      if (!isSupportedImageForCrop(normalizedFile)) {
         alert("Format d'image non supporté. Merci d'utiliser une photo JPEG, PNG ou WEBP.");
         input.value = "";
         return;
@@ -402,9 +439,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       let croppedFile;
       try {
-        croppedFile = await openCropModal(file);
+        croppedFile = await openCropModal(normalizedFile);
       } catch (error) {
-        alert(error instanceof Error ? error.message : "Le recadrage a échoué.");
+        const fallbackMessage =
+          effectiveMime === "image/heic" || effectiveMime === "image/heif"
+            ? "Le format de cette photo n'est pas supporté. Merci d'utiliser une image JPEG ou PNG."
+            : "Le recadrage a échoué. Merci d'utiliser une image JPEG ou PNG.";
+        alert(error instanceof Error && error.message ? error.message : fallbackMessage);
         input.value = "";
         return;
       }
@@ -422,18 +463,32 @@ document.addEventListener("DOMContentLoaded", async () => {
       fd.append("id", id);
       fd.append("file", croppedFile);
 
-      alert("Upload en cours…");
+      let r;
+      try {
+        r = await adminFetch("./api/upload.php", {
+          method: "POST",
+          body: fd,
+        });
+      } catch (_error) {
+        URL.revokeObjectURL(previewUrl);
+        setPhotoPreview(id, previousPhoto);
+        alert("Upload impossible : problème réseau pendant l'envoi de la photo.");
+        return;
+      }
 
-      const r = await adminFetch("./api/upload.php", {
-        method: "POST",
-        body: fd,
-      });
-
-      const j = await r.json().catch(() => ({}));
+      const rawResponse = await r.text();
+      const j = (() => {
+        try {
+          return JSON.parse(rawResponse);
+        } catch (_error) {
+          return {};
+        }
+      })();
       if (!j.ok) {
         URL.revokeObjectURL(previewUrl);
         setPhotoPreview(id, previousPhoto);
-        const reason = typeof j.error === "string" && j.error.trim() !== "" ? j.error : "Erreur upload";
+        const responseHint = !j.error && rawResponse ? ` (réponse serveur: ${rawResponse.slice(0, 120)})` : "";
+        const reason = typeof j.error === "string" && j.error.trim() !== "" ? j.error : `Erreur upload${responseHint}`;
         alert(`Upload impossible : ${reason}`);
         return;
       }

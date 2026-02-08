@@ -589,3 +589,18 @@ Contraintes non négociables :
   - files et états (`need_name`, `waiting`, `active`, `free`) restent pilotés serveur,
   - les temps restent informatifs,
   - aucun impact gameplay.
+---
+
+## 11. Upload photo personnage (admin) — politique iOS officielle
+
+- Le flux photo admin reste **obligatoirement** : sélection image → recadrage carré côté client → upload PHP → standardisation serveur en JPEG 600x600 (qualité ~84).
+- Le front doit bloquer explicitement les formats non supportés avant upload, avec message clair (pas d’"Erreur upload" générique).
+- Comportement iOS/Safari attendu :
+  - Si la photo est JPEG/PNG/WEBP : le recadrage s’ouvre puis l’upload continue normalement.
+  - Si la photo est HEIC/HEIF (mime, extension, ou signature binaire détectée) : refus explicite avec message utilisateur demandant JPEG/PNG.
+- Formats officiellement acceptés pour le pipeline de crop/upload : `image/jpeg`, `image/png`, `image/webp`.
+- Formats officiellement refusés : `image/heic`, `image/heif` et variantes (`heic-sequence`, `heif-sequence`).
+- Contraintes techniques connues :
+  - En environnement actuel sans bibliothèque externe de transcodage HEIC, Safari iOS peut fournir des fichiers non décodables par le pipeline canvas/GD.
+  - Le serveur (`upload.php`) n’accepte que JPEG/PNG/WEBP et rejette tout autre mime.
+  - Le message d’erreur doit exposer une raison explicite (format non supporté, réseau, réponse serveur), jamais un échec opaque.
