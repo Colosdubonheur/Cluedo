@@ -395,3 +395,8 @@ Ces règles sont **non négociables** et doivent rester alignées avec `api/stat
   - remet l’état supervision dans un état initial cohérent
   - n’affecte pas le code versionné
 - Objectif : faciliter les tests terrain sans manipulation Git.
+
+## 11. Navigation Hub
+
+- `admin.html` dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`.
+- `supervision.html` (implémentée via `monitor.html`) dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`.
