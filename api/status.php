@@ -6,6 +6,7 @@ require_once __DIR__ . '/_queue_runtime.php';
 $id = $_GET['id'] ?? null;
 $token = $_GET['token'] ?? null;
 $teamNameInput = trim((string) ($_GET['team_name'] ?? ($_GET['team'] ?? '')));
+$joinIntent = (string) ($_GET['join'] ?? '') === '1';
 
 function normalize_team_name(string $name): string {
   $trimmed = trim($name);
@@ -57,13 +58,16 @@ foreach ($p['queue'] as $i => $q) {
 
 if ($index === null) {
   $resolvedTeamName = normalize_team_name($teamNameInput);
-  $p['queue'][] = [
-    'token' => $token,
-    'team' => $resolvedTeamName,
-    'joined_at' => $resolvedTeamName !== '' ? $now : null,
-    'created_at' => $now,
-  ];
-  $index = count($p['queue']) - 1;
+
+  if ($joinIntent) {
+    $p['queue'][] = [
+      'token' => $token,
+      'team' => $resolvedTeamName,
+      'joined_at' => $resolvedTeamName !== '' ? $now : null,
+      'created_at' => $now,
+    ];
+    $index = count($p['queue']) - 1;
+  }
 } else {
   $existingTeamName = normalize_team_name((string) ($p['queue'][$index]['team'] ?? ''));
 
@@ -107,7 +111,8 @@ foreach ($visibleQueue as $i => $entry) {
   }
 }
 
-$canAccess = !$teamNeedsName && $visibleIndex === 0;
+$inQueue = $visibleIndex !== null;
+$canAccess = $inQueue && !$teamNeedsName && $visibleIndex === 0;
 
 $wait = 0;
 if (!$teamNeedsName && $visibleIndex !== null && $visibleIndex > 0) {
@@ -121,7 +126,9 @@ $previousTeam = ($visibleIndex !== null && $visibleIndex > 0)
   ? (string) ($visibleQueue[$visibleIndex - 1]['team'] ?? '')
   : '';
 $nextTeamName = isset($visibleQueue[1]['team']) ? (string) $visibleQueue[1]['team'] : '';
-$state = $teamNeedsName ? 'need_name' : ($canAccess ? 'active' : 'waiting');
+$state = !$inQueue
+  ? 'free'
+  : ($teamNeedsName ? 'need_name' : ($canAccess ? 'active' : 'waiting'));
 $legacyState = $canAccess ? 'done' : 'waiting';
 
 $p['queue'] = $visibleQueue;
@@ -156,6 +163,7 @@ $response = [
   ],
   'photo' => $p['photo'] ?? '',
   'can_access' => $canAccess,
+  'in_queue' => $inQueue,
   'my_remaining' => $canAccess && $activeRemainingBeforeTakeover !== null ? max(0, (int) $activeRemainingBeforeTakeover) : 0,
 
   // Champs hérités (compatibilité)

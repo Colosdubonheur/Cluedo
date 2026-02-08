@@ -207,6 +207,10 @@ Toute évolution doit respecter ces principes.
 - Le passage à l’état `active` n’est possible qu’après initialisation d’un nom valide.
 - Si la file visible est vide et qu’une première équipe initialise un nom valide, elle passe immédiatement en `active` (sans countdown d’attente).
 - Lors d’une relève (`active` expiré avec au moins une équipe en attente), l’équipe précédemment `active` est retirée immédiatement de la file FIFO côté serveur ; elle n’apparaît plus ni en `active` ni en `waiting`, et est donc `free` en supervision.
+- Cette sortie de l’équipe précédemment `active` est **définitive** :
+  - interdiction de réinsérer automatiquement l’équipe sortante en fin de file,
+  - interdiction de la conserver dans les structures runtime de file,
+  - retour dans une file uniquement via un nouvel accès volontaire (scan / intention explicite de rejoindre).
 
 ---
 
@@ -252,6 +256,10 @@ Sur `play` :
       `Échangez avec {personnage.nom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`
     - **orange** s’il existe une équipe derrière (`queueTotal > 1`) :
       `L’équipe {équipe_suivante} attend et prendra votre place à la fin du temps.`
+    - **rouge** s’il existe une équipe derrière (`queueTotal > 1`) et qu’il reste `<= 15s` avant la relève :
+      - la bulle principale passe en rouge,
+      - le countdown devient rouge clignotant (lisible, non agressif),
+      - sans créer de nouvel état métier ni déclencher d’action serveur.
   - le message secondaire (⚠️) peut rester affiché, mais le message principal doit porter l’information clé sans contradiction
 - Affichage photo côté play :
   - si une photo est configurée dans l’admin (upload runtime), `play.html` l’affiche
@@ -532,4 +540,3 @@ Contraintes non négociables :
 - Aucune référence JSON sans fichier réel écrit dans `uploads/`.
 - Aucun enregistrement d'image brute sans traitement crop + normalisation.
 - Une photo active par personnage ; lors d'un remplacement, l'ancienne photo n'est supprimée que si elle n'est plus référencée.
-
