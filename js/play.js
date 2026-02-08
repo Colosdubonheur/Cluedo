@@ -1,11 +1,30 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const TOKEN_KEY = "cluedo_player_token";
+  const TEAM_KEY = "cluedo_team_name";
 
   let playerToken = sessionStorage.getItem(TOKEN_KEY);
   if (!playerToken) {
     playerToken = crypto.randomUUID();
     sessionStorage.setItem(TOKEN_KEY, playerToken);
   }
+
+  /**
+   * Demande le nom d'équipe une seule fois puis le conserve localement.
+   * Si l'utilisateur annule ou vide la saisie, on applique une valeur stable.
+   */
+  function getOrCreateTeamName() {
+    const stored = localStorage.getItem(TEAM_KEY);
+    if (stored && stored.trim()) {
+      return stored.trim();
+    }
+
+    const prompted = window.prompt("Nom de votre équipe :", "");
+    const teamName = (prompted || "Équipe sans nom").trim() || "Équipe sans nom";
+    localStorage.setItem(TEAM_KEY, teamName);
+    return teamName;
+  }
+
+  const teamName = getOrCreateTeamName();
 
   const audio = new Audio("./assets/ding.mp3");
   audio.preload = "auto";
@@ -49,6 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           padding:10px;
           border-radius:999px;
           font-weight:bold;
+          line-height:1.35;
         ">
           Patientez
         </div>
@@ -140,7 +160,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      const r = await fetch(`./api/status.php?id=${id}&token=${playerToken}&t=${Date.now()}`);
+      const query = new URLSearchParams({
+        id,
+        token: playerToken,
+        team: teamName,
+        t: String(Date.now())
+      });
+      const r = await fetch(`./api/status.php?${query.toString()}`);
       const data = await r.json();
 
       if (!r.ok) {
@@ -159,7 +185,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      const position = data.position ?? 0;
+      const position = Number.isInteger(data.position) ? data.position : 0;
       const queueLength = data.queue_length ?? 1;
       const waitRemaining = data.wait_remaining ?? 0;
       const myRemaining = data.my_remaining ?? 0;
@@ -169,18 +195,27 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!canAccess) {
         elTimer.textContent = fmt(waitRemaining);
-        elStatus.textContent = `En attente (position ${position + 1})`;
+
+        if (position > 0) {
+          const previousTeam = (data.previous_team || "").trim();
+          elStatus.textContent = previousTeam
+            ? `Équipe ${teamName} en attente (position ${position + 1}) • Devant vous : ${previousTeam}`
+            : `Équipe ${teamName} en attente (position ${position + 1})`;
+        } else {
+          elStatus.textContent = `Équipe ${teamName} en attente`;
+        }
+
         elStatus.style.background = "#fbbf24";
         elResult.style.display = "none";
         notified = false;
       } else if (myRemaining > 0) {
         elTimer.textContent = fmt(myRemaining);
-        elStatus.textContent = "Temps en cours avec vous";
+        elStatus.textContent = "À vous de jouer !";
         elStatus.style.background = "#fbbf24";
         elResult.style.display = "none";
       } else {
         elTimer.textContent = "00:00";
-        elStatus.textContent = "Accès autorisé";
+        elStatus.textContent = "À vous de jouer !";
         elStatus.style.background = "#4ade80";
 
         elResult.style.display = "block";
