@@ -206,6 +206,7 @@ Toute évolution doit respecter ces principes.
 - Le placeholder `Équipe sans nom` est interdit côté affichage file : il ne doit jamais être exposé aux autres équipes.
 - Le passage à l’état `active` n’est possible qu’après initialisation d’un nom valide.
 - Si la file visible est vide et qu’une première équipe initialise un nom valide, elle passe immédiatement en `active` (sans countdown d’attente).
+- Lors d’une relève (`active` expiré avec au moins une équipe en attente), l’équipe précédemment `active` est retirée immédiatement de la file FIFO côté serveur ; elle n’apparaît plus ni en `active` ni en `waiting`, et est donc `free` en supervision.
 
 ---
 

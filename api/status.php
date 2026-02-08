@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
+require_once __DIR__ . '/_queue_runtime.php';
 
 $id = $_GET['id'] ?? null;
 $token = $_GET['token'] ?? null;
@@ -22,9 +23,6 @@ function normalize_team_name(string $name): string {
   return $trimmed;
 }
 
-function is_initialized_team(array $entry): bool {
-  return normalize_team_name((string) ($entry['team'] ?? '')) !== '';
-}
 
 if (!$id || !$token) {
   echo json_encode(["error" => "missing id or token"]);
@@ -47,9 +45,7 @@ if (!isset($p['queue']) || !is_array($p['queue'])) {
 }
 
 $MAX_WAIT = 600; // 10 minutes
-$p['queue'] = array_values(array_filter($p['queue'], function ($q) use ($now, $MAX_WAIT) {
-  return isset($q['joined_at']) && ($now - (int) $q['joined_at']) < $MAX_WAIT;
-}));
+$p['queue'] = cluedo_clean_character_queue($p['queue'], $now, $MAX_WAIT);
 
 $index = null;
 foreach ($p['queue'] as $i => $q) {
@@ -87,32 +83,20 @@ if ($index === null) {
 $timePerPlayer = max(1, (int) ($p['time_per_player'] ?? 120));
 $buffer = max(0, (int) ($p['buffer_before_next'] ?? 15));
 
-$visibleQueue = array_values(array_filter($p['queue'], 'is_initialized_team'));
+$visibleQueue = $p['queue'];
 $teamNeedsName = $resolvedTeamName === '';
 
 $activeRemainingBeforeTakeover = null;
 $firstWaitingEta = null;
 
-if (count($visibleQueue) > 0) {
+$visibleQueue = cluedo_apply_runtime_handover($visibleQueue, $now, $timePerPlayer);
+
+if (isset($visibleQueue[0])) {
   $activeStartedAt = (int) ($visibleQueue[0]['joined_at'] ?? $now);
   $activeElapsed = max(0, $now - $activeStartedAt);
   $activeReservedRemaining = max(0, $timePerPlayer - $activeElapsed);
-
-  if ($activeReservedRemaining <= 0 && count($visibleQueue) > 1) {
-    array_shift($visibleQueue);
-
-    if (isset($visibleQueue[0])) {
-      $visibleQueue[0]['joined_at'] = $now;
-    }
-  }
-
-  if (isset($visibleQueue[0])) {
-    $activeStartedAt = (int) ($visibleQueue[0]['joined_at'] ?? $now);
-    $activeElapsed = max(0, $now - $activeStartedAt);
-    $activeReservedRemaining = max(0, $timePerPlayer - $activeElapsed);
-    $activeRemainingBeforeTakeover = $activeReservedRemaining;
-    $firstWaitingEta = $activeReservedRemaining;
-  }
+  $activeRemainingBeforeTakeover = $activeReservedRemaining;
+  $firstWaitingEta = $activeReservedRemaining;
 }
 
 $visibleIndex = null;
