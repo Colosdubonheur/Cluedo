@@ -49,7 +49,7 @@ foreach ($p['queue'] as $i => $q) {
 if ($index === null) {
   $p['queue'][] = [
     "token" => $token,
-    "joined_at" => $now
+    "joined_at" => $now,
   ];
   $index = count($p['queue']) - 1;
 }
@@ -94,21 +94,10 @@ echo json_encode([
   "queue_length" => count($p['queue']),
   "wait_remaining" => max(0, $wait),
   "time_per_player" => $timePerPlayer,
-  "buffer_before_next" => $buffer
+  "buffer_before_next" => $buffer,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 
-
-// Tampon obligatoire avant passage
-if ($index > 0) {
-  $wait += $buffer;
-}
-
-/* -------------------------------------------------
-   5️⃣ Sauvegarde
-------------------------------------------------- */
-file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-
-/* -------------------------------------------------
+exit;
    6️⃣ Réponse JSON
 ------------------------------------------------- */
 echo json_encode([
