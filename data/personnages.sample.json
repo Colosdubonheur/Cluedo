@@ -1,22 +1,11 @@
 {
     "1": {
         "nom": "Juju",
-        "photo": "uploads\/perso_1_1770501975.jpg",
+        "photo": "",
         "time_per_player": 120,
         "buffer_before_next": 15,
         "last_access_at": 0,
-        "queue": [
-            {
-                "token": "test",
-                "team": "Equipe sans nom",
-                "joined_at": 1770511874
-            },
-            {
-                "token": "7b81a767-2304-42d3-9763-6c00304ae83c",
-                "team": "Les Defifou",
-                "joined_at": 1770511905
-            }
-        ]
+        "queue": []
     },
     "2": {
         "nom": "Personnage 2",

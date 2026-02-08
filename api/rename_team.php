@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_data_store.php';
 
 $input = json_decode(file_get_contents('php://input'), true);
 if (!is_array($input)) {
@@ -15,7 +16,7 @@ if (!$id || !$teamId || $newName === '') {
   exit;
 }
 
-$path = __DIR__ . '/../data/personnages.json';
+$path = cluedo_data_path();
 $data = json_decode(file_get_contents($path), true);
 
 if (!isset($data[$id])) {

@@ -1,5 +1,6 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_data_store.php';
 
 $id = $_GET['id'] ?? null;
 $token = $_GET['token'] ?? null;
@@ -10,7 +11,7 @@ if (!$id || !$token) {
   exit;
 }
 
-$path = __DIR__ . '/../data/personnages.json';
+$path = cluedo_data_path();
 $data = json_decode(file_get_contents($path), true);
 
 if (!isset($data[$id])) {
