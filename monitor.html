@@ -25,6 +25,16 @@ cluedo_send_html_no_cache_headers();
 
     <h1>📊 Supervision terrain</h1>
 
+    <section class="card monitor-sort-controls" aria-label="Tri des équipes">
+      <label for="monitor-team-sort" class="admin-label">Ordre d'affichage des équipes</label>
+      <select id="monitor-team-sort" class="admin-input">
+        <option value="latest_message">Dernière équipe ayant reçu un message</option>
+        <option value="longest_queue">Équipe dans la plus longue file d'attente</option>
+        <option value="fewest_seen">Équipe ayant vu le moins de suspects</option>
+        <option value="highest_avg_time">Équipe ayant le temps moyen par suspect le plus élevé</option>
+      </select>
+    </section>
+
     <section class="card monitor-message-controls" aria-label="Communication supervision">
       <h2>💬 Communication supervision</h2>
       <p class="monitor-message-intro">Un seul outil de messagerie : choisissez explicitement une cible, filtrez rapidement la liste, puis envoyez votre message.</p>

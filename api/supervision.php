@@ -272,6 +272,7 @@ foreach ($data as $characterId => $character) {
         'nom' => (string) ($character['nom'] ?? ''),
       ],
       'queue_position' => $index,
+      'queue_length' => count($queue),
       'active_remaining_seconds' => $index === 0 ? $activeRemainingSeconds : null,
       'has_waiting_queue' => $index === 0 ? $hasWaitingQueue : null,
     ];
@@ -429,6 +430,7 @@ foreach ($knownTokens as $token) {
     'current_personnage' => $activeCharacter,
     'waiting_queue' => $waitingQueue,
     'queue_position' => $stateInfo['queue_position'] ?? null,
+    'queue_length' => $stateInfo['queue_length'] ?? 0,
     'state_since' => $stateInfo['state_since'] ?? null,
     'active_remaining_seconds' => $activeRemainingSeconds,
     'has_waiting_queue' => $hasWaitingQueue,
