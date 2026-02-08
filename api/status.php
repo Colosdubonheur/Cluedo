@@ -7,6 +7,7 @@ $id = $_GET['id'] ?? null;
 $token = $_GET['token'] ?? null;
 $teamNameInput = trim((string) ($_GET['team_name'] ?? ($_GET['team'] ?? '')));
 $joinIntent = (string) ($_GET['join'] ?? '') === '1';
+$forceSwitch = (string) ($_GET['force_switch'] ?? '') === '1';
 
 function normalize_team_name(string $name): string {
   $trimmed = trim($name);
@@ -24,6 +25,42 @@ function normalize_team_name(string $name): string {
   return $trimmed;
 }
 
+function cluedo_find_token_in_queue(array $queue, string $token): ?int {
+  foreach ($queue as $i => $entry) {
+    if ((string) ($entry['token'] ?? '') === $token) {
+      return (int) $i;
+    }
+  }
+
+  return null;
+}
+
+function cluedo_find_token_engagement(array $data, string $currentId, string $token, int $now, int $maxWait, int $defaultTimePerPlayer): ?array {
+  foreach ($data as $characterId => $character) {
+    if ((string) $characterId === (string) $currentId) {
+      continue;
+    }
+
+    $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
+    $queue = cluedo_clean_character_queue($queue, $now, $maxWait);
+    $queue = cluedo_apply_runtime_handover($queue, $now, max(1, (int) ($character['time_per_player'] ?? $defaultTimePerPlayer)));
+
+    $index = cluedo_find_token_in_queue($queue, $token);
+    if ($index === null) {
+      continue;
+    }
+
+    return [
+      'character_id' => (string) $characterId,
+      'character_name' => (string) ($character['nom'] ?? ''),
+      'state' => $index === 0 ? 'active' : 'waiting',
+      'queue' => $queue,
+    ];
+  }
+
+  return null;
+}
+
 
 if (!$id || !$token) {
   echo json_encode(["error" => "missing id or token"]);
@@ -31,9 +68,22 @@ if (!$id || !$token) {
 }
 
 $path = cluedo_data_path();
-$data = json_decode(file_get_contents($path), true);
+$fp = fopen($path, 'c+');
+
+if ($fp === false || !flock($fp, LOCK_EX)) {
+  echo json_encode(["error" => "storage unavailable"]);
+  exit;
+}
+
+$rawContent = stream_get_contents($fp);
+$data = json_decode($rawContent === false ? '{}' : $rawContent, true);
+if (!is_array($data)) {
+  $data = [];
+}
 
 if (!isset($data[$id])) {
+  flock($fp, LOCK_UN);
+  fclose($fp);
   echo json_encode(["error" => "unknown id"]);
   exit;
 }
@@ -48,11 +98,43 @@ if (!isset($p['queue']) || !is_array($p['queue'])) {
 $MAX_WAIT = 600; // 10 minutes
 $p['queue'] = cluedo_clean_character_queue($p['queue'], $now, $MAX_WAIT);
 
-$index = null;
-foreach ($p['queue'] as $i => $q) {
-  if (($q['token'] ?? null) === $token) {
-    $index = $i;
-    break;
+$timePerPlayer = max(1, (int) ($p['time_per_player'] ?? 120));
+$index = cluedo_find_token_in_queue($p['queue'], (string) $token);
+
+if ($joinIntent && $index === null) {
+  $otherEngagement = cluedo_find_token_engagement($data, (string) $id, (string) $token, $now, $MAX_WAIT, $timePerPlayer);
+  if ($otherEngagement !== null && !$forceSwitch) {
+    $data[$id] = $p;
+    rewind($fp);
+    ftruncate($fp, 0);
+    fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    fflush($fp);
+    flock($fp, LOCK_UN);
+    fclose($fp);
+
+    echo json_encode([
+      'state' => 'already_in_queue',
+      'can_join_after_confirm' => true,
+      'personnage' => [
+        'id' => (string) $id,
+        'nom' => $p['nom'] ?? '',
+      ],
+      'current_engagement' => [
+        'personnage_id' => $otherEngagement['character_id'],
+        'personnage_nom' => $otherEngagement['character_name'],
+        'state' => $otherEngagement['state'],
+      ],
+    ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
+
+  if ($otherEngagement !== null && $forceSwitch) {
+    $oldCharacterId = $otherEngagement['character_id'];
+    $oldQueue = $otherEngagement['queue'];
+    $oldQueue = array_values(array_filter($oldQueue, function ($entry) use ($token) {
+      return (string) ($entry['token'] ?? '') !== (string) $token;
+    }));
+    $data[$oldCharacterId]['queue'] = $oldQueue;
   }
 }
 
@@ -84,7 +166,6 @@ if ($index === null) {
   $resolvedTeamName = $existingTeamName;
 }
 
-$timePerPlayer = max(1, (int) ($p['time_per_player'] ?? 120));
 $buffer = max(0, (int) ($p['buffer_before_next'] ?? 15));
 
 $visibleQueue = $p['queue'];
@@ -135,7 +216,12 @@ $p['queue'] = $visibleQueue;
 $p['handover'] = null;
 
 $data[$id] = $p;
-file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+rewind($fp);
+ftruncate($fp, 0);
+fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+fflush($fp);
+flock($fp, LOCK_UN);
+fclose($fp);
 
 $response = [
   'state' => $state,
