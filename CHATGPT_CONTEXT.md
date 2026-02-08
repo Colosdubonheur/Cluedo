@@ -257,6 +257,11 @@ Sur `play` :
   - si aucune photo n’est configurée, aucun bloc photo n’est affiché
   - aucun fallback visuel ou changement de contrat JSON
 
+- Upload photo côté admin (`admin.html`) :
+  - chaque upload est persisté en runtime (`uploads/` + référence `data/personnages.json`)
+  - au chargement, `admin.html` relit `data/personnages.json` et réaffiche la photo configurée
+  - la photo reste visible après refresh, sans fallback ni stockage temporaire côté front
+
 - États UI :
   - `need_name` : nom d’équipe absent
   - `waiting` : équipe dans la file en attente
