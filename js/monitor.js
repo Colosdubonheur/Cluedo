@@ -4,14 +4,85 @@
   const toggleEndGameBtn = document.getElementById("toggle-end-game");
   const endGameStatusEl = document.getElementById("monitor-end-game-status");
 
+  const sortSelectEl = document.getElementById("monitor-team-sort");
+
   const messageTargetSearchEl = document.getElementById("monitor-message-target-search");
   const messageTargetEl = document.getElementById("monitor-message-target");
   const messageInputEl = document.getElementById("monitor-message-text");
   const sendMessageBtn = document.getElementById("send-monitor-message");
   const messageFeedbackEl = document.getElementById("monitor-message-feedback");
 
+  const SORT_STORAGE_KEY = "cluedo_monitor_team_sort";
+  const SORT_MODES = ["latest_message", "longest_queue", "fewest_seen", "highest_avg_time"];
+
   let messageTargets = [];
   let monitorBaseTeamUrl = "";
+
+
+  function readSortMode() {
+    const saved = window.localStorage.getItem(SORT_STORAGE_KEY);
+    return SORT_MODES.includes(saved) ? saved : "latest_message";
+  }
+
+  function writeSortMode(mode) {
+    if (!SORT_MODES.includes(mode)) return;
+    window.localStorage.setItem(SORT_STORAGE_KEY, mode);
+  }
+
+  function getQueueLengthMetric(team) {
+    const length = Number(team?.queue_length || 0);
+    return Number.isFinite(length) ? Math.max(0, length) : 0;
+  }
+
+  function getEncounterCountMetric(team) {
+    const encountered = Array.isArray(team?.encountered_personnages) ? team.encountered_personnages.length : 0;
+    return Math.max(0, encountered);
+  }
+
+  function getAverageTimeMetric(team) {
+    const rows = Array.isArray(team?.time_per_personnage) ? team.time_per_personnage : [];
+    if (!rows.length) return 0;
+
+    let total = 0;
+    let count = 0;
+    rows.forEach((row) => {
+      const duration = Number(row?.duration_seconds || 0);
+      if (!Number.isFinite(duration) || duration < 0) return;
+      total += duration;
+      count += 1;
+    });
+
+    if (!count) return 0;
+    return total / count;
+  }
+
+  function getSortValue(team, mode) {
+    if (mode === "latest_message") return Number(team?.message?.created_at || 0);
+    if (mode === "longest_queue") return getQueueLengthMetric(team);
+    if (mode === "fewest_seen") return getEncounterCountMetric(team);
+    if (mode === "highest_avg_time") return getAverageTimeMetric(team);
+    return 0;
+  }
+
+  function compareTeams(a, b, mode) {
+    if (mode === "fewest_seen") {
+      const diff = getSortValue(a, mode) - getSortValue(b, mode);
+      if (diff !== 0) return diff;
+    } else {
+      const diff = getSortValue(b, mode) - getSortValue(a, mode);
+      if (diff !== 0) return diff;
+    }
+
+    const nameDiff = String(a?.team_name || "").localeCompare(String(b?.team_name || ""), "fr", { sensitivity: "base" });
+    if (nameDiff !== 0) return nameDiff;
+
+    return String(a?.token || "").localeCompare(String(b?.token || ""), "fr", { sensitivity: "base" });
+  }
+
+  function sortTeams(teams, mode) {
+    const selectedMode = SORT_MODES.includes(mode) ? mode : "latest_message";
+    return teams.slice().sort((a, b) => compareTeams(a, b, selectedMode));
+  }
 
   function getBaseTeamUrl() {
     if (monitorBaseTeamUrl) return monitorBaseTeamUrl;
@@ -94,20 +165,18 @@
       : '<p class="monitor-muted">Membres non renseignés.</p>';
   }
 
-  function renderHistory(team) {
-    const rows = Array.isArray(team.history) ? team.history.slice().reverse().slice(0, 8) : [];
-    if (!rows.length) {
-      return '<p class="monitor-muted">Aucun passage enregistré.</p>';
+  function renderLastSeenCharacter(team) {
+    const rows = Array.isArray(team.history) ? team.history : [];
+    const currentCharacter = String(team.current_personnage?.nom || "").trim();
+    const lastEntry = rows.length ? rows[rows.length - 1] : null;
+    const lastHistoryCharacter = String(lastEntry?.personnage?.nom || "").trim();
+    const character = currentCharacter || lastHistoryCharacter;
+
+    if (!character) {
+      return '<p class="monitor-muted">Aucun suspect vu.</p>';
     }
 
-    return `<ul class="monitor-history-list">${rows
-      .map((entry) => {
-        const charName = escapeHtml(entry?.personnage?.nom || "Personnage");
-        const start = formatTime(entry?.started_at || 0);
-        const duration = Math.max(0, Number(entry?.duration_seconds || 0));
-        return `<li><span>${charName}</span><span>Début ${start}</span><span>${duration}s</span></li>`;
-      })
-      .join("")}</ul>`;
+    return `<p class="monitor-last-character">${escapeHtml(character)}</p>`;
   }
 
   function renderMessageSummary(team) {
@@ -144,8 +213,8 @@
         ${renderMessageSummary(team)}
       </section>
       <section>
-        <h4>Historique des passages</h4>
-        ${renderHistory(team)}
+        <h4>Dernier suspect vu</h4>
+        ${renderLastSeenCharacter(team)}
       </section>
       <section>
         <h4>Membres de l'équipe</h4>
@@ -383,12 +452,15 @@
     fillMessageTargets(payload.teams || [], Array.isArray(payload.characters) ? payload.characters : []);
     renderEndGameControls(payload.game_state || {});
 
-    if (!payload.teams.length) {
+    const sortMode = readSortMode();
+    const sortedTeams = sortTeams(payload.teams || [], sortMode);
+
+    if (!sortedTeams.length) {
       listEl.textContent = "Aucune équipe connue.";
       return;
     }
 
-    listEl.innerHTML = payload.teams.map(renderCard).join("");
+    listEl.innerHTML = sortedTeams.map(renderCard).join("");
   }
 
   resetBtn.addEventListener("click", async () => {
@@ -468,6 +540,15 @@
       await refresh();
     }
   });
+
+  if (sortSelectEl) {
+    sortSelectEl.value = readSortMode();
+    sortSelectEl.addEventListener("change", async () => {
+      const selected = SORT_MODES.includes(sortSelectEl.value) ? sortSelectEl.value : "latest_message";
+      writeSortMode(selected);
+      await refresh();
+    });
+  }
 
   listEl.addEventListener("click", async (event) => {
     const button = event.target.closest("button[data-action]");

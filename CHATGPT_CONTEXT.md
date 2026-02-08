@@ -956,6 +956,13 @@ Contraintes non négociables :
   - `waiting` : équipe en attente dans une file,
   - `free` : équipe non engagée dans une file (état autorisé en supervision uniquement).
 - Les données affichées en supervision sont informatives (nom d’équipe, membres, photo, historique simplifié des personnages rencontrés).
+- `monitor.html` propose un tri d’affichage dynamique des équipes (côté front uniquement, sans impact métier) avec 4 modes verrouillés :
+  - dernière équipe ayant reçu un message,
+  - équipe dans la plus longue file d’attente,
+  - équipe ayant vu le moins de suspects,
+  - équipe ayant le temps moyen par suspect le plus élevé (métrique informative runtime).
+- Dans chaque carte équipe de supervision, l’historique détaillé n’est plus affiché : seul le **dernier suspect vu** est visible.
+- Dans chaque carte équipe de supervision, l’aperçu message est mono-ligne : seul le **dernier message envoyé** à l’équipe est affiché visuellement.
 - La supervision inclut un canal de messages `supervision -> équipes` :
   - envoi individuel (par équipe) ou global (toutes les équipes),
   - stockage runtime en JSON,
