@@ -92,6 +92,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const ids = Object.keys(data).sort((a, b) => Number(a) - Number(b));
 
   const CROPPED_SIZE = 600;
+  const CROPPED_QUALITY = 0.84;
 
   const loadImageFromFile = (file) =>
     new Promise((resolve, reject) => {
@@ -232,13 +233,13 @@ document.addEventListener("DOMContentLoaded", async () => {
               return;
             }
             resolve(
-              new File([blob], `perso_${Date.now()}.png`, {
-                type: "image/png",
+              new File([blob], `perso_${Date.now()}.jpg`, {
+                type: "image/jpeg",
               })
             );
           },
-          "image/png",
-          0.92
+          "image/jpeg",
+          CROPPED_QUALITY
         );
       });
     });

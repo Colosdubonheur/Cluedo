@@ -505,8 +505,31 @@ Contraintes :
 ## 13. Persistance des photos admin (runtime)
 
 - La persistance d’une photo est garantie côté serveur dans `api/upload.php` :
-  - le fichier est écrit dans `uploads/` via `move_uploaded_file` ;
+  - le fichier final traité (crop validé + normalisation) est écrit dans `uploads/` ;
   - le chemin relatif `uploads/<fichier>` est écrit dans `data/personnages.json` (`$data[$id]['photo']`).
 - `admin.html` relit systématiquement les données runtime au chargement via `GET /api/get.php` (dans `js/admin.js`), puis utilise le champ `photo` du JSON pour afficher l’image.
 - `POST /api/save.php` persiste l’objet admin courant tel qu’envoyé par le front, sans format alternatif ni fallback.
 - Aucune règle métier n’est modifiée : pas de cache forcé, pas de fallback image, pas de changement de structure JSON.
+
+## 11. Pipeline officiel d'upload photo admin (verrouillé)
+
+Flux obligatoire, sans fallback :
+1. Sélection d'un fichier image dans `admin.html`.
+2. **Crop carré 1:1 obligatoire** côté admin (`js/admin.js`) avec validation explicite utilisateur (`Valider le crop`).
+3. Génération d'un fichier **final** (non original) en JPEG carré standardisé `600x600`.
+4. Envoi du fichier final vers `POST /api/upload.php`.
+5. Contrôles serveur bloquants :
+   - upload valide (`is_uploaded_file`),
+   - MIME image autorisé (jpeg/png/webp),
+   - image carrée obligatoire,
+   - extension GD disponible,
+   - dossier `uploads/` accessible en écriture.
+6. Recompression/normalisation serveur en JPEG qualité 84 et écriture du fichier final dans `uploads/`.
+7. Écriture du chemin runtime (`uploads/...jpg`) dans `data/personnages.json`.
+8. Remplacement visuel immédiat côté admin + persistance après refresh (source JSON).
+
+Contraintes non négociables :
+- Aucune référence JSON sans fichier réel écrit dans `uploads/`.
+- Aucun enregistrement d'image brute sans traitement crop + normalisation.
+- Une photo active par personnage ; lors d'un remplacement, l'ancienne photo n'est supprimée que si elle n'est plus référencée.
+
