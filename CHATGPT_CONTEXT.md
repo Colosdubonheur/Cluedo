@@ -261,6 +261,8 @@ Sur `play` :
   - chaque upload est persisté en runtime (`uploads/` + référence `data/personnages.json`)
   - lors de l’upload d’une nouvelle photo pour un personnage, l’ancienne photo associée est supprimée du dossier `uploads/`
   - une seule photo par personnage est conservée en runtime (aucun versioning, aucun historique)
+  - chaque photo personnage est **obligatoirement cropée en carré (ratio 1:1)** lors de l'upload avec validation explicite de l'admin
+  - l'image persistée est l'image cropée finale, au **format standardisé** pour tous les usages (admin / play / QR / PDF)
   - au chargement, `admin.html` relit `data/personnages.json` et réaffiche la photo configurée
   - la photo reste visible après refresh, sans fallback ni stockage temporaire côté front
 
@@ -489,3 +491,12 @@ Contraintes :
 - Aucun impact sur les files d’attente.
 - Aucun impact sur les états (`need_name`, `waiting`, `active`, `free`).
 - Aucune nouvelle règle métier introduite.
+
+## 13. Persistance des photos admin (runtime)
+
+- La persistance d’une photo est garantie côté serveur dans `api/upload.php` :
+  - le fichier est écrit dans `uploads/` via `move_uploaded_file` ;
+  - le chemin relatif `uploads/<fichier>` est écrit dans `data/personnages.json` (`$data[$id]['photo']`).
+- `admin.html` relit systématiquement les données runtime au chargement via `GET /api/get.php` (dans `js/admin.js`), puis utilise le champ `photo` du JSON pour afficher l’image.
+- `POST /api/save.php` persiste l’objet admin courant tel qu’envoyé par le front, sans format alternatif ni fallback.
+- Aucune règle métier n’est modifiée : pas de cache forcé, pas de fallback image, pas de changement de structure JSON.

@@ -91,6 +91,158 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const ids = Object.keys(data).sort((a, b) => Number(a) - Number(b));
 
+  const CROPPED_SIZE = 600;
+
+  const loadImageFromFile = (file) =>
+    new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      const image = new Image();
+
+      reader.onload = () => {
+        image.src = String(reader.result || "");
+      };
+
+      reader.onerror = () => {
+        reject(new Error("Impossible de lire le fichier sélectionné"));
+      };
+
+      image.onload = () => {
+        resolve(image);
+      };
+
+      image.onerror = () => {
+        reject(new Error("Impossible de lire l'image sélectionnée"));
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+  const openCropModal = (file) =>
+    new Promise(async (resolve, reject) => {
+      const image = await loadImageFromFile(file);
+      const box = Math.min(image.naturalWidth, image.naturalHeight);
+      const state = {
+        x: Math.round((image.naturalWidth - box) / 2),
+        y: Math.round((image.naturalHeight - box) / 2),
+      };
+
+      const modal = document.createElement("div");
+      modal.className = "crop-modal";
+      modal.innerHTML = `
+        <div class="crop-dialog" role="dialog" aria-modal="true" aria-label="Recadrer la photo">
+          <h3>Recadrage obligatoire (format carré)</h3>
+          <p class="crop-help">Déplacez le cadre, puis validez pour enregistrer l'image finale.</p>
+          <div class="crop-stage-wrap">
+            <div class="crop-stage">
+              <img alt="Prévisualisation du recadrage" class="crop-image" />
+              <div class="crop-selection" aria-hidden="true"></div>
+            </div>
+          </div>
+          <div class="crop-actions">
+            <button type="button" class="admin-button crop-cancel">Annuler</button>
+            <button type="button" class="admin-button crop-confirm">Valider le crop</button>
+          </div>
+        </div>
+      `;
+
+      document.body.appendChild(modal);
+      const stage = modal.querySelector(".crop-stage");
+      const preview = modal.querySelector(".crop-image");
+      const selection = modal.querySelector(".crop-selection");
+
+      preview.src = image.src;
+
+      const STAGE_SIZE = 420;
+      stage.style.width = `${STAGE_SIZE}px`;
+      stage.style.height = `${STAGE_SIZE}px`;
+
+      const scale = Math.min(STAGE_SIZE / image.naturalWidth, STAGE_SIZE / image.naturalHeight);
+      const displayedWidth = image.naturalWidth * scale;
+      const displayedHeight = image.naturalHeight * scale;
+      const offsetLeft = (STAGE_SIZE - displayedWidth) / 2;
+      const offsetTop = (STAGE_SIZE - displayedHeight) / 2;
+      const displayedBox = box * scale;
+
+      preview.style.width = `${displayedWidth}px`;
+      preview.style.height = `${displayedHeight}px`;
+      preview.style.left = `${offsetLeft}px`;
+      preview.style.top = `${offsetTop}px`;
+
+      const syncSelection = () => {
+        selection.style.width = `${displayedBox}px`;
+        selection.style.height = `${displayedBox}px`;
+        selection.style.left = `${offsetLeft + state.x * scale}px`;
+        selection.style.top = `${offsetTop + state.y * scale}px`;
+      };
+
+      syncSelection();
+
+      let drag = null;
+      const onMove = (event) => {
+        if (!drag) return;
+        const nextX = drag.startX + (event.clientX - drag.pointerX) / scale;
+        const nextY = drag.startY + (event.clientY - drag.pointerY) / scale;
+        const maxX = image.naturalWidth - box;
+        const maxY = image.naturalHeight - box;
+        state.x = Math.max(0, Math.min(maxX, Math.round(nextX)));
+        state.y = Math.max(0, Math.min(maxY, Math.round(nextY)));
+        syncSelection();
+      };
+
+      selection.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        drag = {
+          pointerX: event.clientX,
+          pointerY: event.clientY,
+          startX: state.x,
+          startY: state.y,
+        };
+        selection.setPointerCapture(event.pointerId);
+      });
+
+      selection.addEventListener("pointermove", onMove);
+      selection.addEventListener("pointerup", () => {
+        drag = null;
+      });
+      selection.addEventListener("pointercancel", () => {
+        drag = null;
+      });
+
+      const close = () => {
+        modal.remove();
+      };
+
+      modal.querySelector(".crop-cancel").addEventListener("click", () => {
+        close();
+        resolve(null);
+      });
+
+      modal.querySelector(".crop-confirm").addEventListener("click", () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = CROPPED_SIZE;
+        canvas.height = CROPPED_SIZE;
+        const ctx = canvas.getContext("2d");
+
+        ctx.drawImage(image, state.x, state.y, box, box, 0, 0, CROPPED_SIZE, CROPPED_SIZE);
+        canvas.toBlob(
+          (blob) => {
+            close();
+            if (!blob) {
+              reject(new Error("Impossible de générer l'image recadrée"));
+              return;
+            }
+            resolve(
+              new File([blob], `perso_${Date.now()}.png`, {
+                type: "image/png",
+              })
+            );
+          },
+          "image/png",
+          0.92
+        );
+      });
+    });
+
   const setPhotoPreview = (id, src) => {
     const card = document.getElementById(`player-${id}`);
     if (!card) return;
@@ -163,13 +315,33 @@ document.addEventListener("DOMContentLoaded", async () => {
       const file = input.files[0];
       if (!file) return;
 
+      if (!file.type.startsWith("image/")) {
+        alert("Le fichier sélectionné n'est pas une image.");
+        input.value = "";
+        return;
+      }
+
+      let croppedFile;
+      try {
+        croppedFile = await openCropModal(file);
+      } catch (error) {
+        alert("Le recadrage a échoué.");
+        input.value = "";
+        return;
+      }
+
+      if (!croppedFile) {
+        input.value = "";
+        return;
+      }
+
       const previousPhoto = data[id].photo || "";
-      const previewUrl = URL.createObjectURL(file);
+      const previewUrl = URL.createObjectURL(croppedFile);
       setPhotoPreview(id, previewUrl);
 
       const fd = new FormData();
       fd.append("id", id);
-      fd.append("file", file);
+      fd.append("file", croppedFile);
 
       alert("Upload en cours…");
 
