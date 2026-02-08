@@ -170,58 +170,99 @@ if ($method === 'POST' && $action === 'delete_team') {
     exit;
   }
 
-  $path = cluedo_data_path();
-  $data = json_decode((string) file_get_contents($path), true);
-  if (!is_array($data)) {
-    $data = [];
+  $lockPath = __DIR__ . '/../data/.runtime_delete_team.lock';
+  $lockHandle = fopen($lockPath, 'c');
+  if ($lockHandle === false || !flock($lockHandle, LOCK_EX)) {
+    if (is_resource($lockHandle)) {
+      fclose($lockHandle);
+    }
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'verrou runtime indisponible'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
   }
 
   $removedQueueEntries = 0;
-  foreach ($data as $characterId => $character) {
-    if (!isset($character['queue']) || !is_array($character['queue'])) {
-      continue;
+  $removedHistory = false;
+  $removedProfile = false;
+  $removedPresence = false;
+  $removedMessage = false;
+  $photoDeleted = false;
+
+  try {
+    $dataPath = cluedo_data_path();
+    $data = json_decode((string) file_get_contents($dataPath), true);
+    if (!is_array($data)) {
+      $data = [];
     }
 
-    $queue = $character['queue'];
-    $initialCount = count($queue);
-    $queue = array_values(array_filter($queue, function ($entry) use ($token) {
-      return (string) ($entry['token'] ?? '') !== $token;
-    }));
+    foreach ($data as $characterId => $character) {
+      if (!isset($character['queue']) || !is_array($character['queue'])) {
+        continue;
+      }
 
-    $removedQueueEntries += max(0, $initialCount - count($queue));
-    $data[$characterId]['queue'] = $queue;
-  }
+      $queue = $character['queue'];
+      $initialCount = count($queue);
+      $queue = array_values(array_filter($queue, function ($entry) use ($token) {
+        return (string) ($entry['token'] ?? '') !== $token;
+      }));
 
-  file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      $removedQueueEntries += max(0, $initialCount - count($queue));
+      $data[$characterId]['queue'] = $queue;
+    }
 
-  $historyStore = cluedo_load_history();
-  if (isset($historyStore['teams'][$token])) {
-    unset($historyStore['teams'][$token]);
+    $historyStore = cluedo_load_history();
+    if (isset($historyStore['teams'][$token])) {
+      unset($historyStore['teams'][$token]);
+      $removedHistory = true;
+    }
+
+    $profilesStore = cluedo_load_team_profiles();
+    $profile = cluedo_get_team_profile($profilesStore, $token);
+    $photoPath = trim((string) ($profile['photo'] ?? ''));
+    if (isset($profilesStore['teams'][$token])) {
+      unset($profilesStore['teams'][$token]);
+      $removedProfile = true;
+    }
+
+    $presenceStore = cluedo_load_team_presence();
+    if (isset($presenceStore['teams'][$token])) {
+      unset($presenceStore['teams'][$token]);
+      $removedPresence = true;
+    }
+
+    $messagesStore = cluedo_load_supervision_messages();
+    if (isset($messagesStore['teams'][$token])) {
+      unset($messagesStore['teams'][$token]);
+      $removedMessage = true;
+    }
+
+    file_put_contents($dataPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     cluedo_save_history($historyStore);
-  }
-
-  $profilesStore = cluedo_load_team_profiles();
-  if (isset($profilesStore['teams'][$token])) {
-    unset($profilesStore['teams'][$token]);
     cluedo_save_team_profiles($profilesStore);
-  }
-
-  $presenceStore = cluedo_load_team_presence();
-  if (isset($presenceStore['teams'][$token])) {
-    unset($presenceStore['teams'][$token]);
     cluedo_save_team_presence($presenceStore);
-  }
-
-  $messagesStore = cluedo_load_supervision_messages();
-  if (isset($messagesStore['teams'][$token])) {
-    unset($messagesStore['teams'][$token]);
     cluedo_save_supervision_messages($messagesStore);
+
+    if ($photoPath !== '' && str_starts_with($photoPath, 'uploads/')) {
+      $uploadsDir = realpath(__DIR__ . '/../uploads');
+      $absolutePhotoPath = realpath(__DIR__ . '/../' . $photoPath);
+      if ($uploadsDir !== false && $absolutePhotoPath !== false && str_starts_with($absolutePhotoPath, $uploadsDir . DIRECTORY_SEPARATOR) && is_file($absolutePhotoPath)) {
+        $photoDeleted = @unlink($absolutePhotoPath);
+      }
+    }
+  } finally {
+    flock($lockHandle, LOCK_UN);
+    fclose($lockHandle);
   }
 
   echo json_encode([
     'ok' => true,
     'deleted_token' => $token,
     'removed_queue_entries' => $removedQueueEntries,
+    'removed_history' => $removedHistory,
+    'removed_profile' => $removedProfile,
+    'removed_presence' => $removedPresence,
+    'removed_message' => $removedMessage,
+    'photo_deleted' => $photoDeleted,
   ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   exit;
 }

@@ -421,7 +421,7 @@
   }
 
   async function deleteTeam(teamToken, teamName) {
-    const confirmed = window.confirm(`Confirmer la suppression de l'équipe ${teamName} ? Cette action est irréversible.`);
+    const confirmed = window.confirm(`Confirmer la suppression DÉFINITIVE de l'équipe ${teamName} ?\n\nCette action supprime le nom, la photo, les participants, les messages et l'historique des passages.`);
     if (!confirmed) return;
 
     const body = new URLSearchParams({ action: "delete_team", token: teamToken });

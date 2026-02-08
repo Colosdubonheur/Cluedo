@@ -101,6 +101,27 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
+
+  function clearPersistedMessageHistoryForCurrentToken() {
+    const storageKey = getMessageStorageKey();
+    localStorage.removeItem(storageKey);
+    sessionStorage.removeItem(storageKey);
+  }
+
+  function resetRuntimeStateForFreshTeam() {
+    messageHistory.length = 0;
+    messageHistoryKeys.clear();
+    lastMessageKey = "";
+    lastPlayedMessageKey = "";
+    previousRemainingSeconds = null;
+    criticalAlertPlayedFor = "";
+    players = [];
+    clearPersistedMessageHistoryForCurrentToken();
+    localStorage.removeItem(TEAM_KEY);
+    renderMessageHistory();
+    renderPlayers();
+  }
+
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
     if (s === 0) return "Disponible";
@@ -564,6 +585,10 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!response.ok || !state.ok) throw new Error(state.error || "hub failed");
     if (requestSequence < lastAppliedHubSequence) return;
     lastAppliedHubSequence = requestSequence;
+
+    if (state.team?.is_new_team_session) {
+      resetRuntimeStateForFreshTeam();
+    }
 
     latestState = state;
     renderEndGameBanner(state);

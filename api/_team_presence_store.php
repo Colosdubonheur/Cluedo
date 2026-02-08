@@ -36,17 +36,26 @@ function cluedo_save_team_presence(array $store): bool
   ) !== false;
 }
 
-function cluedo_touch_team_presence(string $token, int $timestamp): void
+function cluedo_touch_team_presence(string $token, int $timestamp): array
 {
   if ($token === '') {
-    return;
+    return [];
   }
 
   $store = cluedo_load_team_presence();
-  if (!isset($store['teams'][$token]) || !is_array($store['teams'][$token])) {
+  $isNew = !isset($store['teams'][$token]) || !is_array($store['teams'][$token]);
+  if ($isNew) {
     $store['teams'][$token] = [];
+  }
+
+  if (!isset($store['teams'][$token]['first_seen_at'])) {
+    $store['teams'][$token]['first_seen_at'] = $timestamp;
   }
 
   $store['teams'][$token]['last_seen_at'] = $timestamp;
   cluedo_save_team_presence($store);
+
+  $entry = $store['teams'][$token];
+  $entry['is_new'] = $isNew;
+  return $entry;
 }
