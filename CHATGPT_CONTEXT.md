@@ -608,3 +608,10 @@ Contraintes non négociables :
   - En environnement actuel sans bibliothèque externe de transcodage HEIC, Safari iOS peut fournir des fichiers non décodables par le pipeline canvas/GD.
   - Le serveur (`upload.php`) n’accepte que JPEG/PNG/WEBP et rejette tout autre mime.
   - Le message d’erreur doit exposer une raison explicite (format non supporté, réseau, réponse serveur), jamais un échec opaque.
+
+## 12. Version applicative visible sur le Hub
+
+- La page Hub (`index.html`) affiche une version applicative en haut à droite, de façon discrète et purement informative.
+- Le format est strictement `YYYY.MM.DD.HH.mm` (année 4 chiffres, mois/jour/heure/minute sur 2 chiffres).
+- Source unique de vérité : `data/app_version.txt`, lu côté serveur par `api/version.php` puis affiché côté UI.
+- Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.

@@ -10,6 +10,7 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 </head>
 <body>
+  <div id="hub-app-version" class="hub-app-version" aria-label="Version applicative">…</div>
   <div class="container">
     <h1>Hub Cluedo</h1>
     <div class="card hub-card">
@@ -39,12 +40,30 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
+      const appVersionContainer = document.getElementById("hub-app-version");
       const container = document.getElementById("hub-character-list");
       const quickAccessContainer = document.getElementById("hub-quick-access-list");
       const downloadZipButton = document.getElementById("hub-download-zip-qr");
       const downloadPdfButton = document.getElementById("hub-download-pdf-qr");
       const fallbackName = (id) => `Personnage ${id}`;
       const characterEntries = [];
+
+      const loadAppVersion = async () => {
+        try {
+          const response = await fetch(`./api/version.php?ts=${Date.now()}`);
+          if (!response.ok) {
+            throw new Error("Réponse version indisponible");
+          }
+
+          const payload = await response.json();
+          const version = typeof payload.version === "string" ? payload.version.trim() : "";
+          appVersionContainer.textContent = version || "Version inconnue";
+        } catch (error) {
+          appVersionContainer.textContent = "Version inconnue";
+        }
+      };
+
+      await loadAppVersion();
 
       const sanitizeForFilename = (value) => value
         .normalize("NFD")
