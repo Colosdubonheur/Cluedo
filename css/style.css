@@ -1,3 +1,5 @@
+/* style.css (see previous message for full comments) */
+:root { --bg:#0f1115; --card:#171a21; --text:#e9eef7; --muted:#a8b3c7; --ok:#4ade80; --warn:#fbbf24; --accent:#3b82f6; --accent-hover:#2563eb; }
 :root { --bg:#0f1115; --card:#171a21; --text:#e9eef7; --muted:#a8b3c7; --ok:#4ade80; --warn:#fbbf24; }
 *{box-sizing:border-box}
 body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
@@ -9,6 +11,27 @@ body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text
 .badge.wait{background:var(--warn);color:#000}
 .badge.ok{background:var(--ok);color:#000}
 
+.hub-card{display:flex;flex-direction:column;gap:18px}
+.hub-section h2{margin:0 0 10px;font-size:1.2rem}
+.hub-grid{display:grid;grid-template-columns:1fr;gap:10px}
+.hub-button{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:52px;
+  width:100%;
+  border-radius:12px;
+  background:var(--accent);
+  color:#fff;
+  text-decoration:none;
+  font-weight:700;
+  padding:12px;
+  text-align:center;
+}
+.hub-button:hover,.hub-button:focus-visible{background:var(--accent-hover)}
+
+@media (min-width: 768px){
+  .hub-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
 .admin-page{padding-bottom:32px}
 .admin-subtitle{color:var(--muted);margin-top:-6px}
 .admin-open-access{color:#6ee7b7;margin-top:-6px}
