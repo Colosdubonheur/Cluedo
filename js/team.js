@@ -235,7 +235,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    for (const entry of messageHistory) {
+    for (const entry of [...messageHistory].reverse()) {
       const row = document.createElement("div");
       row.className = "team-message-item";
 
