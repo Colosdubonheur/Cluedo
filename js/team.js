@@ -326,11 +326,17 @@ document.addEventListener("DOMContentLoaded", () => {
     rows.forEach((row) => {
       const item = document.createElement("li");
       item.className = "team-character-item";
+      item.setAttribute("role", "button");
+      item.setAttribute("tabindex", "0");
 
       const isCurrent = currentCharacterId === String(row.id);
       const endGameActive = isEndGameActive(state);
       const blockedByEndGame = endGameActive && !isCurrent;
-      const actionLabel = isCurrent ? "Quitter" : "Rejoindre";
+      const rowDisabled = isBlocked || isQueueActionInProgress || blockedByEndGame;
+      if (rowDisabled) {
+        item.classList.add("is-disabled");
+        item.setAttribute("aria-disabled", "true");
+      }
       const photo = row.photo
         ? `<img src="${row.photo}" alt="${row.nom}" class="team-character-photo"/>`
         : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
@@ -344,25 +350,33 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
         <div class="team-character-col team-character-col-meta">
           <h3>${row.nom || "Personnage"}</h3>
-          <p class="team-character-line team-character-location" title="${locationTitle}" aria-label="${locationTitle}">📍</p>
+          <p class="team-character-line team-character-location" title="${locationTitle}" aria-label="${locationTitle}">📍 ${locationTitle}</p>
           <p class="team-character-line team-character-wait ${waitClass}">⏱ ${fmt(row.estimated_wait_seconds || 0)}</p>
           ${seenStatus}
         </div>
-        <div class="team-character-col team-character-col-action">
-          <button type="button" class="admin-button team-character-action-btn" data-id="${String(row.id)}" ${isBlocked || isQueueActionInProgress || blockedByEndGame ? "disabled" : ""}>${actionLabel}<span>la file</span></button>
-        </div>
       `;
+
+      const triggerQueueAction = () => {
+        if (rowDisabled) return;
+        const action = isCurrent ? "quitter" : "rejoindre";
+        const name = String(row.nom || "ce suspect");
+        const confirmed = window.confirm(`Confirmer : ${action} la file de « ${name} » ?`);
+        if (!confirmed) return;
+        void onQueueAction(String(row.id || ""));
+      };
+
+      item.addEventListener("click", triggerQueueAction);
+      item.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        triggerQueueAction();
+      });
+
       list.appendChild(item);
     });
 
     charactersEl.innerHTML = "";
     charactersEl.appendChild(list);
-
-    list.querySelectorAll(".team-character-action-btn").forEach((btn) => {
-      btn.addEventListener("click", () => {
-        void onQueueAction(btn.dataset.id || "");
-      });
-    });
   }
 
   async function maybePlayMessageSound(messageText, createdAt) {
@@ -390,7 +404,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setFeedback(characterFeedbackEl, "Actions sur les files bloquées tant que les informations de l'équipe ne sont pas complètes.", "error");
     } else {
       setFeedback(lockMessageEl, "", "neutral");
-      setFeedback(characterFeedbackEl, "Sélectionnez un suspect pour rejoindre ou quitter sa file.", "success");
+      setFeedback(characterFeedbackEl, "Cliquez sur une tuile suspect pour rejoindre ou quitter sa file.", "success");
     }
 
     return isBlocked;
@@ -534,23 +548,38 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   teamPhotoUploadBtn?.addEventListener("click", async () => {
-    const file = teamPhotoInputEl.files && teamPhotoInputEl.files[0] ? teamPhotoInputEl.files[0] : null;
-    if (!file) {
-      setFeedback(teamPhotoFeedbackEl, "Sélectionnez une image avant l'envoi.", "error");
+    if (!window.CluedoPhotoUpload?.uploadFromInput) {
+      setFeedback(teamPhotoFeedbackEl, "Module de recadrage indisponible.", "error");
       return;
     }
 
-    setFeedback(teamPhotoFeedbackEl, "Upload en cours…", "processing");
     teamPhotoUploadBtn.disabled = true;
+    setFeedback(teamPhotoFeedbackEl, "Recadrage en attente…", "processing");
+
     try {
-      const result = await runWithPollingPaused(async () => uploadTeamPhoto(file));
-      renderTeamPhoto(result.photo || currentTeamPhotoPath || "");
-      teamPhotoInputEl.value = "";
-      setFeedback(teamPhotoFeedbackEl, "Photo équipe mise à jour.", "success");
+      await runWithPollingPaused(async () =>
+        window.CluedoPhotoUpload.uploadFromInput({
+          id: token,
+          input: teamPhotoInputEl,
+          getPreviousPhoto: () => currentTeamPhotoPath,
+          setPhotoPreview: (nextPhoto) => {
+            renderTeamPhoto(nextPhoto || "");
+          },
+          sendUploadRequest: async ({ file }) => {
+            setFeedback(teamPhotoFeedbackEl, "Upload en cours…", "processing");
+            try {
+              const result = await uploadTeamPhoto(file);
+              setFeedback(teamPhotoFeedbackEl, "Photo équipe mise à jour.", "success");
+              return { ok: true, photo: result.photo || "" };
+            } catch (error) {
+              const message = error instanceof Error && error.message ? error.message : "Upload impossible.";
+              setFeedback(teamPhotoFeedbackEl, message, "error");
+              return { ok: false, error: message };
+            }
+          },
+        })
+      );
       await loadHub();
-    } catch (error) {
-      const message = error instanceof Error && error.message ? error.message : "Upload impossible.";
-      setFeedback(teamPhotoFeedbackEl, message, "error");
     } finally {
       teamPhotoUploadBtn.disabled = false;
     }
