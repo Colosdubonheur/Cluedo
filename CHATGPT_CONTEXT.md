@@ -184,6 +184,19 @@ Le serveur est l’unique source de vérité pour :
 
 ---
 
+### Fin de jeu (supervision)
+- L'état global **`end_game_active`** est stocké côté serveur dans `data/game_state.json` et exposé par `api/supervision.php`, `api/team_hub.php` et `api/status.php`.
+- Activation uniquement via le bouton supervision **« Fin de jeu »** avec confirmation explicite (aucun déclenchement par texte).
+- Quand la fin de jeu est active :
+  - les équipes voient une notification rouge persistante **« Fin de jeu »** dans `team.html`,
+  - les équipes **déjà en cycle** (active ou waiting) continuent normalement (FIFO/timers inchangés),
+  - les équipes libres ne peuvent plus entrer dans une nouvelle file.
+- Désactivation via le bouton supervision **« Annuler la fin de jeu »** avec confirmation :
+  - la notification disparaît côté équipes,
+  - les entrées en file redeviennent possibles,
+  - aucun état d'engagement existant n'est modifié.
+- La messagerie supervision reste active avant, pendant et après la fin de jeu (équipes et personnages).
+
 ## 6. Architecture technique
 
 - Frontend : HTML + JavaScript vanilla

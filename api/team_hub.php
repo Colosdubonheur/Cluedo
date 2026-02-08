@@ -6,6 +6,7 @@ require_once __DIR__ . '/_queue_runtime.php';
 require_once __DIR__ . '/_team_profiles_store.php';
 require_once __DIR__ . '/_character_visibility.php';
 require_once __DIR__ . '/_supervision_messages_store.php';
+require_once __DIR__ . '/_game_state_store.php';
 
 $token = trim((string) ($_GET['token'] ?? ''));
 if ($token === '') {
@@ -149,4 +150,5 @@ echo json_encode([
     'message' => $teamMessage,
   ],
   'global' => $global,
+  'game_state' => cluedo_load_game_state(),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

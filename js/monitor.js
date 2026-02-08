@@ -1,6 +1,8 @@
 (function () {
   const listEl = document.getElementById("teams");
   const resetBtn = document.getElementById("reset-history");
+  const toggleEndGameBtn = document.getElementById("toggle-end-game");
+  const endGameStatusEl = document.getElementById("monitor-end-game-status");
 
   const teamMessageTargetEl = document.getElementById("team-message-target");
   const teamMessageInputEl = document.getElementById("team-message-text");
@@ -169,6 +171,48 @@
     await refresh();
   }
 
+
+  function renderEndGameControls(gameState) {
+    const isActive = !!gameState?.end_game_active;
+    toggleEndGameBtn.textContent = isActive ? "Annuler la fin de jeu" : "Fin de jeu";
+    toggleEndGameBtn.classList.toggle("is-active", isActive);
+    endGameStatusEl.textContent = isActive
+      ? "🔴 Fin de jeu active : aucune nouvelle entrée en file."
+      : "🟢 Fin de jeu inactive : fonctionnement normal des files.";
+  }
+
+  async function setEndGame(active) {
+    const prompt = active
+      ? "Confirmer l'activation de la fin de jeu ? Les équipes en cours continuent, mais aucune nouvelle entrée en file ne sera autorisée."
+      : "Confirmer l'annulation de la fin de jeu ?";
+
+    if (!window.confirm(prompt)) {
+      return;
+    }
+
+    toggleEndGameBtn.disabled = true;
+    const body = new URLSearchParams({
+      action: "set_end_game",
+      active: active ? "1" : "0",
+    });
+
+    const response = await fetch("./api/supervision.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body.toString(),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    toggleEndGameBtn.disabled = false;
+
+    if (!response.ok || !payload.ok) {
+      window.alert(payload.error || "Impossible de mettre à jour la fin de jeu.");
+      return;
+    }
+
+    renderEndGameControls(payload.game_state || {});
+    await refresh();
+  }
   async function refresh() {
     const response = await fetch(`./api/supervision.php?t=${Date.now()}`);
     const payload = await response.json();
@@ -179,6 +223,7 @@
     }
 
     fillMessageTargets(payload.teams || [], Array.isArray(payload.characters) ? payload.characters : []);
+    renderEndGameControls(payload.game_state || {});
 
     if (!payload.teams.length) {
       listEl.textContent = "Aucune équipe connue.";
@@ -211,6 +256,11 @@
     }
 
     await refresh();
+  });
+
+  toggleEndGameBtn.addEventListener("click", async () => {
+    const active = !(toggleEndGameBtn.classList.contains("is-active"));
+    await setEndGame(active);
   });
 
   sendTeamMessageBtn.addEventListener("click", async () => {
