@@ -112,6 +112,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let pollTimeoutId = null;
   let hasFatalError = false;
+  let needNamePromptInFlight = false;
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -282,6 +283,15 @@ document.addEventListener("DOMContentLoaded", async () => {
       elTimer.textContent = "--:--";
       elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
       document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
+
+      if (!needNamePromptInFlight) {
+        needNamePromptInFlight = true;
+        setTimeout(() => {
+          elSetNameBtn.click();
+          needNamePromptInFlight = false;
+        }, 50);
+      }
+
       pollTimeoutId = setTimeout(loop, 1000);
       return;
     }
@@ -316,8 +326,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const personnageNom = data.personnage?.nom || data.nom || `Personnage #${id}`;
       const equipeNom = data.equipe?.nom || teamName;
       const hasValidNameFromServer = hasValidUserTeamName(equipeNom);
-      const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : 0);
-      const queueTotal = data.file?.total ?? data.queue_length ?? 1;
+      const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : null);
+      const queueTotal = data.file?.total ?? data.queue_length ?? 0;
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
       const myRemaining = data.my_remaining ?? 0;
       const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
@@ -325,9 +335,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
       // (`state === "active"` ou `can_access === true`). Sans signal explicite => `waiting`.
       const hasExplicitAccess = data.state === "active" || data.can_access === true;
-      const state = hasExplicitAccess ? "active" : "waiting";
+      const state = data.state === "need_name" ? "need_name" : (hasExplicitAccess ? "active" : "waiting");
 
-      if (!hasValidNameFromServer) {
+      if (state === "need_name" || !hasValidNameFromServer) {
         teamName = "";
         localStorage.removeItem(TEAM_KEY);
         elNeedName.style.display = "block";
@@ -336,6 +346,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         elTimer.textContent = "--:--";
         elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
         document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
+
+        if (!needNamePromptInFlight) {
+          needNamePromptInFlight = true;
+          setTimeout(() => {
+            elSetNameBtn.click();
+            needNamePromptInFlight = false;
+          }, 50);
+        }
+
         pollTimeoutId = setTimeout(loop, 1000);
         return;
       }
@@ -349,7 +368,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         await renameTeam();
       };
 
-      elPosition.textContent = `${position + 1} / ${queueTotal}`;
+      elPosition.textContent = Number.isInteger(position) && queueTotal > 0 ? `${position + 1} / ${queueTotal}` : "-";
       elEstimatedWait.textContent = fmt(waitRemaining);
       elPreviousTeam.textContent = previousTeam || "Aucune";
 
