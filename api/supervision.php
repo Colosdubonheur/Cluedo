@@ -6,6 +6,7 @@ require_once __DIR__ . '/_queue_runtime.php';
 require_once __DIR__ . '/_character_visibility.php';
 require_once __DIR__ . '/_team_profiles_store.php';
 require_once __DIR__ . '/_supervision_messages_store.php';
+require_once __DIR__ . '/_game_state_store.php';
 
 function cluedo_history_path(): string
 {
@@ -143,6 +144,20 @@ if ($method === 'POST' && $action === 'send_message') {
 if ($method === 'POST' && $action === 'reset_history') {
   cluedo_save_history(['teams' => []]);
   echo json_encode(['ok' => true, 'reset' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  exit;
+}
+
+if ($method === 'POST' && $action === 'set_end_game') {
+  $active = (string) ($_POST['active'] ?? '') === '1';
+  cluedo_save_game_state([
+    'end_game_active' => $active,
+    'updated_at' => time(),
+  ]);
+
+  echo json_encode([
+    'ok' => true,
+    'game_state' => cluedo_load_game_state(),
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   exit;
 }
 
@@ -381,4 +396,5 @@ echo json_encode([
   'ok' => true,
   'teams' => $teamsPayload,
   'characters' => $charactersPayload,
+  'game_state' => cluedo_load_game_state(),
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

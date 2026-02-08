@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_queue_runtime.php';
 require_once __DIR__ . '/_character_visibility.php';
+require_once __DIR__ . '/_game_state_store.php';
 
 $id = $_GET['id'] ?? null;
 $token = $_GET['token'] ?? null;
@@ -119,6 +120,8 @@ $p['queue'] = cluedo_clean_character_queue($p['queue'], $now, $MAX_WAIT);
 
 $timePerPlayer = max(1, (int) ($p['time_per_player'] ?? 120));
 $index = cluedo_find_token_in_queue($p['queue'], (string) $token);
+$gameState = cluedo_load_game_state();
+$endGameActive = !empty($gameState['end_game_active']);
 
 if ($joinIntent && $index === null) {
   $otherEngagement = cluedo_find_token_engagement($data, (string) $id, (string) $token, $now, $MAX_WAIT, $timePerPlayer);
@@ -161,6 +164,25 @@ if ($index === null) {
   $resolvedTeamName = normalize_team_name($teamNameInput);
 
   if ($joinIntent) {
+    if ($endGameActive) {
+      $data[$id] = $p;
+      rewind($fp);
+      ftruncate($fp, 0);
+      fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      fflush($fp);
+      flock($fp, LOCK_UN);
+      fclose($fp);
+
+      http_response_code(403);
+      echo json_encode([
+        'ok' => false,
+        'error' => 'end_game_active',
+        'message' => 'Fin de jeu active : nouvelles entrées en file indisponibles.',
+        'game_state' => $gameState,
+      ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+      exit;
+    }
+
     $p['queue'][] = [
       'token' => $token,
       'team' => $resolvedTeamName,
@@ -243,6 +265,7 @@ flock($fp, LOCK_UN);
 fclose($fp);
 
 $response = [
+  'ok' => true,
   'state' => $state,
   'legacy_state' => $legacyState,
   'personnage' => [
@@ -280,6 +303,7 @@ $response = [
   'time_per_player' => $timePerPlayer,
   'buffer_before_next' => $buffer,
   'previous_team' => $previousTeam,
+  'game_state' => $gameState,
 ];
 
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

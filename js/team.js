@@ -22,6 +22,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const characterFeedbackEl = document.getElementById("team-character-feedback");
   const lockMessageEl = document.getElementById("team-lock-message");
   const messageEl = document.getElementById("team-message");
+  const endGameBannerEl = document.getElementById("team-end-game-banner");
   const audioEnableBtn = document.getElementById("team-audio-enable-btn");
   const audioStatusEl = document.getElementById("team-audio-status");
 
@@ -151,6 +152,12 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!init.isReady) return;
 
     const currentCharacterId = String(latestState.team?.state?.character_id || "");
+    const endGameActive = isEndGameActive(latestState);
+
+    if (endGameActive && currentCharacterId !== String(characterId)) {
+      setFeedback(characterFeedbackEl, "Fin de jeu active : impossible de rejoindre une nouvelle file.", "error");
+      return;
+    }
 
     isQueueActionInProgress = true;
     try {
@@ -158,11 +165,21 @@ document.addEventListener("DOMContentLoaded", () => {
         await leaveQueue(characterId);
       } else {
         let joinResult = await joinQueue(characterId, init.teamName, false);
+        if (joinResult?.error === "end_game_active") {
+          setFeedback(characterFeedbackEl, "Fin de jeu active : impossible de rejoindre une nouvelle file.", "error");
+          await loadHub();
+          return;
+        }
         if (joinResult?.state === "already_in_queue" && joinResult?.can_join_after_confirm) {
           const fromName = joinResult.current_engagement?.personnage_nom || "un autre personnage";
           const confirmed = window.confirm(`Votre équipe est déjà en file pour « ${fromName} ». Confirmer le changement ?`);
           if (!confirmed) return;
           joinResult = await joinQueue(characterId, init.teamName, true);
+          if (joinResult?.error === "end_game_active") {
+            setFeedback(characterFeedbackEl, "Fin de jeu active : impossible de rejoindre une nouvelle file.", "error");
+            await loadHub();
+            return;
+          }
         }
       }
       await loadHub();
@@ -198,6 +215,8 @@ document.addEventListener("DOMContentLoaded", () => {
       item.className = "team-character-item";
 
       const isCurrent = currentCharacterId === String(row.id);
+      const endGameActive = isEndGameActive(state);
+      const blockedByEndGame = endGameActive && !isCurrent;
       const buttonLabel = isCurrent ? "Quitter cette file" : "Rejoindre la file";
       const photo = row.photo
         ? `<img src="${row.photo}" alt="${row.nom}" class="team-character-photo"/>`
@@ -212,7 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <p class="team-character-line">🏠 ${row.location || "Non renseignée"}</p>
           <p class="team-character-line team-character-wait ${waitClass}">⏱ ${fmt(row.estimated_wait_seconds || 0)}</p>
           ${unseenBadge}
-          <button type="button" class="admin-button team-character-action-btn" data-id="${String(row.id)}" ${isBlocked || isQueueActionInProgress ? "disabled" : ""}>${buttonLabel}</button>
+          <button type="button" class="admin-button team-character-action-btn" data-id="${String(row.id)}" ${isBlocked || isQueueActionInProgress || blockedByEndGame ? "disabled" : ""}>${buttonLabel}</button>
         </div>
       `;
       list.appendChild(item);
@@ -260,6 +279,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!response.ok || !state.ok) throw new Error(state.error || "hub failed");
 
     latestState = state;
+    renderEndGameBanner(state);
     const profile = state.team?.profile || {};
     const init = resolveInitialization(profile);
 
@@ -270,6 +290,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const isBlocked = renderLockState(init);
     renderCharactersList(state, isBlocked);
+    if (isEndGameActive(state) && state.team?.state?.state === "free") {
+      setFeedback(characterFeedbackEl, "Fin de jeu active : vous ne pouvez plus rejoindre de file.", "error");
+    }
 
     const messagePayload = state.team?.message || {};
     const messageText = String(messagePayload.text || "").trim();
@@ -277,6 +300,15 @@ document.addEventListener("DOMContentLoaded", () => {
     void maybePlayMessageSound(messageText, messagePayload.created_at || 0);
   }
 
+
+  function isEndGameActive(state) {
+    return !!state?.game_state?.end_game_active;
+  }
+
+  function renderEndGameBanner(state) {
+    const active = isEndGameActive(state);
+    endGameBannerEl.hidden = !active;
+  }
   function addPlayerFromInput() {
     const value = String(playerInput.value || "").trim();
     if (!value) return;
