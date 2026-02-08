@@ -60,7 +60,7 @@ $oldPhotoPath = isset($data[$id]['photo']) && is_string($data[$id]['photo'])
   ? trim($data[$id]['photo'])
   : null;
 
-$name = "perso_{$id}_" . time() . ".{$ext}";
+$name = 'perso_' . $id . '_' . bin2hex(random_bytes(8)) . '.' . $ext;
 $dest = $dir . '/' . $name;
 
 if (!move_uploaded_file((string) $file['tmp_name'], $dest)) {
@@ -108,9 +108,6 @@ echo json_encode([
   'ok' => true,
   'path' => $relativePath,
 ]);
-}
-
-echo json_encode([
   "ok" => true,
   "path" => "uploads/" . $name
 ]);

@@ -266,6 +266,13 @@ Sur `play` :
   - au chargement, `admin.html` relit `data/personnages.json` et réaffiche la photo configurée
   - la photo reste visible après refresh, sans fallback ni stockage temporaire côté front
 
+### Ordre impératif de persistance photo (admin)
+1. Upload: `POST /api/upload.php` écrit d'abord le fichier final dans `uploads/` avec un nom stable.
+2. Persistance JSON: après écriture disque réussie, `api/upload.php` met à jour `data/personnages.json` avec le chemin exact `uploads/...`.
+3. Suppression ancienne photo: l'ancienne photo n'est supprimée qu'après validation des étapes 1 et 2, et seulement si elle n'est plus référencée ailleurs.
+4. Sauvegarde admin: `POST /api/save.php` ne doit jamais écraser `photo` avec une valeur vide si une photo runtime existe déjà.
+5. Refresh: `admin.html` relit `data/personnages.json`; le chemin `photo` doit pointer vers un fichier réellement présent dans `uploads/`.
+
 - États UI :
   - `need_name` : nom d’équipe absent
   - `waiting` : équipe dans la file en attente
