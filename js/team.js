@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const photoInput = document.getElementById("team-photo-input");
   const qrFeedback = document.getElementById("team-qr-feedback");
   const qrReader = document.getElementById("team-qr-reader");
+  const qrStartCameraBtn = document.getElementById("team-qr-start-camera");
+  const qrImportBtn = document.getElementById("team-qr-import-btn");
+  const qrFileInput = document.getElementById("team-qr-file-input");
   const historyEl = document.getElementById("team-history");
   const globalEl = document.getElementById("team-global");
 
@@ -300,52 +303,158 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function initQrScanner() {
-    if (!window.Html5QrcodeScanner) {
+    if (!window.Html5Qrcode) {
       setQrFeedback("Scanner QR indisponible sur cet appareil.", "error");
       return;
     }
 
-    const scanner = new window.Html5QrcodeScanner("team-qr-reader", { fps: 10, qrbox: 220 }, false);
+    const scanner = new window.Html5Qrcode("team-qr-reader", false);
+    let lastErrorMessage = "";
+    let isScannerRunning = false;
     let lastValue = "";
     let isProcessingScan = false;
 
-    scanner.render(
-      async (decodedText) => {
-        if (!decodedText || decodedText === lastValue || isProcessingScan) {
+    const preferredCamera = () => {
+      const saved = localStorage.getItem("cluedo_qr_camera_id");
+      return saved ? String(saved) : "";
+    };
+
+    const onScanSuccess = async (decodedText) => {
+      if (!decodedText || decodedText === lastValue || isProcessingScan) {
+        return;
+      }
+
+      isProcessingScan = true;
+      lastValue = decodedText;
+
+      try {
+        const target = parseQrTarget(decodedText);
+        if (!target?.id || !target?.url) {
+          setQrFeedback("QR invalide : URL play.html?id=X introuvable.", "error");
           return;
         }
 
-        isProcessingScan = true;
-        lastValue = decodedText;
-
-        try {
-          const target = parseQrTarget(decodedText);
-          if (!target?.id || !target?.url) {
-            setQrFeedback("QR invalide : URL play.html?id=X introuvable.", "error");
-            return;
-          }
-
-          const teamName = profileTeamName();
-          if (teamName) {
-            localStorage.setItem(TEAM_KEY, teamName);
-          }
-          sessionStorage.setItem(TOKEN_KEY, token);
-          localStorage.setItem(TOKEN_KEY, token);
-
-          setQrFeedback(`QR détecté (${target.id}) : ouverture…`, "success");
-          setTimeout(() => {
-            window.location.assign(target.url);
-          }, 450);
-        } finally {
-          setTimeout(() => {
-            lastValue = "";
-            isProcessingScan = false;
-            qrReader.classList.remove("is-processing");
-          }, 1500);
+        const teamName = profileTeamName();
+        if (teamName) {
+          localStorage.setItem(TEAM_KEY, teamName);
         }
-      },
-      () => {}
-    );
+        sessionStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(TOKEN_KEY, token);
+
+        setQrFeedback(`QR détecté (${target.id}) : ouverture…`, "success");
+        setTimeout(() => {
+          window.location.assign(target.url);
+        }, 450);
+      } finally {
+        setTimeout(() => {
+          lastValue = "";
+          isProcessingScan = false;
+          qrReader.classList.remove("is-processing");
+        }, 1500);
+      }
+    };
+
+    async function stopScannerIfNeeded() {
+      if (!isScannerRunning) return;
+      await scanner.stop().catch(() => {});
+      await scanner.clear().catch(() => {});
+      isScannerRunning = false;
+    }
+
+    async function startCameraScan() {
+      setQrFeedback("Activation de la caméra… Autorisez l'accès si votre navigateur le demande.", "processing");
+
+      if (!window.isSecureContext) {
+        setQrFeedback("Caméra indisponible : ouvrez cette page en HTTPS puis réessayez, ou utilisez « Importer une image ».", "error");
+        return;
+      }
+
+      await stopScannerIfNeeded();
+
+      let cameras = [];
+      try {
+        cameras = await window.Html5Qrcode.getCameras();
+      } catch (error) {
+        const reason = error?.message ? ` (${error.message})` : "";
+        setQrFeedback(`Impossible d'accéder à la caméra${reason}. Utilisez « Importer une image ».`, "error");
+        return;
+      }
+
+      if (!Array.isArray(cameras) || cameras.length === 0) {
+        setQrFeedback("Aucune caméra détectée. Utilisez « Importer une image ».", "error");
+        return;
+      }
+
+      const savedCameraId = preferredCamera();
+      const preferredByLabel = cameras.find((camera) => /back|rear|environment|arrière/i.test(camera.label || ""));
+      const preferred = cameras.find((camera) => camera.id === savedCameraId) || preferredByLabel || cameras[0];
+      const attempts = [
+        { label: "caméra arrière", cameraConfig: { facingMode: { ideal: "environment" } } },
+        { label: "caméra par identifiant", cameraConfig: { deviceId: { exact: preferred.id } } },
+        { label: "caméra par défaut", cameraConfig: preferred.id },
+      ];
+
+      let started = false;
+      lastErrorMessage = "";
+      for (const attempt of attempts) {
+        try {
+          await scanner.start(
+            attempt.cameraConfig,
+            { fps: 10, qrbox: { width: 240, height: 240 } },
+            onScanSuccess,
+            () => {}
+          );
+          started = true;
+          isScannerRunning = true;
+          localStorage.setItem("cluedo_qr_camera_id", preferred.id);
+          setQrFeedback("Caméra activée. Présentez le QR code devant l'objectif.", "neutral");
+          break;
+        } catch (error) {
+          lastErrorMessage = error?.message || String(error);
+        }
+      }
+
+      if (!started) {
+        const timeoutIssue = /timeout starting video source/i.test(lastErrorMessage);
+        const message = timeoutIssue
+          ? "La caméra a mis trop de temps à démarrer sur ce poste. Réessayez ou utilisez « Importer une image »."
+          : `Impossible de démarrer la caméra${lastErrorMessage ? ` (${lastErrorMessage})` : ""}. Utilisez « Importer une image ».`;
+        setQrFeedback(message, "error");
+      }
+    }
+
+    async function scanFromImageFile(file) {
+      if (!file) return;
+      await stopScannerIfNeeded();
+      setQrFeedback("Analyse de l'image en cours…", "processing");
+
+      try {
+        const decodedText = await scanner.scanFile(file, true);
+        await onScanSuccess(decodedText);
+      } catch (error) {
+        const reason = error?.message ? ` (${error.message})` : "";
+        setQrFeedback(`Aucun QR valide détecté dans l'image${reason}.`, "error");
+      } finally {
+        qrFileInput.value = "";
+      }
+    }
+
+    qrStartCameraBtn.addEventListener("click", () => {
+      startCameraScan().catch(() => {
+        setQrFeedback("Impossible de démarrer la caméra. Utilisez « Importer une image ».", "error");
+      });
+    });
+
+    qrImportBtn.addEventListener("click", () => {
+      qrFileInput.click();
+    });
+
+    qrFileInput.addEventListener("change", async () => {
+      const file = qrFileInput.files?.[0];
+      await scanFromImageFile(file);
+    });
+
+    setQrFeedback("Choisissez une action : « Scanner un QR code » ou « Importer une image ».", "neutral");
   }
 
   async function uploadTeamPhotoWithCrop(file) {
