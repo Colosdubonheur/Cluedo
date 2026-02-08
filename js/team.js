@@ -36,6 +36,8 @@ document.addEventListener("DOMContentLoaded", () => {
   messageAudio.preload = "auto";
   const soundOnAudio = new Audio("./assets/soundon.wav");
   soundOnAudio.preload = "auto";
+  const exitAudio = new Audio("./assets/exit.mp3");
+  exitAudio.preload = "auto";
 
   let latestState = null;
   let isQueueActionInProgress = false;
@@ -50,6 +52,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let pollingPausedCount = 0;
   let audioEnabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
   let currentTeamPhotoPath = "";
+  let previousRemainingSeconds = null;
+  let criticalAlertPlayedFor = "";
   const messageHistory = [];
   const messageHistoryKeys = new Set();
 
@@ -438,6 +442,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!currentCharacterId) {
       currentCharacterEl.hidden = true;
       currentCharacterEl.innerHTML = "";
+      previousRemainingSeconds = null;
+      criticalAlertPlayedFor = "";
       return;
     }
 
@@ -447,13 +453,38 @@ document.addEventListener("DOMContentLoaded", () => {
     const characterPhoto = row?.photo
       ? `<img src="${row.photo}" alt="${characterName}" class="team-character-photo"/>`
       : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
+    const remainingSeconds = Math.max(0, Number(row?.estimated_wait_seconds || 0));
     const hasNextTeamWaiting = teamState.state === "active" && Number(teamState.queue_total || 0) > 1;
+    const isCriticalExitAlert = teamState.state === "active" && hasNextTeamWaiting && remainingSeconds < 15;
     const statusText = teamState.state === "active"
-      ? (hasNextTeamWaiting ? "Préparez-vous à libérer la place" : "Interrogatoire en cours")
+      ? (isCriticalExitAlert ? "Libérez la place" : (hasNextTeamWaiting ? "Préparez-vous à libérer la place" : "Interrogatoire en cours"))
       : "";
-    const waitClass = teamState.state === "active" ? (hasNextTeamWaiting ? "is-wait-orange" : "is-wait-green") : "";
-    const waitValue = fmt(row?.estimated_wait_seconds || 0);
+    const waitClass = teamState.state === "active"
+      ? (isCriticalExitAlert ? "is-wait-critical" : (hasNextTeamWaiting ? "is-wait-orange" : "is-wait-green"))
+      : "";
+    const waitValue = fmt(remainingSeconds);
     const disableLeave = isBlocked || isQueueActionInProgress;
+    const stateClass = teamState.state === "active"
+      ? (isCriticalExitAlert ? "is-critical" : (hasNextTeamWaiting ? "is-alert" : "is-active"))
+      : "is-waiting";
+
+    const crossedCriticalThreshold =
+      teamState.state === "active"
+      && hasNextTeamWaiting
+      && previousRemainingSeconds !== null
+      && previousRemainingSeconds >= 15
+      && remainingSeconds < 15;
+
+    if (crossedCriticalThreshold && criticalAlertPlayedFor !== currentCharacterId) {
+      criticalAlertPlayedFor = currentCharacterId;
+      void maybePlayExitSound();
+    }
+
+    if (teamState.state !== "active" || !hasNextTeamWaiting || remainingSeconds >= 15) {
+      criticalAlertPlayedFor = "";
+    }
+
+    previousRemainingSeconds = remainingSeconds;
 
     currentCharacterEl.hidden = false;
     currentCharacterEl.innerHTML = `
@@ -463,7 +494,7 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="team-current-character-meta">
             <h3>${characterName}</h3>
             <p class="team-character-line team-character-location" title="${locationText}" aria-label="${locationText}">📍 ${locationText}</p>
-            ${statusText ? `<p class="team-current-state ${teamState.state === "active" ? (hasNextTeamWaiting ? "is-alert" : "is-active") : "is-waiting"}">${statusText}</p>` : ""}
+            ${statusText ? `<p class="team-current-state ${stateClass}">${statusText}</p>` : ""}
             <p class="team-character-line team-character-wait ${waitClass}">${teamState.state === "active" ? "⏱ Temps restant :" : "⏱ Votre interrogatoire commence dans environ :"} ${waitValue}</p>
           </div>
         </div>
@@ -487,6 +518,18 @@ document.addEventListener("DOMContentLoaded", () => {
     messageAudio.currentTime = 0;
     try {
       await messageAudio.play();
+    } catch (_error) {
+      audioEnabled = false;
+      localStorage.setItem(AUDIO_ENABLED_KEY, "0");
+      syncAudioButtonState();
+    }
+  }
+
+  async function maybePlayExitSound() {
+    if (!audioEnabled) return;
+    exitAudio.currentTime = 0;
+    try {
+      await exitAudio.play();
     } catch (_error) {
       audioEnabled = false;
       localStorage.setItem(AUDIO_ENABLED_KEY, "0");

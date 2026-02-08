@@ -1137,6 +1137,11 @@ body {
   color: #f59e0b;
 }
 
+.team-current-state.is-critical {
+  color: #ef4444;
+  animation: cluedoCriticalBlink 0.9s steps(1, end) infinite;
+}
+
 .team-current-state.is-waiting {
   color: #fbbf24;
 }
@@ -1225,6 +1230,11 @@ body {
 
 .team-character-wait.is-wait-red {
   color: #ef4444;
+}
+
+.team-character-wait.is-wait-critical {
+  color: #ef4444;
+  animation: cluedoCriticalBlink 0.9s steps(1, end) infinite;
 }
 
 .team-seen-badge {
