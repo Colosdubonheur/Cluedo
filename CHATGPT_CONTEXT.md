@@ -286,7 +286,8 @@ Le serveur est l’unique source de vérité pour :
 
 ### Supervision — lisibilité des cartes équipe (monitor.html)
 - Affichage des équipes en grille responsive (UI uniquement) :
-  - 2 colonnes à partir du mobile paysage / tablette,
+  - 1 colonne sur mobile étroit (jusqu'à 427px) pour préserver la lisibilité,
+  - 2 colonnes dès 428px (inclut les mobiles larges type iPhone Pro Max et au-delà),
   - 3 à 4 colonnes sur écrans moyens,
   - jusqu'à 5 ou 6 colonnes sur écrans desktop larges.
 - Objectif supervision : maximiser le nombre d'équipes visibles simultanément et limiter le scroll vertical.
