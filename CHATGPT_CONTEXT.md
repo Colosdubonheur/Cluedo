@@ -395,3 +395,21 @@ Ces règles sont **non négociables** et doivent rester alignées avec `api/stat
   - remet l’état supervision dans un état initial cohérent
   - n’affecte pas le code versionné
 - Objectif : faciliter les tests terrain sans manipulation Git.
+
+---
+
+## 11. Hub Cluedo (point d’entrée)
+
+Le `Hub Cluedo` (`index.html`) est le point d’entrée terrain vers les interfaces de l’application.
+
+Le Hub doit proposer des boutons d’accès rapides, visibles et adaptés au tactile pour :
+- `Administration` (`admin.html`)
+- `Supervision` (`monitor.html`)
+- `play.html?id=X` pour chaque personnage (accès joueur)
+- `character.html?id=X` pour chaque personnage (accès interface personnage)
+
+Contraintes :
+- changement UI uniquement
+- aucune modification des règles métier
+- aucun impact gameplay / états / files d’attente / identification
+- aucune modification des routes existantes (URLs et paramètres conservés)
