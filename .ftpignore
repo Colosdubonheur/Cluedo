@@ -1,0 +1,7 @@
+.git/
+.github/
+README.md
+CHATGPT_CONTEXT.md
+*.md
+.DS_Store
+uploads/
