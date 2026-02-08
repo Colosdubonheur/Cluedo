@@ -8,17 +8,14 @@ document.addEventListener("DOMContentLoaded", () => {
   localStorage.setItem(TOKEN_KEY, token);
   sessionStorage.setItem(TOKEN_KEY, token);
 
-  const displayNameEl = document.getElementById("team-display-name");
   const heroTeamNameEl = document.getElementById("team-hero-name");
+  const editNameBtn = document.getElementById("team-edit-name-btn");
   const teamNameInput = document.getElementById("team-name");
   const playersWrap = document.getElementById("team-players");
-  const savePlayersBtn = document.getElementById("save-players");
+  const playerInput = document.getElementById("team-player-input");
+  const addPlayerBtn = document.getElementById("team-player-add-btn");
   const profileForm = document.getElementById("team-profile-form");
   const feedbackName = document.getElementById("team-name-feedback");
-  const participantsGuidanceEl = document.getElementById("team-guidance-participants");
-  const photoGuidanceEl = document.getElementById("team-guidance-photo");
-  const historyEl = document.getElementById("team-history");
-  const globalEl = document.getElementById("team-global");
   const charactersEl = document.getElementById("team-characters");
   const characterSortEl = document.getElementById("team-character-sort");
   const characterFilterUnseenEl = document.getElementById("team-character-filter-unseen");
@@ -35,10 +32,12 @@ document.addEventListener("DOMContentLoaded", () => {
   let isQueueActionInProgress = false;
   let characterSortMode = "name";
   let filterOnlyUnseen = false;
-  let lastMessageText = "";
+  let players = [];
+  let lastMessageKey = "";
 
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
+    if (s === 0) return "Disponible";
     return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   }
 
@@ -46,35 +45,12 @@ document.addEventListener("DOMContentLoaded", () => {
     return String(name || "").trim().length > 0;
   }
 
-  function getPlayers() {
-    return Array.from(playersWrap.querySelectorAll("input")).map((input) => input.value.trim());
-  }
-
-  function countValidPlayers(players) {
-    return players.filter((name) => name.length > 0).length;
-  }
-
-  function ensurePlayerInputs(players = []) {
-    playersWrap.innerHTML = "";
-    for (let i = 0; i < 10; i += 1) {
-      const row = document.createElement("div");
-      row.className = "team-input-row";
-      const label = document.createElement("label");
-      label.setAttribute("for", `team-player-${i + 1}`);
-      label.textContent = `Participant ${i + 1}`;
-      const input = document.createElement("input");
-      input.id = `team-player-${i + 1}`;
-      input.type = "text";
-      input.className = "admin-input";
-      input.maxLength = 40;
-      input.placeholder = "Prénom";
-      input.value = players[i] || "";
-      row.append(label, input);
-      playersWrap.appendChild(row);
-    }
+  function countValidPlayers(list) {
+    return list.filter((name) => String(name || "").trim().length > 0).length;
   }
 
   function setFeedback(el, message, status = "neutral") {
+    if (!el) return;
     el.textContent = String(message || "");
     el.classList.remove("is-success", "is-error", "is-processing");
     if (status === "success") el.classList.add("is-success");
@@ -84,30 +60,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function updateTeamNameUi(name) {
     const resolved = String(name || "").trim() || "Équipe sans nom";
-    displayNameEl.textContent = resolved;
     heroTeamNameEl.textContent = resolved;
     if (hasValidTeamName(name)) localStorage.setItem(TEAM_KEY, String(name).trim());
   }
 
   function resolveInitialization(profile) {
     const teamName = String(profile?.team_name || "").trim();
-    const players = Array.isArray(profile?.players) ? profile.players.map((v) => String(v || "").trim()) : [];
-    const validPlayers = countValidPlayers(players);
+    const profilePlayers = Array.isArray(profile?.players)
+      ? profile.players.map((value) => String(value || "").trim()).filter((value) => value.length > 0)
+      : [];
+    const validPlayers = countValidPlayers(profilePlayers);
     const isTeamNameValid = hasValidTeamName(teamName);
     return {
       teamName,
-      players,
+      players: profilePlayers,
       validPlayers,
       isTeamNameValid,
       isReady: isTeamNameValid && validPlayers >= 2,
     };
   }
 
+  function renderPlayers() {
+    playersWrap.innerHTML = "";
+    players.forEach((name, index) => {
+      const item = document.createElement("li");
+      item.className = "team-player-item";
+      const text = document.createElement("span");
+      text.textContent = name;
+      const removeBtn = document.createElement("button");
+      removeBtn.type = "button";
+      removeBtn.className = "team-player-remove";
+      removeBtn.dataset.index = String(index);
+      removeBtn.setAttribute("aria-label", `Supprimer ${name}`);
+      removeBtn.textContent = "✕";
+      item.append(text, removeBtn);
+      playersWrap.appendChild(item);
+    });
+  }
+
+  function getWaitColorClass(row) {
+    const queueTotal = Number(row.queue_total || 0);
+    const waitingCount = Number(row.waiting_count || 0);
+    const hasActiveTeam = queueTotal >= 1;
+    if (hasActiveTeam && waitingCount >= 2) return "is-wait-red";
+    if (hasActiveTeam && waitingCount === 1) return "is-wait-orange";
+    return "is-wait-green";
+  }
+
   async function saveProfile() {
     const payload = {
       token,
       team_name: teamNameInput.value.trim(),
-      players: getPlayers(),
+      players,
     };
 
     const response = await fetch("./api/team_profile.php", {
@@ -143,7 +147,7 @@ document.addEventListener("DOMContentLoaded", () => {
   async function onQueueAction(characterId) {
     if (!latestState || isQueueActionInProgress) return;
 
-    const init = resolveInitialization(latestState.team?.profile || {});
+    const init = resolveInitialization({ team_name: teamNameInput.value, players });
     if (!init.isReady) return;
 
     const currentCharacterId = String(latestState.team?.state?.character_id || "");
@@ -181,7 +185,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     if (rows.length === 0) {
-      charactersEl.innerHTML = '<p class="team-feedback">Aucun personnage à afficher avec ce filtre.</p>';
+      charactersEl.innerHTML = '<p class="team-feedback">Aucun suspect à afficher avec ce filtre.</p>';
       return;
     }
 
@@ -194,17 +198,22 @@ document.addEventListener("DOMContentLoaded", () => {
       item.className = "team-character-item";
 
       const isCurrent = currentCharacterId === String(row.id);
-      const button = `<button type="button" class="admin-button team-character-action-btn" data-id="${String(row.id)}" ${isBlocked || isQueueActionInProgress ? "disabled" : ""}>${isCurrent ? "Quitter cette file" : "Rejoindre la file"}</button>`;
-      const photo = row.photo ? `<img src="${row.photo}" alt="${row.nom}" class="team-character-photo"/>` : "<div class=\"team-character-photo team-character-photo-placeholder\">Photo indisponible</div>";
-      const unseenBadge = seen.has(String(row.id || "")) ? "" : '<p class="team-feedback is-success">Jamais vu</p>';
+      const buttonLabel = isCurrent ? "Quitter cette file" : "Rejoindre la file";
+      const photo = row.photo
+        ? `<img src="${row.photo}" alt="${row.nom}" class="team-character-photo"/>`
+        : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
+      const unseenBadge = seen.has(String(row.id || "")) ? "" : '<span class="team-seen-badge">Jamais vu</span>';
+      const waitClass = getWaitColorClass(row);
 
       item.innerHTML = `
-        <h3>${row.nom || "Personnage"}</h3>
         ${photo}
-        <p><strong>Localisation :</strong> ${row.location || "Non renseignée"}</p>
-        <p><strong>Attente estimée :</strong> ${fmt(row.estimated_wait_seconds || 0)}</p>
-        ${unseenBadge}
-        ${button}
+        <div class="team-character-meta">
+          <h3>${row.nom || "Personnage"}</h3>
+          <p class="team-character-line">🏠 ${row.location || "Non renseignée"}</p>
+          <p class="team-character-line team-character-wait ${waitClass}">⏱ ${fmt(row.estimated_wait_seconds || 0)}</p>
+          ${unseenBadge}
+          <button type="button" class="admin-button team-character-action-btn" data-id="${String(row.id)}" ${isBlocked || isQueueActionInProgress ? "disabled" : ""}>${buttonLabel}</button>
+        </div>
       `;
       list.appendChild(item);
     });
@@ -219,10 +228,11 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  async function maybePlayMessageSound(messageText) {
+  async function maybePlayMessageSound(messageText, createdAt) {
     const enabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
-    if (!enabled || !messageText || messageText === lastMessageText) return;
-    lastMessageText = messageText;
+    const key = `${messageText}::${String(createdAt || 0)}`;
+    if (!enabled || !messageText || key === lastMessageKey) return;
+    lastMessageKey = key;
     messageAudio.currentTime = 0;
     try { await messageAudio.play(); } catch (_error) { /* noop */ }
   }
@@ -233,21 +243,13 @@ document.addEventListener("DOMContentLoaded", () => {
     const missingName = !init.isTeamNameValid;
     const isBlocked = missingName || tooFew || tooMany;
 
-    if (missingName) {
-      setFeedback(participantsGuidanceEl, "Nom d'équipe obligatoire.", "error");
-    } else if (tooFew) {
-      setFeedback(participantsGuidanceEl, "Au moins 2 participants sont requis (max 10).", "error");
-    } else if (tooMany) {
-      setFeedback(participantsGuidanceEl, "Maximum 10 participants autorisés.", "error");
+    if (isBlocked) {
+      setFeedback(lockMessageEl, "Complétez le nom d'équipe et ajoutez entre 2 et 10 participants pour accéder aux files.", "error");
+      setFeedback(characterFeedbackEl, "Actions sur les files bloquées tant que les informations de l'équipe ne sont pas complètes.", "error");
     } else {
-      setFeedback(participantsGuidanceEl, `Équipe initialisée (${init.validPlayers} participants).`, "success");
+      setFeedback(lockMessageEl, "", "neutral");
+      setFeedback(characterFeedbackEl, "Sélectionnez un suspect pour rejoindre ou quitter sa file.", "success");
     }
-
-    lockMessageEl.textContent = isBlocked
-      ? "Blocage actif : vous devez saisir un nom d'équipe et au moins 2 prénoms avant toute action sur les personnages."
-      : "Espace équipe prêt : vous pouvez gérer les files des personnages.";
-    lockMessageEl.classList.toggle("is-error", isBlocked);
-    lockMessageEl.classList.toggle("is-success", !isBlocked);
 
     return isBlocked;
   }
@@ -262,26 +264,30 @@ document.addEventListener("DOMContentLoaded", () => {
     const init = resolveInitialization(profile);
 
     teamNameInput.value = init.teamName;
-    ensurePlayerInputs(init.players);
+    players = [...init.players];
+    renderPlayers();
     updateTeamNameUi(init.teamName);
 
     const isBlocked = renderLockState(init);
     renderCharactersList(state, isBlocked);
 
-    const messageText = String(state.team?.message?.message || "").trim();
+    const messagePayload = state.team?.message || {};
+    const messageText = String(messagePayload.text || "").trim();
     messageEl.textContent = messageText || "Aucun message reçu.";
-    void maybePlayMessageSound(messageText);
+    void maybePlayMessageSound(messageText, messagePayload.created_at || 0);
+  }
 
-    const historyRows = Array.isArray(state.team?.history) ? state.team.history : [];
-    historyEl.innerHTML = historyRows.length
-      ? `<h3>Historique équipe</h3><ul>${historyRows.map((row) => `<li>${row.nom}: ${fmt(row.duration_seconds || 0)}</li>`).join("")}</ul>`
-      : "";
-
-    const teamState = state.team?.state?.state || "free";
-    globalEl.textContent = teamState === "free" ? "Votre équipe n'est dans aucune file." : `État courant : ${teamState}`;
-    photoGuidanceEl.textContent = "La photo d'équipe reste optionnelle.";
-
-    setFeedback(characterFeedbackEl, isBlocked ? "Actions personnages désactivées tant que l'équipe n'est pas initialisée." : "Sélectionnez un personnage pour rejoindre ou quitter sa file.", isBlocked ? "error" : "success");
+  function addPlayerFromInput() {
+    const value = String(playerInput.value || "").trim();
+    if (!value) return;
+    if (players.length >= 10) {
+      setFeedback(feedbackName, "Maximum 10 participants autorisés.", "error");
+      return;
+    }
+    players.push(value);
+    playerInput.value = "";
+    renderPlayers();
+    setFeedback(feedbackName, "", "neutral");
   }
 
   profileForm.addEventListener("submit", async (event) => {
@@ -297,24 +303,42 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  savePlayersBtn.addEventListener("click", () => {
-    profileForm.requestSubmit();
+  addPlayerBtn?.addEventListener("click", addPlayerFromInput);
+
+  playerInput?.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    addPlayerFromInput();
+  });
+
+  playersWrap?.addEventListener("click", (event) => {
+    const target = event.target;
+    if (!(target instanceof HTMLButtonElement)) return;
+    if (!target.classList.contains("team-player-remove")) return;
+    const index = Number(target.dataset.index);
+    if (!Number.isInteger(index) || index < 0 || index >= players.length) return;
+    players.splice(index, 1);
+    renderPlayers();
   });
 
   characterSortEl?.addEventListener("change", () => {
     characterSortMode = characterSortEl.value === "wait" ? "wait" : "name";
-    if (latestState) {
-      const init = resolveInitialization(latestState.team?.profile || {});
-      renderCharactersList(latestState, !init.isReady);
-    }
+    if (!latestState) return;
+    const init = resolveInitialization({ team_name: teamNameInput.value, players });
+    renderCharactersList(latestState, !init.isReady);
   });
 
   characterFilterUnseenEl?.addEventListener("change", () => {
     filterOnlyUnseen = characterFilterUnseenEl.checked;
-    if (latestState) {
-      const init = resolveInitialization(latestState.team?.profile || {});
-      renderCharactersList(latestState, !init.isReady);
-    }
+    if (!latestState) return;
+    const init = resolveInitialization({ team_name: teamNameInput.value, players });
+    renderCharactersList(latestState, !init.isReady);
+  });
+
+  editNameBtn?.addEventListener("click", () => {
+    teamNameInput.focus();
+    teamNameInput.select();
+    teamNameInput.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
   audioEnableBtn?.addEventListener("click", () => {
