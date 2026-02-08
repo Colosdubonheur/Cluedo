@@ -401,6 +401,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const queueTotal = data.file?.total ?? data.queue_length ?? 0;
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
       const activeRemainingBeforeTakeover = data.timers?.active_remaining_before_takeover_seconds;
+      const activeReservedDuration = data.timers?.time_per_player_seconds ?? data.time_per_player ?? 0;
       const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
       // Règle de sécurité métier : ne jamais inférer l'état "active" à partir du temps restant.
       // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
@@ -461,26 +462,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         elResult.style.display = "none";
         notified = false;
       } else {
-        const hasPendingTakeover = Number.isFinite(Number(activeRemainingBeforeTakeover));
+        const hasQueuedTeam = Number(queueTotal) > 1;
+        const nextTeamName = hasQueuedTeam ? (data.file?.next_team_name || "L’équipe suivante") : "";
 
-        if (hasPendingTakeover) {
-          syncLocalTimer("active", Math.max(0, Number(activeRemainingBeforeTakeover) || 0));
-          elTimer.textContent = fmt(localTimerRemaining);
-        } else {
-          stopLocalTimer();
-          elTimer.textContent = "∞";
-        }
+        const configuredTimePerPlayer = Math.max(0, Number(activeReservedDuration) || 0);
+        const serverActiveRemaining = Math.max(0, Number(activeRemainingBeforeTakeover) || 0);
+        const elapsedOnReservedWindow = Math.max(0, configuredTimePerPlayer - serverActiveRemaining);
+        const localActiveRemaining = Math.max(0, configuredTimePerPlayer - elapsedOnReservedWindow);
+
+        syncLocalTimer("active", localActiveRemaining);
+        elTimer.textContent = fmt(localTimerRemaining);
 
         elQueueDetails.style.display = "none";
-        elTimerLabel.textContent = "⏱️ Temps restant avant prise de place";
+        elTimerLabel.textContent = "⏱️ Temps réservé";
         elTimer.style.color = "white";
-        elStatus.textContent = `Vous pouvez continuer à échanger avec ${personnageNom}, mais à tout instant une équipe peut vous prendre la place.`;
+        elStatus.textContent = `Échangez avec ${personnageNom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`;
         elStatus.style.background = "#4ade80";
         elResult.style.display = "block";
-        elMessage.textContent =
-          hasPendingTakeover
-            ? "⚠️ Une équipe attend : la relève sera automatique à la fin du chrono."
-            : `Aucune équipe en attente : vous pouvez continuer avec ${personnageNom} sans limite.`;
+        elMessage.textContent = hasQueuedTeam
+          ? `⚠️ L’équipe « ${nextTeamName} » attend et pourra prendre la place à la fin du temps.`
+          : "";
 
         if (data.photo) {
           elPhoto.src = data.photo;
@@ -488,6 +489,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         } else {
           elPhoto.style.display = "none";
         }
+
 
         if (!notified && unlocked) {
           audio.currentTime = 0;

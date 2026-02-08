@@ -89,63 +89,30 @@ $buffer = max(0, (int) ($p['buffer_before_next'] ?? 15));
 
 $visibleQueue = array_values(array_filter($p['queue'], 'is_initialized_team'));
 $teamNeedsName = $resolvedTeamName === '';
-$handover = isset($p['handover']) && is_array($p['handover']) ? $p['handover'] : null;
 
 $activeRemainingBeforeTakeover = null;
 $firstWaitingEta = null;
 
 if (count($visibleQueue) > 0) {
-  $activeToken = (string) ($visibleQueue[0]['token'] ?? '');
   $activeStartedAt = (int) ($visibleQueue[0]['joined_at'] ?? $now);
   $activeElapsed = max(0, $now - $activeStartedAt);
-  $hasWaitingTeam = count($visibleQueue) > 1;
-  $isOverLimit = $activeElapsed >= $timePerPlayer;
+  $activeReservedRemaining = max(0, $timePerPlayer - $activeElapsed);
 
-  if ($hasWaitingTeam) {
-    $nextToken = (string) ($visibleQueue[1]['token'] ?? '');
+  if ($activeReservedRemaining <= 0 && count($visibleQueue) > 1) {
+    array_shift($visibleQueue);
 
-    if ($isOverLimit) {
-      $isInvalidHandover = !is_array($handover)
-        || ($handover['from_token'] ?? '') !== $activeToken
-        || ($handover['to_token'] ?? '') !== $nextToken
-        || !isset($handover['deadline_at']);
-
-      if ($isInvalidHandover) {
-        $handover = [
-          'from_token' => $activeToken,
-          'to_token' => $nextToken,
-          'started_at' => $now,
-          'deadline_at' => $now + $buffer,
-        ];
-      }
-
-      $handoverRemaining = max(0, (int) ($handover['deadline_at'] ?? $now) - $now);
-      $activeRemainingBeforeTakeover = $handoverRemaining;
-      $firstWaitingEta = $handoverRemaining;
-
-      if ($handoverRemaining <= 0) {
-        array_shift($visibleQueue);
-
-        if (isset($visibleQueue[0])) {
-          $visibleQueue[0]['joined_at'] = $now;
-          $activeRemainingBeforeTakeover = count($visibleQueue) > 1 ? $timePerPlayer + $buffer : null;
-          $firstWaitingEta = count($visibleQueue) > 1 ? $timePerPlayer + $buffer : null;
-        }
-
-        $handover = null;
-      }
-    } else {
-      $remainingQuota = max(0, $timePerPlayer - $activeElapsed);
-      $activeRemainingBeforeTakeover = $remainingQuota + $buffer;
-      $firstWaitingEta = $remainingQuota + $buffer;
-      $handover = null;
+    if (isset($visibleQueue[0])) {
+      $visibleQueue[0]['joined_at'] = $now;
     }
-  } else {
-    $activeRemainingBeforeTakeover = null;
-    $firstWaitingEta = null;
-    $handover = null;
   }
 
+  if (isset($visibleQueue[0])) {
+    $activeStartedAt = (int) ($visibleQueue[0]['joined_at'] ?? $now);
+    $activeElapsed = max(0, $now - $activeStartedAt);
+    $activeReservedRemaining = max(0, $timePerPlayer - $activeElapsed);
+    $activeRemainingBeforeTakeover = $activeReservedRemaining;
+    $firstWaitingEta = $activeReservedRemaining;
+  }
 }
 
 $visibleIndex = null;
@@ -162,18 +129,19 @@ $wait = 0;
 if (!$teamNeedsName && $visibleIndex !== null && $visibleIndex > 0) {
   $wait = max(0, (int) $firstWaitingEta);
   if ($visibleIndex > 1) {
-    $wait += ($visibleIndex - 1) * ($timePerPlayer + $buffer);
+    $wait += ($visibleIndex - 1) * $timePerPlayer;
   }
 }
 
 $previousTeam = ($visibleIndex !== null && $visibleIndex > 0)
   ? (string) ($visibleQueue[$visibleIndex - 1]['team'] ?? '')
   : '';
+$nextTeamName = isset($visibleQueue[1]['team']) ? (string) $visibleQueue[1]['team'] : '';
 $state = $teamNeedsName ? 'need_name' : ($canAccess ? 'active' : 'waiting');
 $legacyState = $canAccess ? 'done' : 'waiting';
 
 $p['queue'] = $visibleQueue;
-$p['handover'] = $handover;
+$p['handover'] = null;
 
 $data[$id] = $p;
 file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -193,11 +161,12 @@ $response = [
     'position' => $teamNeedsName ? null : $visibleIndex,
     'total' => count($visibleQueue),
     'equipe_precedente' => $previousTeam,
+    'next_team_name' => $nextTeamName,
     'temps_attente_estime_seconds' => max(0, (int) $wait),
   ],
   'timers' => [
     'active_remaining_before_takeover_seconds' => $activeRemainingBeforeTakeover,
-    'courtesy_remaining_seconds' => isset($handover['deadline_at']) ? max(0, (int) $handover['deadline_at'] - $now) : null,
+    'courtesy_remaining_seconds' => null,
     'time_per_player_seconds' => $timePerPlayer,
     'buffer_before_next_seconds' => $buffer,
   ],

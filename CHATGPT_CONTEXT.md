@@ -222,12 +222,14 @@ Sur `play` :
   - `equipe_precedente`
 - En état `active` :
   - ne pas afficher la notion de file (`position`, `1/1`, etc.)
-  - afficher un compteur `⏱️ Temps restant avant prise de place`
-  - ce compteur est piloté par la valeur serveur `timers.active_remaining_before_takeover_seconds`
-  - s’il n’existe aucune équipe en attente, le compteur affiche `∞` (aucune relève planifiée)
-  - remplacer le message principal par :
-    `Vous pouvez continuer à échanger avec {personnage.nom}, mais à tout instant une équipe peut vous prendre la place.`
+  - afficher **systématiquement** un countdown `⏱️ Temps réservé`
+  - ce countdown représente le **temps minimum réservé** à l’équipe active (`time_per_player`), indépendamment de la file derrière
+  - ce countdown démarre dès l’accès au personnage et peut atteindre `00:00` sans action serveur tant qu’aucune autre équipe n’attend
   - ne jamais afficher littéralement le mot `personnage` dans les messages UI : utiliser systématiquement `{personnage.nom}`
+  - message principal (fond vert) à afficher en permanence en `active` :
+    `Échangez avec {personnage.nom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`
+  - message d’alerte (⚠️) **uniquement** s’il existe une équipe derrière (`queueTotal > 1`) :
+    `⚠️ L’équipe « {équipe_suivante} » attend et pourra prendre la place à la fin du temps.`
 - États UI :
   - `need_name` : nom d’équipe absent
   - `waiting` : équipe dans la file en attente
@@ -253,11 +255,13 @@ Transition attendue :
   en `active`).
 - **Polling non destructif** : le polling met à jour l'état métier/valeurs serveur mais ne recrée pas le
   timer local à chaque tick ; il ne fait qu'ajuster/synchroniser la valeur si nécessaire.
-- **Règle countdown strictement limitée à l'attente** :
-  - ne jamais démarrer/afficher un countdown quand `state === "active"`,
-  - le timer est autorisé uniquement quand `state === "waiting"`,
-  - si l'équipe est première et le personnage libre (`state === "active"`), afficher directement :
-    `C’est votre tour, vous pouvez accéder au personnage`.
+- **Sémantique countdown en `active` (règle définitive)** :
+  - le countdown en `active` est toujours affiché et vaut `time_per_player - temps_passé` (borné à 0)
+  - il exprime un **temps réservé minimal**, pas une prise de place effective
+  - il ne déclenche jamais, à lui seul, une action serveur
+- **Relève automatique (conditions strictes)** :
+  - une relève est autorisée uniquement si `countdown <= 0` **et** `queueTotal > 1`
+  - si `queueTotal <= 1`, aucune relève automatique, même avec `countdown = 0`
 
 Règles d’identité :
 - utiliser `equipe.id` (token) comme identifiant technique
