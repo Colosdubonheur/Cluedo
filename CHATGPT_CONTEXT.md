@@ -1080,6 +1080,9 @@ Quand les prérequis sont remplis (nom valide + 2 à 10 participants), l'équipe
 Le texte d'état « Espace équipe prêt : vous pouvez gérer les files des personnages » est supprimé.
 
 ### Section Suspects (affichage ligne unique)
+Lorsqu'une équipe est avec un personnage, le statut affiché est :
+« Vous pouvez interroger {nom_du_personnage} ».
+
 Chaque suspect affiche sur une ligne horizontale :
 - photo,
 - nom,

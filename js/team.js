@@ -546,7 +546,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const statusText = teamState.state === "active"
       ? (hasNextTeamWaiting && nextTeamName
         ? `Préparez-vous à libérer la place à l’équipe ${nextTeamName} dans ${fmt(remainingSeconds)}`
-        : "Interrogatoire en cours")
+        : `Vous pouvez interroger ${characterName}`)
       : "";
     const stateClass = teamState.state === "active"
       ? (isCriticalExitAlert ? "is-critical" : (hasNextTeamWaiting ? "is-alert" : "is-active"))
