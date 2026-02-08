@@ -1089,6 +1089,13 @@ Quand les prérequis sont remplis (nom valide + participants renseignés), l'éq
 Le texte d'état « Espace équipe prêt : vous pouvez gérer les files des personnages » est supprimé.
 
 ### Section Suspects (affichage ligne unique)
+Lorsqu'une équipe clique sur un suspect disponible ou en attente depuis la liste des suspects :
+- le suspect sélectionné devient le suspect actif (bloc supérieur),
+- la tuile correspondante disparaît de la liste des suspects,
+- une seule instance visuelle du suspect doit exister à l'écran (aucune duplication).
+
+Quand un suspect est déjà actif (interrogatoire en cours), un clic sur sa tuile dans le bloc actif du haut doit proposer la sortie d'interrogatoire avec confirmation.
+
 Lorsqu'une équipe est avec un personnage, le statut affiché est :
 « Vous pouvez interroger {nom_du_personnage} ».
 

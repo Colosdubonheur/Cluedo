@@ -438,8 +438,6 @@ document.addEventListener("DOMContentLoaded", () => {
     );
     const currentCharacterId = String(state.team?.state?.character_id || "");
     const allRows = Array.isArray(state.global) ? [...state.global] : [];
-    const currentRow = allRows.find((row) => String(row.id || "") === currentCharacterId) || null;
-
     let rows = allRows.filter((row) => String(row.id || "") !== currentCharacterId);
 
     if (filterOnlyUnseen) {
@@ -450,10 +448,6 @@ document.addEventListener("DOMContentLoaded", () => {
       if (characterSortMode === "time") return (a.estimated_wait_seconds || 0) - (b.estimated_wait_seconds || 0);
       return String(a.nom || "").localeCompare(String(b.nom || ""), "fr");
     });
-
-    if (currentRow) {
-      rows.unshift(currentRow);
-    }
 
     if (rows.length === 0) {
       charactersEl.innerHTML = '<p class="team-feedback">Aucun suspect à afficher avec ce filtre.</p>';
@@ -598,6 +592,26 @@ document.addEventListener("DOMContentLoaded", () => {
         </div>
       </div>
     `;
+
+    const cardEl = currentCharacterEl.querySelector(".team-current-character-card");
+    if (!cardEl || teamState.state !== "active" || isQueueActionInProgress) return;
+
+    const triggerLeaveCurrentInterrogation = () => {
+      if (isQueueActionInProgress) return;
+      const confirmed = window.confirm(`Voulez-vous quitter l’interrogatoire avec ${characterName} ?`);
+      if (!confirmed) return;
+      void onQueueAction(currentCharacterId);
+    };
+
+    cardEl.setAttribute("role", "button");
+    cardEl.setAttribute("tabindex", "0");
+    cardEl.setAttribute("aria-label", `Quitter l’interrogatoire avec ${characterName}`);
+    cardEl.addEventListener("click", triggerLeaveCurrentInterrogation);
+    cardEl.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      event.preventDefault();
+      triggerLeaveCurrentInterrogation();
+    });
   }
 
   async function maybePlayMessageSound(messageText, createdAt) {
