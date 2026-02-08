@@ -1,5 +1,38 @@
 # CHATGPT_CONTEXT — Cluedo
 
+## Gouvernance documentaire (règle contractuelle verrouillée)
+
+- `CHATGPT_CONTEXT.md` est la source de vérité contractuelle du projet pour :
+  - les règles métier,
+  - les comportements UI,
+  - les décisions d'architecture,
+  - les conventions fonctionnelles.
+- Toute évolution **fonctionnelle** ou **UI** validée doit obligatoirement être répercutée dans ce fichier, dans la section la plus adaptée, avec un wording clair et non ambigu.
+- Sont explicitement concernés (liste non exhaustive) :
+  - règles d'affichage équipe / personnage / supervision,
+  - libellés exacts visibles à l'écran,
+  - règles de timing, alertes et sons,
+  - comportements liés à la suppression d'équipe,
+  - règles « déjà vu / jamais vu »,
+  - messagerie (ordre, persistance, scroll, sons),
+  - tri et affichage en supervision,
+  - règles d'entrée / sortie de file,
+  - toute suppression ou modification d'un comportement existant.
+
+### Interdictions strictes
+- Il est interdit d'implémenter une règle sans la documenter dans `CHATGPT_CONTEXT.md`.
+- Il est interdit de modifier un comportement existant sans mise à jour explicite de la documentation.
+- Aucun comportement ne doit être considéré comme « évident » s'il n'est pas formalisé dans ce document.
+
+### Processus obligatoire pour chaque demande validée
+1. Implémentation technique.
+2. Mise à jour de `CHATGPT_CONTEXT.md`.
+3. Vérification finale que la documentation reflète exactement le comportement réellement livré.
+
+### Cas à exclure de la documentation
+- Une demande annulée, reportée ou rejetée ne doit pas être ajoutée à `CHATGPT_CONTEXT.md`.
+- En cas d'ambiguïté de formulation, l'implémentation doit être suspendue jusqu'à clarification afin d'éviter une règle documentaire inexacte.
+
 ## Décisions produit verrouillées
 
 - L'**Espace Équipe** (`team.html`) est désormais l'**entrée unique** pour gérer l'engagement dans les files des personnages.
