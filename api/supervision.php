@@ -46,6 +46,7 @@ $action = trim((string) ($_POST['action'] ?? $_GET['action'] ?? ''));
 
 
 if ($method === 'POST' && $action === 'send_message') {
+  $channel = trim((string) ($_POST['channel'] ?? ''));
   $target = trim((string) ($_POST['target'] ?? 'all'));
   $message = trim((string) ($_POST['message'] ?? ''));
 
@@ -60,6 +61,18 @@ if ($method === 'POST' && $action === 'send_message') {
     'text' => substr($message, 0, 300),
     'created_at' => time(),
   ];
+
+  if ($channel === 'team' && str_starts_with($target, 'character:')) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'cible personnage invalide pour le canal équipe'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
+
+  if ($channel === 'character' && ($target === 'all' || str_starts_with($target, 'team:'))) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'cible équipe invalide pour le canal personnage'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
 
   if ($target === 'all') {
     $messages['global'] = $payload;
