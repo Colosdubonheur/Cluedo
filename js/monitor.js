@@ -532,6 +532,18 @@
     renderMessageTargetOptions(getSelectedTarget());
   });
 
+  messageTargetEl.addEventListener("change", () => {
+    const selectedTarget = getSelectedTarget();
+    if (!selectedTarget) return;
+
+    if (messageTargetSearchEl.value) {
+      messageTargetSearchEl.value = "";
+      renderMessageTargetOptions(selectedTarget);
+    }
+
+    messageTargetEl.focus();
+  });
+
   sendMessageBtn.addEventListener("click", async () => {
     const target = getSelectedTarget();
     const text = (messageInputEl.value || "").trim();
