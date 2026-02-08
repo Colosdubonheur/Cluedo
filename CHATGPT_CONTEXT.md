@@ -672,12 +672,16 @@ Contraintes non négociables :
   - Le serveur (`upload.php`) n’accepte que JPEG/PNG/WEBP et rejette tout autre mime.
   - Le message d’erreur doit exposer une raison explicite (format non supporté, réseau, réponse serveur), jamais un échec opaque.
 
-## 12. Version applicative visible sur le Hub
+## 12. Versionnement
 
-- La page Hub (`index.html`) affiche une version applicative en haut à droite, de façon discrète et purement informative.
-- Le format officiel est strictement `YY.MM.DD.HH.mm` (année sur 2 chiffres, mois/jour/heure/minute sur 2 chiffres).
-- Règle verrouillée : la version est générée à partir de l'heure réelle du serveur, au moment effectif de la génération, sans cache ni valeur figée.
-- Source unique de vérité : génération côté serveur dans `api/version.php`, puis affichage côté UI.
+- La page Hub (`index.html`) affiche une version applicative visible (zone dédiée en haut à droite), purement informative.
+- Le format officiel est strictement `V AAMM.X` (affichage sans espace : ex. `V2602.4`).
+- `AA` = année sur 2 chiffres ; `MM` = mois sur 2 chiffres ; `X` = compteur incrémental.
+- Règle d’incrémentation verrouillée :
+  - `X` démarre à `1` au début de chaque nouveau mois (`AAMM`),
+  - puis augmente de `+1` à chaque évolution livrée (correctif, UX, ajout, correction).
+- Source de vérité unique : version définie côté dépôt/serveur dans `data/app_version.txt`, lue et exposée par `api/version.php`.
+- Interdiction verrouillée : la version est indépendante du poste utilisateur (pas d’horloge client, pas de génération via `Date.now()` ou équivalent).
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
 
 ## 11. Team UX technique (stabilité terrain)
