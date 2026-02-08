@@ -84,40 +84,23 @@ $data[$id] = $p;
 file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
 /* -------------------------------------------------
-   6️⃣ Réponse JSON
+   6️⃣ Réponse JSON (une seule sortie)
 ------------------------------------------------- */
+$response = [
   "id" => $id,
   "nom" => $p['nom'],
   "photo" => $p['photo'] ?? "",
   "position" => $index,
+  "queue_length" => count($p['queue']),
+  "wait_remaining" => max(0, $wait),
+  "time_per_player" => $timePerPlayer,
   "buffer_before_next" => $buffer
-], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+];
 
-if ($index === null) {
-  $p['queue'][] = [
-    "token" => $token,
-    "joined_at" => $now
-  ];
-  $index = count($p['queue']) - 1;
-}
-
-/* -------------------------------------------------
-   4️⃣ Calcul du temps d’attente
-------------------------------------------------- */
-$timePerPlayer = (int)($p['time_per_player'] ?? 120);
-$buffer = (int)($p['buffer_before_next'] ?? 15);
-
-$wait = 0;
-
-// Si quelqu’un est avant moi
-if ($index > 0) {
-  $first = $p['queue'][0];
-  $elapsedFirst = $now - $first['joined_at'];
-  $remainingFirst = max(0, $timePerPlayer - $elapsedFirst);
-
-  $wait += $remainingFirst;
-  $wait += ($index - 1) * $timePerPlayer;
-}
+echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+// Obligatoire pour empêcher toute sortie additionnelle (debug/whitespace/includes) après le JSON.
+exit;
+
 
 // Tampon obligatoire avant passage
 if ($index > 0) {
