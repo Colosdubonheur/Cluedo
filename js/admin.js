@@ -88,6 +88,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const ids = Object.keys(data).sort((a, b) => Number(a) - Number(b));
 
+  const setPhotoPreview = (id, src) => {
+    const card = document.getElementById(`player-${id}`);
+    if (!card) return;
+    const preview = card.querySelector(".admin-photo");
+    if (!preview) return;
+
+    if (!src) {
+      preview.classList.add("is-hidden");
+      preview.removeAttribute("src");
+      return;
+    }
+
+    preview.src = src;
+    preview.classList.remove("is-hidden");
+  };
+
   for (const id of ids) {
     const p = data[id];
 
@@ -114,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       <input class="nom admin-input" data-id="${id}" value="${p.nom || ""}" />
 
       <label class="admin-label">Photo</label>
-      ${p.photo ? `<img src="${p.photo}" alt="Photo ${p.nom || `personnage ${id}`}" class="admin-photo" />` : ""}
+      <img ${p.photo ? `src="${p.photo}"` : ""} alt="Photo ${p.nom || `personnage ${id}`}" class="admin-photo${p.photo ? "" : " is-hidden"}" />
       <input type="file" accept="image/*" class="photo" data-id="${id}" />
 
       <label class="admin-label">Temps de passage (secondes)</label>
@@ -143,6 +159,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       const file = input.files[0];
       if (!file) return;
 
+      const previousPhoto = data[id].photo || "";
+      const previewUrl = URL.createObjectURL(file);
+      setPhotoPreview(id, previewUrl);
+
       const fd = new FormData();
       fd.append("id", id);
       fd.append("file", file);
@@ -156,11 +176,15 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const j = await r.json();
       if (!j.ok) {
+        URL.revokeObjectURL(previewUrl);
+        setPhotoPreview(id, previousPhoto);
         alert("Erreur upload");
         return;
       }
 
       data[id].photo = j.path;
+      setPhotoPreview(id, j.path);
+      URL.revokeObjectURL(previewUrl);
       alert("Photo enregistrée 👍");
     });
   });

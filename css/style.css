@@ -22,13 +22,17 @@ body {
 .card { background: var(--card); border-radius: 14px; padding: 14px; }
 .play { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
 .bigTimer { font-size: 64px; font-weight: 800; }
+
 .badge { padding: 6px 10px; border-radius: 999px; font-weight: 700; }
 .badge.wait { background: var(--warn); color: #000; }
 .badge.ok { background: var(--ok); color: #000; }
 
+/* ===================== HUB ===================== */
+
 .hub-card { display: flex; flex-direction: column; gap: 18px; }
 .hub-section h2 { margin: 0 0 10px; font-size: 1.2rem; }
 .hub-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+
 .hub-character-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
 .hub-character-card {
   background: #10151f;
@@ -38,6 +42,7 @@ body {
 }
 .hub-character-title { margin: 0 0 10px; font-size: 1rem; color: #dbe7ff; }
 .hub-character-actions { display: grid; gap: 8px; }
+
 .hub-button {
   display: flex;
   align-items: center;
@@ -59,19 +64,27 @@ body {
 .hub-button:focus-visible { background: var(--accent-hover); }
 
 .hub-button-secondary { background: #334155; }
-.hub-button-secondary:hover,
-.hub-button-secondary:focus-visible { background: #3f516d; }
+.hub-button-secondary:hover { background: #3f516d; }
 
 .hub-button-qr { background: #16a34a; }
-.hub-button-qr:hover,
-.hub-button-qr:focus-visible { background: #15803d; }
+.hub-button-qr:hover { background: #15803d; }
 
 .hub-desktop-only { display: none; }
 
+/* ===================== ADMIN ===================== */
+
 .admin-page { padding-bottom: 32px; }
+
 .admin-subtitle { color: var(--muted); margin-top: -6px; }
 .admin-open-access { color: #6ee7b7; margin-top: -6px; }
-.admin-label { display: block; margin: 0 0 8px; font-size: 14px; color: var(--muted); }
+
+.admin-label {
+  display: block;
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
 .admin-input {
   width: 100%;
   padding: 12px;
@@ -81,24 +94,56 @@ body {
   background: #0f131d;
   color: var(--text);
 }
+
 .admin-button,
 .admin-save-button,
-.admin-nav-button { border: none; border-radius: 10px; cursor: pointer; }
-.admin-button { padding: 12px 14px; font-size: 15px; background: #3b82f6; color: #fff; }
-.admin-save-button { width: 100%; padding: 14px; font-size: 18px; margin-top: 20px; background: #16a34a; color: #fff; }
+.admin-nav-button {
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+}
+
+.admin-button {
+  padding: 12px 14px;
+  font-size: 15px;
+  background: #3b82f6;
+  color: #fff;
+}
+
+.admin-save-button {
+  width: 100%;
+  padding: 14px;
+  font-size: 18px;
+  margin-top: 20px;
+  background: #16a34a;
+  color: #fff;
+}
+
 .admin-quick-nav,
 .admin-global-actions { margin-bottom: 16px; }
+
 .admin-quick-nav h2,
 .admin-global-actions h2 { margin: 0 0 10px; font-size: 18px; }
+
 .admin-quick-nav-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.admin-nav-button { padding: 8px 12px; background: #243042; color: #dbe7ff; font-size: 14px; }
+
+.admin-nav-button {
+  padding: 8px 12px;
+  background: #243042;
+  color: #dbe7ff;
+  font-size: 14px;
+}
 .admin-nav-button:hover { background: #31445f; }
+
 .admin-global-actions-row { display: flex; flex-direction: column; gap: 10px; }
 .admin-global-actions-controls { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
 .admin-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
+
 .admin-player-card h3 { margin-top: 0; }
 .admin-player-card .admin-input,
 .admin-player-card .photo { margin-bottom: 12px; }
+
 .admin-photo {
   width: 100%;
   max-height: 200px;
@@ -107,6 +152,8 @@ body {
   margin-bottom: 8px;
   background: #0b0f16;
 }
+
+/* ===================== MEDIA QUERIES ===================== */
 
 @media (min-width: 768px) {
   .hub-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
