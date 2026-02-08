@@ -112,12 +112,6 @@ $response = [
 
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 exit;
-   6️⃣ Réponse JSON
-------------------------------------------------- */
-echo json_encode([
-  "id" => $id,
-  "nom" => $p['nom'],
-  "photo" => $p['photo'] ?? "",
   "position" => $index,
   "queue_length" => count($p['queue']),
   "wait_remaining" => max(0, $wait),
