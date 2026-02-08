@@ -108,9 +108,6 @@ echo json_encode([
   'ok' => true,
   'path' => $relativePath,
 ]);
-}
-
-echo json_encode([
   "ok" => true,
   "path" => "uploads/" . $name
 ]);
