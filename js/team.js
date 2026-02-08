@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const AUDIO_ENABLED_KEY = "cluedo_team_audio_enabled";
   const MESSAGE_HISTORY_VERSION = "v1";
   const SEEN_THRESHOLD_SECONDS = 30;
+  const DEFAULT_TEAM_NAME = "Équipe sans nom";
 
   const params = new URLSearchParams(window.location.search);
   const tokenFromUrl = String(params.get("token") || "").trim();
@@ -168,7 +169,8 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function hasValidTeamName(name) {
-    return String(name || "").trim().length > 0;
+    const resolved = String(name || "").trim();
+    return resolved.length > 0 && resolved !== DEFAULT_TEAM_NAME;
   }
 
   function countValidPlayers(list) {
@@ -202,7 +204,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function updateTeamNameUi(name) {
-    const resolved = String(name || "").trim() || "Équipe sans nom";
+    const resolved = String(name || "").trim() || DEFAULT_TEAM_NAME;
     heroTeamNameEl.textContent = resolved;
     if (hasValidTeamName(name)) localStorage.setItem(TEAM_KEY, String(name).trim());
   }
@@ -219,7 +221,7 @@ document.addEventListener("DOMContentLoaded", () => {
       players: profilePlayers,
       validPlayers,
       isTeamNameValid,
-      isReady: isTeamNameValid && validPlayers >= 2,
+      isReady: isTeamNameValid && validPlayers > 0,
     };
   }
 
@@ -625,13 +627,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderLockState(init) {
-    const tooFew = init.validPlayers < 2;
-    const tooMany = init.validPlayers > 10;
+    const missingParticipants = init.validPlayers <= 0;
     const missingName = !init.isTeamNameValid;
-    const isBlocked = missingName || tooFew || tooMany;
+    const isBlocked = missingName || missingParticipants;
 
     if (isBlocked) {
-      setFeedback(lockMessageEl, "Complétez le nom d'équipe et ajoutez entre 2 et 10 participants pour interroger les suspects.", "error");
+      setFeedback(lockMessageEl, "Complétez le nom de l’équipe et renseignez l’ensemble des participants de votre équipe pour interroger les personnages.", "error");
       setFeedback(characterFeedbackEl, "Interrogatoires bloqués tant que les informations de l'équipe ne sont pas complètes.", "error");
     } else {
       setFeedback(lockMessageEl, "", "neutral");
