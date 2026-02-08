@@ -396,6 +396,10 @@ Ces règles sont **non négociables** et doivent rester alignées avec `api/stat
   - n’affecte pas le code versionné
 - Objectif : faciliter les tests terrain sans manipulation Git.
 
+## 11. Navigation Hub
+
+- `admin.html` dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`.
+- `supervision.html` (implémentée via `monitor.html`) dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`.
 ---
 
 ## 11. Hub Cluedo (point d’entrée)
