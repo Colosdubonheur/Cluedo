@@ -198,6 +198,49 @@ document.addEventListener("DOMContentLoaded", () => {
     await loadHub();
   }
 
+
+  function initAccordion() {
+    const items = Array.from(document.querySelectorAll("[data-accordion-item]"));
+    const triggers = Array.from(document.querySelectorAll("[data-accordion-trigger]"));
+
+    if (!items.length || !triggers.length) {
+      return;
+    }
+
+    function openItem(itemToOpen) {
+      for (const item of items) {
+        const trigger = item.querySelector("[data-accordion-trigger]");
+        const panel = item.querySelector(".team-accordion-panel");
+        const isOpen = item === itemToOpen;
+
+        item.classList.toggle("is-open", isOpen);
+        if (trigger) {
+          trigger.setAttribute("aria-expanded", isOpen ? "true" : "false");
+        }
+        if (panel) {
+          panel.hidden = !isOpen;
+        }
+      }
+    }
+
+    for (const trigger of triggers) {
+      trigger.addEventListener("click", () => {
+        const item = trigger.closest("[data-accordion-item]");
+        if (!item) {
+          return;
+        }
+        const isCurrentlyOpen = item.classList.contains("is-open");
+        if (isCurrentlyOpen) {
+          return;
+        }
+        openItem(item);
+      });
+    }
+
+    const defaultOpen = items.find((item) => item.classList.contains("is-open")) || items[0];
+    openItem(defaultOpen);
+  }
+
   async function initQrScanner() {
     if (!window.Html5QrcodeScanner) {
       qrFeedback.textContent = "Scanner QR indisponible sur cet appareil.";
@@ -274,6 +317,7 @@ document.addEventListener("DOMContentLoaded", () => {
     historyEl.textContent = "Erreur de chargement.";
     globalEl.textContent = "Erreur de chargement.";
   });
+  initAccordion();
   initQrScanner();
   setInterval(() => {
     loadHub().catch(() => {});

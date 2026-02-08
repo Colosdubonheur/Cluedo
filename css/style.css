@@ -314,7 +314,48 @@ body {
 /* ===================== TEAM HUB ===================== */
 
 .team-page { padding-bottom: 40px; }
-.team-block { margin-bottom: 14px; }
+.team-accordion { display: grid; gap: 14px; }
+.team-block { margin-bottom: 0; }
+.team-accordion-heading { margin: 0; }
+.team-accordion-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+}
+.team-accordion-trigger:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 5px;
+  border-radius: 8px;
+}
+.team-accordion-icon {
+  transition: transform 0.2s ease;
+  color: var(--muted);
+}
+.team-accordion-item.is-open .team-accordion-icon {
+  transform: rotate(180deg);
+}
+.team-accordion-panel {
+  margin-top: 12px;
+  border-top: 1px solid #2a3142;
+  padding-top: 12px;
+}
+.team-accordion-panel h3 {
+  margin: 0 0 10px;
+  font-size: 1rem;
+}
+.team-accordion-panel h3 + div {
+  margin-bottom: 12px;
+}
 .team-token {
   font-size: 13px;
   color: var(--muted);
