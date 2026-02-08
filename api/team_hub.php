@@ -54,17 +54,40 @@ if (!is_array($data)) {
 
 $changed = cluedo_enforce_character_visibility($data);
 
-$historyPath = __DIR__ . '/../data/team_history.json';
-$history = ['teams' => []];
-if (file_exists($historyPath)) {
-  $decodedHistory = json_decode((string) file_get_contents($historyPath), true);
-  if (is_array($decodedHistory)) {
-    $history = $decodedHistory;
+function cluedo_team_hub_history_path(): string
+{
+  return __DIR__ . '/../data/team_history.json';
+}
+
+function cluedo_team_hub_load_history(): array
+{
+  $path = cluedo_team_hub_history_path();
+  if (!file_exists($path)) {
+    return ['teams' => []];
   }
+
+  $decoded = json_decode((string) file_get_contents($path), true);
+  if (!is_array($decoded)) {
+    return ['teams' => []];
+  }
+
+  if (!isset($decoded['teams']) || !is_array($decoded['teams'])) {
+    $decoded['teams'] = [];
+  }
+
+  return $decoded;
 }
-if (!isset($history['teams']) || !is_array($history['teams'])) {
-  $history['teams'] = [];
+
+function cluedo_team_hub_save_history(array $history): void
+{
+  if (!isset($history['teams']) || !is_array($history['teams'])) {
+    $history['teams'] = [];
+  }
+
+  file_put_contents(cluedo_team_hub_history_path(), json_encode($history, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
+
+$history = cluedo_team_hub_load_history();
 
 $profilesStore = cluedo_load_team_profiles();
 $profile = cluedo_get_team_profile($profilesStore, $token);
@@ -81,6 +104,7 @@ $teamState = [
   'queue_total' => null,
 ];
 $global = [];
+$teamActiveStartedAt = null;
 $activeCharacterIds = array_fill_keys(array_map('strval', array_keys(cluedo_get_active_characters($data))), true);
 
 foreach ($data as $characterId => $character) {
@@ -121,6 +145,9 @@ foreach ($data as $characterId => $character) {
       'position' => (int) $index,
       'queue_total' => count($queue),
     ];
+    if ($index === 0) {
+      $teamActiveStartedAt = (int) ($entry['joined_at'] ?? $now);
+    }
     break;
   }
 
@@ -140,7 +167,62 @@ foreach ($data as $characterId => $character) {
 
 file_put_contents($dataPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-$teamHistory = $history['teams'][$token] ?? ['history' => []];
+if (!isset($history['teams'][$token]) || !is_array($history['teams'][$token])) {
+  $history['teams'][$token] = ['team_name' => '', 'current' => null, 'history' => []];
+}
+if (!isset($history['teams'][$token]['history']) || !is_array($history['teams'][$token]['history'])) {
+  $history['teams'][$token]['history'] = [];
+}
+
+$teamHistoryRow = $history['teams'][$token];
+$current = is_array($teamHistoryRow['current'] ?? null) ? $teamHistoryRow['current'] : null;
+$isActiveNow = $teamState['state'] === 'active' && (string) ($teamState['character_id'] ?? '') !== '';
+
+if ($isActiveNow) {
+  $activeCharacterId = (string) $teamState['character_id'];
+  $activeCharacterName = (string) ($teamState['character_name'] ?? '');
+  $startedAt = max(0, (int) ($teamActiveStartedAt ?? $now));
+
+  if (!is_array($current)) {
+    $teamHistoryRow['current'] = [
+      'personnage_id' => $activeCharacterId,
+      'personnage_nom' => $activeCharacterName,
+      'started_at' => $startedAt,
+    ];
+  } else {
+    $currentCharacterId = (string) ($current['personnage_id'] ?? '');
+    if ($currentCharacterId !== $activeCharacterId) {
+      $previousStartedAt = (int) ($current['started_at'] ?? $now);
+      $teamHistoryRow['history'][] = [
+        'personnage_id' => $currentCharacterId,
+        'personnage_nom' => (string) ($current['personnage_nom'] ?? ''),
+        'started_at' => $previousStartedAt,
+        'ended_at' => $now,
+      ];
+      $teamHistoryRow['current'] = [
+        'personnage_id' => $activeCharacterId,
+        'personnage_nom' => $activeCharacterName,
+        'started_at' => $startedAt,
+      ];
+    } elseif ((int) ($current['started_at'] ?? 0) <= 0 || $startedAt < (int) ($current['started_at'] ?? 0)) {
+      $teamHistoryRow['current']['started_at'] = $startedAt;
+    }
+  }
+} elseif (is_array($current)) {
+  $startedAt = (int) ($current['started_at'] ?? $now);
+  $teamHistoryRow['history'][] = [
+    'personnage_id' => (string) ($current['personnage_id'] ?? ''),
+    'personnage_nom' => (string) ($current['personnage_nom'] ?? ''),
+    'started_at' => $startedAt,
+    'ended_at' => $now,
+  ];
+  $teamHistoryRow['current'] = null;
+}
+
+$history['teams'][$token] = $teamHistoryRow;
+cluedo_team_hub_save_history($history);
+
+$teamHistory = $history['teams'][$token] ?? ['history' => [], 'current' => null];
 $rows = isset($teamHistory['history']) && is_array($teamHistory['history']) ? $teamHistory['history'] : [];
 $rows = array_values(array_filter($rows, function ($row) {
   return isset($row['personnage']) && is_array($row['personnage']);
@@ -163,6 +245,23 @@ foreach ($rows as $row) {
   }
 
   $totalsByCharacter[$characterId]['duration_seconds'] += max(0, (int) ($row['duration_seconds'] ?? 0));
+}
+
+$currentPassage = is_array($teamHistory['current'] ?? null) ? $teamHistory['current'] : null;
+if ($currentPassage !== null) {
+  $characterId = (string) ($currentPassage['personnage_id'] ?? '');
+  if ($characterId !== '' && isset($activeCharacterIds[$characterId])) {
+    if (!isset($totalsByCharacter[$characterId])) {
+      $totalsByCharacter[$characterId] = [
+        'id' => $characterId,
+        'nom' => (string) ($currentPassage['personnage_nom'] ?? ''),
+        'duration_seconds' => 0,
+      ];
+    }
+
+    $startedAt = (int) ($currentPassage['started_at'] ?? $now);
+    $totalsByCharacter[$characterId]['duration_seconds'] += max(0, $now - $startedAt);
+  }
 }
 
 $recap = array_values($totalsByCharacter);
