@@ -691,3 +691,48 @@ Contraintes non négociables :
 - Les erreurs techniques brutes ne doivent pas être exposées aux joueurs ; l’interface doit afficher des messages UX compréhensibles et actionnables.
 - Ces points sont techniques/UX uniquement et ne modifient aucune règle métier verrouillée (file, token, statut, timers).
 
+
+## 14. Stratégie cache production « zéro bug cache »
+
+### Décision retenue (cache busting)
+- Option B implémentée (compatible mutualisé, sans build obligatoire) : **`?v=<hash contenu serveur>`** injecté côté serveur via `cluedo_asset_url()`.
+- Source de vérité unique : `includes/cache.php` calcule un hash MD5 tronqué (fallback `filemtime`) pour chaque asset local.
+- Les pages `*.html` sont interprétées par PHP (directive `.htaccess`) pour injecter automatiquement les URLs versionnées dans les balises `<link>` / `<script>`.
+- Interdiction respectée : aucun versionnement basé sur l’heure locale navigateur.
+
+### Règles de headers HTTP
+- HTML (`*.html`) : no-cache strict côté navigateur via `cluedo_send_html_no_cache_headers()` :
+  - `Cache-Control: no-cache, no-store, must-revalidate`
+  - `Pragma: no-cache`
+  - `Expires: 0`
+- API / données dynamiques (`/api/*.php`) : no-cache strict via double protection :
+  - `api/_bootstrap.php` (headers applicatifs systématiques)
+  - `.htaccess` (headers forcés serveur)
+- Assets statiques :
+  - **avec `v=`** : `Cache-Control: public, max-age=31536000, immutable`
+  - **sans `v=`** : `Cache-Control: public, max-age=300, must-revalidate`
+
+### Stratégie CDN Cloudflare (sans purge globale)
+- Principe :
+  - HTML : bypass / TTL très court (pas d’edge cache long)
+  - API (`/api/*`) : bypass cache total
+  - Assets versionnés (`/css/*`, `/js/*`, `/assets/*`, `/uploads/*` avec `v=`) : cache edge long autorisé
+- Règles recommandées Cloudflare :
+  1. `* /jeux/cluedo/api/*` → Cache Level: Bypass
+  2. `* /jeux/cluedo/*.html*` → Cache Level: Bypass (ou Edge TTL très court)
+  3. `* /jeux/cluedo/css/*`, `* /jeux/cluedo/js/*`, `* /jeux/cluedo/assets/*`, `* /jeux/cluedo/uploads/*` → cache autorisé (idéalement uniquement URLs versionnées)
+- Conséquence : déploiement sans « Purge Everything » ; les nouveaux assets sont servis via nouvelle clé d’URL (`?v=`).
+
+### État PWA / Service Worker
+- Vérification effectuée : aucun `service-worker.js`, `sw.js` ou manifest PWA détecté dans le dépôt actuel.
+- Donc : aucune logique SW ajoutée (conforme à la contrainte « ne rien ajouter s’il n’y a pas de SW »).
+
+### Procédure de déploiement sans bug cache
+1. Déployer le code (HTML/PHP/JS/CSS/images).
+2. Ouvrir une page HTML : vérifier que CSS/JS/favicons locaux ont bien `?v=<hash>`.
+3. Vérifier headers :
+   - HTML = no-store
+   - API = no-store
+   - assets `?v=` = `max-age=31536000, immutable`
+4. Si Cloudflare actif, valider que les règles Cache Rules ci-dessus sont en place.
+5. Ne pas lancer de purge globale ; uniquement purge ciblée exceptionnelle si un fichier non versionné subsiste.
