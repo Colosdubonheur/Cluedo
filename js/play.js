@@ -112,7 +112,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let pollTimeoutId = null;
   let hasFatalError = false;
-  let needNamePromptInFlight = false;
+  let hasAutoPromptedNeedName = false;
+  let teamNameInitializationLocked = hasValidUserTeamName(teamName);
+  let localTimerIntervalId = null;
+  let localTimerMode = "none";
+  let localTimerRemaining = 0;
+  let localTimerLastTickAt = 0;
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -142,6 +147,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       clearTimeout(pollTimeoutId);
       pollTimeoutId = null;
     }
+
+    stopLocalTimer();
 
     elCharacterLine.textContent = "Erreur";
     elTeamLine.textContent = "";
@@ -243,6 +250,63 @@ document.addEventListener("DOMContentLoaded", async () => {
     await updateTeamNameOnServer(newName);
   }
 
+  function stopLocalTimer() {
+    localTimerMode = "none";
+    localTimerRemaining = 0;
+    localTimerLastTickAt = 0;
+  }
+
+  function syncLocalTimer(mode, serverSeconds) {
+    const nextSeconds = Math.max(0, Number(serverSeconds) || 0);
+
+    if (localTimerMode !== mode) {
+      localTimerMode = mode;
+      localTimerRemaining = nextSeconds;
+      localTimerLastTickAt = Date.now();
+      return;
+    }
+
+    if (localTimerLastTickAt === 0) {
+      localTimerRemaining = nextSeconds;
+      localTimerLastTickAt = Date.now();
+      return;
+    }
+
+    if (nextSeconds < localTimerRemaining - 1) {
+      localTimerRemaining = nextSeconds;
+      localTimerLastTickAt = Date.now();
+    }
+  }
+
+  function ensureLocalTimerLoop() {
+    if (localTimerIntervalId) {
+      return;
+    }
+
+    localTimerIntervalId = setInterval(() => {
+      if (hasFatalError || localTimerMode === "none" || localTimerLastTickAt === 0) {
+        return;
+      }
+
+      const now = Date.now();
+      const deltaSec = (now - localTimerLastTickAt) / 1000;
+      if (deltaSec <= 0) {
+        return;
+      }
+
+      localTimerRemaining = Math.max(0, localTimerRemaining - deltaSec);
+      localTimerLastTickAt = now;
+
+      if (localTimerMode === "waiting") {
+        const current = fmt(localTimerRemaining);
+        elTimer.textContent = current;
+        elEstimatedWait.textContent = current;
+      } else if (localTimerMode === "active") {
+        elTimer.textContent = fmt(localTimerRemaining);
+      }
+    }, 250);
+  }
+
   elSetNameBtn.onclick = async () => {
     const name = askTeamName(teamName || "");
     if (!name) {
@@ -256,8 +320,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const initialized = await initializeTeamNameOnServer(name);
     if (initialized) {
+      teamNameInitializationLocked = true;
+      hasAutoPromptedNeedName = false;
       elNeedName.style.display = "none";
-      await loop();
     }
   };
 
@@ -275,8 +340,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (!hasValidUserTeamName(teamName)) {
+      teamNameInitializationLocked = false;
       teamName = "";
       localStorage.removeItem(TEAM_KEY);
+      stopLocalTimer();
       elNeedName.style.display = "block";
       elStatus.textContent = "Merci de saisir le nom de votre équipe";
       elStatus.style.background = "#fbbf24";
@@ -284,11 +351,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
       document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
 
-      if (!needNamePromptInFlight) {
-        needNamePromptInFlight = true;
+      if (!hasAutoPromptedNeedName) {
+        hasAutoPromptedNeedName = true;
         setTimeout(() => {
           elSetNameBtn.click();
-          needNamePromptInFlight = false;
         }, 50);
       }
 
@@ -338,8 +404,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       const state = data.state === "need_name" ? "need_name" : (hasExplicitAccess ? "active" : "waiting");
 
       if (state === "need_name" || !hasValidNameFromServer) {
+        teamNameInitializationLocked = false;
         teamName = "";
         localStorage.removeItem(TEAM_KEY);
+        stopLocalTimer();
         elNeedName.style.display = "block";
         elStatus.textContent = "Merci de saisir le nom de votre équipe";
         elStatus.style.background = "#fbbf24";
@@ -347,11 +415,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
         document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
 
-        if (!needNamePromptInFlight) {
-          needNamePromptInFlight = true;
+        if (!teamNameInitializationLocked && !hasAutoPromptedNeedName) {
+          hasAutoPromptedNeedName = true;
           setTimeout(() => {
             elSetNameBtn.click();
-            needNamePromptInFlight = false;
           }, 50);
         }
 
@@ -360,6 +427,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       teamName = equipeNom;
+      teamNameInitializationLocked = true;
+      hasAutoPromptedNeedName = false;
       localStorage.setItem(TEAM_KEY, teamName);
 
       elCharacterLine.textContent = `Vous allez voir : ${personnageNom}`;
@@ -373,18 +442,22 @@ document.addEventListener("DOMContentLoaded", async () => {
       elPreviousTeam.textContent = previousTeam || "Aucune";
 
       if (state === "waiting") {
-        elTimer.textContent = fmt(waitRemaining);
+        syncLocalTimer("waiting", waitRemaining);
+        const waitingText = fmt(localTimerRemaining);
+        elTimer.textContent = waitingText;
         elStatus.textContent = `Équipe en attente`;
         elStatus.style.background = "#fbbf24";
         elResult.style.display = "none";
         notified = false;
       } else {
         if (myRemaining > 0) {
-          elTimer.textContent = fmt(myRemaining);
+          syncLocalTimer("active", myRemaining);
+          elTimer.textContent = fmt(localTimerRemaining);
           elStatus.textContent = "C’est votre tour, vous pouvez accéder au personnage";
           elStatus.style.background = "#fbbf24";
           elResult.style.display = "none";
         } else {
+          stopLocalTimer();
           elTimer.textContent = "00:00";
           elStatus.textContent = "C’est votre tour, vous pouvez accéder au personnage";
           elStatus.style.background = "#4ade80";
@@ -417,5 +490,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     pollTimeoutId = setTimeout(loop, 1000);
   }
 
+  ensureLocalTimerLoop();
   loop();
 });
