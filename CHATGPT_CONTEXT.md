@@ -207,6 +207,7 @@ Le serveur est l’unique source de vérité pour :
 
 ### Messagerie supervision (outil unifié équipes + personnages)
 - Le point d'émission unique est **Supervision** (`monitor.html`) avec **un seul outil de messagerie** (une seule liste, un seul champ message, un seul bouton d'envoi).
+- Dans `monitor.html`, aucun texte d'aide/notice explicative ne doit être affiché dans le bloc de messagerie ; l'usage repose uniquement sur les libellés des champs et actions.
 - La liste de ciblage est unique et ordonnée strictement ainsi :
   1. `teams_and_characters:all` → **Tout le monde (équipes + personnages)**
   2. `teams:all` → **Toutes les équipes**
