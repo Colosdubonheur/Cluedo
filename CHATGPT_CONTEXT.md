@@ -853,3 +853,10 @@ Contraintes non négociables :
   - affichage côté `team.html`,
   - **informatif uniquement** : aucun impact sur gameplay, files, rotations ou timers.
 Si une dépendance liée à un ancien mécanisme visuel/code devait réapparaître, elle doit être explicitement validée côté métier avant réintroduction.
+
+
+## Navigation centrale (Hub)
+
+- Le **Hub** (`index.html`) est le **point de navigation central** de l'application.
+- **Toutes les pages** utilisateur et admin accessibles directement (ex. `admin.html`, `team.html`, `play.html`, `character.html`, `monitor.html`) doivent proposer un bouton/lien explicite **« Retour au Hub »**.
+- Ce retour vers `index.html` doit rester immédiat, visible et homogène sur desktop, tablette et mobile (pas de menu caché).
