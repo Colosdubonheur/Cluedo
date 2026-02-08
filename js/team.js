@@ -548,10 +548,6 @@ document.addEventListener("DOMContentLoaded", () => {
         ? `Préparez-vous à libérer la place à l’équipe ${nextTeamName} dans ${fmt(remainingSeconds)}`
         : "Interrogatoire en cours")
       : "";
-    const waitClass = teamState.state === "active"
-      ? (isCriticalExitAlert ? "is-wait-critical" : (hasNextTeamWaiting ? "is-wait-orange" : "is-wait-green"))
-      : "";
-    const waitValue = fmt(remainingSeconds);
     const stateClass = teamState.state === "active"
       ? (isCriticalExitAlert ? "is-critical" : (hasNextTeamWaiting ? "is-alert" : "is-active"))
       : "is-waiting";
@@ -583,7 +579,6 @@ document.addEventListener("DOMContentLoaded", () => {
             <h3>${characterName}</h3>
             <p class="team-character-line team-character-location" title="${locationText}" aria-label="${locationText}">📍 ${locationText}</p>
             ${statusText ? `<p class="team-current-state ${stateClass}">${statusText}</p>` : ""}
-            <p class="team-character-line team-character-wait ${waitClass}">${teamState.state === "active" ? "⏱ Temps restant :" : "⏱ Votre interrogatoire commence dans environ :"} ${waitValue}</p>
           </div>
         </div>
       </div>

@@ -82,10 +82,11 @@
 
 ### team.html — logique fonctionnelle documentée
 - L’équipe sélectionne un suspect puis entre dans un interrogatoire (ou une attente implicite), sans visualiser la notion de file.
+- La page `team.html` n’affiche **aucun chronomètre dédié** (« Temps restant ») : le temps est communiqué uniquement via les messages contextuels.
 - Le bouton STOP correspond à une sortie volontaire de l’interrogatoire (ou de l’attente implicite).
 - Lorsqu’une autre équipe arrive sur le même suspect :
   - l’état visuel change,
-  - le chronomètre devient orange,
+  - le message contextuel passe en alerte (orange/rouge selon seuil),
   - le message « Préparez-vous à libérer la place » apparaît.
 
 ### Séparation stricte UI / métier
