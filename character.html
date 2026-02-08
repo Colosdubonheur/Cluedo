@@ -17,11 +17,16 @@ cluedo_send_html_no_cache_headers();
   <div class="container">
     <h1>🎭 Interface personnage</h1>
     <div id="characterName" class="card">Chargement…</div>
-    <section class="card character-supervision-message" style="margin-top:12px" aria-live="polite">
-      <h3>Messages supervision</h3>
-      <p id="characterSupervisionMessage" class="character-supervision-message-text">Aucun message pour le moment.</p>
-    </section>
     <div id="currentTeam" class="card character-active-team" style="margin-top:12px"></div>
+    <section class="card character-supervision-message" style="margin-top:12px" aria-live="polite">
+      <div class="team-notifications-header">
+        <h3>Messages supervision</h3>
+        <button id="character-audio-enable-btn" type="button" class="admin-button team-audio-button is-disabled" aria-pressed="false">🔔 Activer le son</button>
+      </div>
+      <div id="characterSupervisionMessage" class="team-message-history" aria-label="Historique des messages supervision" aria-live="polite">
+        <p class="team-message-empty">Aucun message reçu.</p>
+      </div>
+    </section>
     <div id="queue" class="card character-waiting-queue" style="margin-top:12px"></div>
     <section class="card character-photo-card" style="margin-top:12px">
       <h3>Photo du personnage</h3>

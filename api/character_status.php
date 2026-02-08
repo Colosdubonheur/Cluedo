@@ -5,6 +5,7 @@ require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_queue_runtime.php';
 require_once __DIR__ . '/_character_visibility.php';
 require_once __DIR__ . '/_supervision_messages_store.php';
+require_once __DIR__ . '/_team_profiles_store.php';
 
 $id = $_GET['id'] ?? null;
 if (!$id) {
@@ -46,13 +47,25 @@ $current = null;
 $waiting = [];
 
 if (isset($queue[0])) {
+  $activeToken = (string) ($queue[0]['token'] ?? '');
+  $profilesStore = cluedo_load_team_profiles();
+  $activeProfile = cluedo_get_team_profile($profilesStore, $activeToken);
+  $activePlayers = array_values(array_filter(array_map(function ($name) {
+    return trim((string) $name);
+  }, isset($activeProfile['players']) && is_array($activeProfile['players']) ? $activeProfile['players'] : []), function ($name) {
+    return $name !== '';
+  }));
+
   $elapsed = max(0, $now - (int) ($queue[0]['joined_at'] ?? $now));
   $remaining = max(0, $timePerPlayer - $elapsed);
   $current = [
-    'token' => (string) ($queue[0]['token'] ?? ''),
+    'token' => $activeToken,
     'team' => (string) ($queue[0]['team'] ?? ''),
     'remaining_seconds' => $remaining,
     'state' => 'active',
+    'players' => $activePlayers,
+    'photo' => (string) ($activeProfile['photo'] ?? ''),
+    'incomplete_team_penalty' => !empty($activeProfile['incomplete_team_penalty']),
   ];
 }
 

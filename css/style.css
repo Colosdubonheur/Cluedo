@@ -1112,13 +1112,77 @@ body {
 }
 
 .character-active-team {
-  border: 1px solid #22c55e;
+  border: 2px solid #22c55e;
+  background: linear-gradient(180deg, rgba(34, 197, 94, 0.15), rgba(30, 41, 59, 0.9));
+}
+
+.character-active-team h3 {
+  margin-top: 0;
+}
+
+.character-active-team-priority {
+  display: grid;
+  gap: 8px;
+}
+
+.character-active-team-name {
+  margin: 0;
+  font-size: clamp(1.4rem, 5vw, 2rem);
+  font-weight: 900;
+}
+
+.character-active-team-identity {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 12px;
+  align-items: start;
+}
+
+.character-active-team-photo,
+.character-active-team-photo-placeholder {
+  width: 92px;
+  height: 92px;
+  border-radius: 14px;
+  border: 2px solid #f8fafc;
+}
+
+.character-active-team-photo {
+  object-fit: cover;
+  display: block;
+}
+
+.character-active-team-photo-placeholder {
+  display: grid;
+  place-items: center;
+  background: #334155;
+  font-size: 2rem;
+}
+
+.character-active-team-state,
+.character-active-team-remaining,
+.character-active-team-players-title,
+.character-active-team-players-empty {
+  margin: 0 0 6px;
+}
+
+.character-active-team-players {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 2px;
 }
 
 .character-active-team-actions {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.character-active-team-actions .admin-button {
+  font-size: 1rem;
+  padding: 12px 14px;
+  font-weight: 800;
 }
 
 .character-waiting-queue {

@@ -43,6 +43,7 @@ function cluedo_get_team_profile(array $store, string $token): array
       'team_name' => '',
       'players' => array_fill(0, 10, ''),
       'photo' => '',
+      'incomplete_team_penalty' => false,
     ];
   }
 
@@ -56,5 +57,6 @@ function cluedo_get_team_profile(array $store, string $token): array
     'team_name' => trim((string) ($profile['team_name'] ?? '')),
     'players' => $players,
     'photo' => trim((string) ($profile['photo'] ?? '')),
+    'incomplete_team_penalty' => !empty($profile['incomplete_team_penalty']),
   ];
 }
