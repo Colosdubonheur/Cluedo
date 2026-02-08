@@ -7,12 +7,14 @@
         "last_access_at": 0,
         "queue": [
             {
-                "token": "test1",
-                "joined_at": 1770504217
+                "token": "test",
+                "team": "Equipe sans nom",
+                "joined_at": 1770511874
             },
             {
-                "token": "test2",
-                "joined_at": 1770504229
+                "token": "7b81a767-2304-42d3-9763-6c00304ae83c",
+                "team": "Les Defifou",
+                "joined_at": 1770511905
             }
         ]
     },
