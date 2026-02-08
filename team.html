@@ -7,122 +7,73 @@ cluedo_send_html_no_cache_headers();
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>Cluedo - Équipe</title>
+  <title>Cluedo — Espace Équipe</title>
   <link rel="stylesheet" href="<?= htmlspecialchars(cluedo_asset_url('./css/style.css'), ENT_QUOTES, "UTF-8") ?>"/>
   <link rel="icon" href="<?= htmlspecialchars(cluedo_asset_url('./favicon.ico'), ENT_QUOTES, "UTF-8") ?>" type="image/x-icon"/>
-  <script src="https://unpkg.com/html5-qrcode" defer></script>
-  <script src="<?= htmlspecialchars(cluedo_asset_url('./js/photo-upload.js'), ENT_QUOTES, "UTF-8") ?>" defer></script>
-  <script src="<?= htmlspecialchars(cluedo_asset_url('./js/team.js'), ENT_QUOTES, "UTF-8") ?>" defer></script>
 </head>
 <body>
   <div class="hub-app-version" data-app-version aria-label="Version applicative"></div>
-  <main class="container team-page">
-    <header class="card team-hero" aria-label="Nom de l'équipe">
-      <p class="team-kicker">Espace équipe</p>
-      <div class="team-hero-main">
-        <h1 id="team-display-name" class="team-display-name">Équipe sans nom</h1>
-        <button id="team-edit-name-btn" type="button" class="admin-button team-edit-name-btn" aria-label="Modifier le nom de l'équipe">✏️</button>
-      </div>
-      <p id="team-name-feedback" class="team-feedback"></p>
-    </header>
+  <div class="container">
+    <h1>👥 Espace Équipe</h1>
 
-    <section class="card team-guidance" aria-label="Guidage équipe">
-      <h2 class="team-guidance-title">✅ Vérifications avant de jouer</h2>
-      <p id="team-guidance-participants" class="team-guidance-message" role="status" aria-live="polite"></p>
-      <p id="team-guidance-photo" class="team-guidance-message" role="status" aria-live="polite"></p>
+    <section class="card team-block team-profile-block" aria-label="Profil équipe">
+      <h2>Profil équipe</h2>
+      <p id="team-display-name" class="team-display-name">Équipe sans nom</p>
+      <div class="team-profile-actions">
+        <button id="team-edit-name-btn" type="button" class="admin-button team-profile-edit-btn">Modifier le nom de l'équipe</button>
+      </div>
+      <form id="team-profile-form" class="team-form" autocomplete="off">
+        <div class="team-input-row">
+          <label for="team-name">Nom d'équipe</label>
+          <input id="team-name" type="text" class="admin-input" maxlength="40" placeholder="Ex: Équipe rouge"/>
+        </div>
+        <div id="team-players" class="team-players"></div>
+        <button id="save-players" type="button" class="admin-button">Sauvegarder les joueurs</button>
+        <button type="submit" class="admin-button team-profile-save-name-btn">Enregistrer le nom</button>
+        <p id="team-name-feedback" class="team-feedback"></p>
+      </form>
+
+      <div class="team-photo-block">
+        <h3>Photo d'équipe</h3>
+        <img id="team-photo" alt="Photo équipe" style="display:none;max-width:220px;border-radius:10px;"/>
+        <div class="team-photo-actions">
+          <input id="team-photo-input" type="file" accept="image/*"/>
+        </div>
+      </div>
     </section>
 
-
-    <section class="card team-supervision-message" aria-label="Messages supervision">
-      <h2>📣 Message supervision</h2>
-      <div class="team-audio-controls" aria-live="polite">
-        <button id="team-audio-enable-btn" type="button" class="admin-button">🔔 Activer le son</button>
-        <p id="team-audio-status" class="team-feedback">Le son est désactivé. Activez-le pour recevoir les notifications.</p>
-      </div>
-      <p id="team-supervision-message" class="team-supervision-message-text">Aucun message de la supervision.</p>
+    <section class="card team-block" aria-label="Notifications supervision">
+      <h2>Notifications</h2>
+      <button id="team-audio-enable-btn" type="button" class="admin-button team-audio-button" aria-pressed="false">🔔 Activer le son</button>
+      <p id="team-audio-status" class="team-feedback">Le son est désactivé.</p>
+      <p id="team-supervision-message" class="team-feedback">Aucun message supervision.</p>
     </section>
 
-    <section class="card team-block team-qr-block" aria-label="Scanner QR code">
-      <h2>📱 Scanner QR code (optionnel)</h2>
-      <p class="team-feedback">Le QR code est un raccourci. Vous pouvez aussi gérer les files directement depuis la liste des personnages ci-dessous.</p>
-      <div class="team-qr-actions" aria-label="Actions de scan QR">
-        <button id="team-qr-start-camera" type="button" class="admin-button team-qr-primary-btn">Scanner un QR code (caméra)</button>
-        <button id="team-qr-import-btn" type="button" class="admin-button team-qr-secondary-btn">Importer une image</button>
-        <input id="team-qr-file-input" type="file" accept="image/*" class="team-qr-file-input"/>
-      </div>
-      <div id="team-qr-reader" aria-live="polite"></div>
-      <p id="team-qr-feedback" class="team-feedback"></p>
-    </section>
-
-
-
-    <section class="card team-block" aria-label="Liste des personnages">
-      <h2>🧭 Personnages & files</h2>
+    <section class="card team-block" aria-label="Files personnages">
+      <h2>Files des personnages</h2>
+      <p class="team-feedback">Rejoignez ou quittez une file directement depuis cette liste.</p>
       <div class="team-character-toolbar">
-        <label class="admin-label" for="team-character-sort">Trier par</label>
-        <select id="team-character-sort" class="admin-input">
+        <label for="team-character-sort" class="team-character-sort-label">Trier par</label>
+        <select id="team-character-sort" class="admin-input team-character-sort-select">
           <option value="name">Nom</option>
-          <option value="wait">Temps d'attente</option>
+          <option value="wait">Attente</option>
         </select>
       </div>
-      <p id="team-character-feedback" class="team-feedback" role="status" aria-live="polite"></p>
-      <div id="team-characters">Chargement…</div>
+      <p id="team-character-feedback" class="team-feedback"></p>
+      <div id="team-characters" class="team-characters">Chargement…</div>
     </section>
 
-    <section class="team-accordion" aria-label="Sections de l'espace équipe">
-      <article class="card team-block team-accordion-item" data-accordion-item>
-        <h2 class="team-accordion-heading">
-          <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-stats" id="team-accordion-trigger-stats">
-            <span>📊 Résumé & état du jeu <span class="team-accordion-hint">(appuyer pour ouvrir)</span></span>
-            <span class="team-accordion-icon" aria-hidden="true">▾</span>
-          </button>
-        </h2>
-        <div class="team-accordion-panel" id="team-accordion-panel-stats" role="region" aria-labelledby="team-accordion-trigger-stats" hidden>
-          <h3>Personnages déjà vus</h3>
-          <div id="team-history">Chargement…</div>
-
-          <h3>État global (actif / attente)</h3>
-          <div id="team-global">Chargement…</div>
-        </div>
-      </article>
-
-      <article class="card team-block team-accordion-item" data-accordion-item>
-        <h2 class="team-accordion-heading">
-          <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-participants" id="team-accordion-trigger-participants">
-            <span>👥 Participants <span class="team-accordion-hint">(appuyer pour ouvrir)</span></span>
-            <span class="team-accordion-icon" aria-hidden="true">▾</span>
-          </button>
-        </h2>
-        <div class="team-accordion-panel" id="team-accordion-panel-participants" role="region" aria-labelledby="team-accordion-trigger-participants" hidden>
-          <form id="team-profile-form" class="team-form">
-            <label class="admin-label" for="team-name">Nom de l'équipe</label>
-            <input id="team-name" class="admin-input" maxlength="80" placeholder="Nom affiché"/>
-            <button type="submit" class="admin-button">Enregistrer le nom</button>
-
-            <h3>Joueurs (max 10)</h3>
-            <div id="team-players" class="team-players"></div>
-            <button id="save-players" type="button" class="admin-button">Enregistrer</button>
-          </form>
-        </div>
-      </article>
-
-      <article class="card team-block team-accordion-item" data-accordion-item>
-        <h2 class="team-accordion-heading">
-          <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-photo" id="team-accordion-trigger-photo">
-            <span>📷 Photo d'équipe <span class="team-accordion-hint">(appuyer pour ouvrir)</span></span>
-            <span class="team-accordion-icon" aria-hidden="true">▾</span>
-          </button>
-        </h2>
-        <div class="team-accordion-panel" id="team-accordion-panel-photo" role="region" aria-labelledby="team-accordion-trigger-photo" hidden>
-          <div class="team-photo-wrap">
-            <img id="team-photo" class="admin-photo team-photo-square" alt="Photo d'équipe"/>
-            <input id="team-photo-input" type="file" accept="image/jpeg,image/png,image/webp"/>
-            <p class="team-feedback">Image carrée + crop obligatoire. Envoi optimisé pour mobile/iOS.</p>
-          </div>
-        </div>
-      </article>
+    <section class="card team-block" aria-label="État équipe">
+      <h2>État équipe</h2>
+      <p id="team-guidance-participants" class="team-feedback"></p>
+      <p id="team-guidance-photo" class="team-feedback"></p>
+      <div id="team-history" class="team-history"></div>
+      <div id="team-global" class="team-global"></div>
     </section>
-  </main>
+  </div>
+
+  <script src="<?= htmlspecialchars(cluedo_asset_url('./js/photo-upload.js'), ENT_QUOTES, "UTF-8") ?>" defer></script>
   <script src="<?= htmlspecialchars(cluedo_asset_url('./js/app-version.js'), ENT_QUOTES, "UTF-8") ?>" defer></script>
+  <script src="<?= htmlspecialchars(cluedo_asset_url('./js/team.js'), ENT_QUOTES, "UTF-8") ?>" defer></script>
 </body>
 </html>
