@@ -809,3 +809,31 @@ body {
     grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 }
+
+.team-character-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.team-character-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+
+.team-character-item {
+  border: 1px solid #2a3142;
+  border-radius: 10px;
+  padding: 10px;
+  display: grid;
+  gap: 4px;
+}
+
+.team-character-action {
+  margin-top: 6px;
+}

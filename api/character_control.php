@@ -7,6 +7,7 @@ require_once __DIR__ . '/_character_visibility.php';
 $payload = json_decode((string) file_get_contents('php://input'), true);
 $id = $payload['id'] ?? null;
 $action = $payload['action'] ?? null;
+$location = trim((string) ($payload['location'] ?? ''));
 
 if (!$id || !$action) {
   http_response_code(400);
@@ -23,6 +24,13 @@ if (!isset($data[$id])) {
 }
 
 $changed = cluedo_enforce_character_visibility($data);
+
+if ($action === 'set_location') {
+  $data[$id]['location'] = $location;
+  file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+  echo json_encode(['ok' => true, 'changed' => true, 'location' => $location]);
+  exit;
+}
 
 if (!cluedo_character_is_active($data[$id])) {
   if ($changed) {

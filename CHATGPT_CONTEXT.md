@@ -19,7 +19,7 @@ Le système garantit :
 ## 2. Acteurs du système
 
 ### Équipes (côté joueurs)
-- Une équipe correspond à **un scan de QR code**
+- Une équipe correspond à un **token d'équipe stable** (persisté côté client).
 - L’équipe saisit un **nom d’équipe** (libellé utilisateur)
 - Le nom d’équipe :
   - est purement déclaratif
@@ -89,18 +89,19 @@ Le serveur est l’unique source de vérité pour :
 
 ## 5. Flux utilisateur
 
-1. Scan d’un QR code → sélection implicite du personnage
-2. Saisie du nom d’équipe (une seule fois)
-3. Entrée dans la file du personnage
-4. Affichage :
+1. Accès à l'Espace Équipe (`team.html`)
+2. Sélection d'un personnage depuis la liste centrale (le QR reste un raccourci optionnel)
+3. Saisie/correction du nom d'équipe
+4. Entrée dans la file du personnage
+5. Affichage :
    - personnage à rencontrer
    - nom de l’équipe
    - position
    - temps estimé
    - équipe précédente
-5. Possibilité de corriger le nom d’équipe **sans quitter la file**
-6. Passage avec le personnage
-7. Sortie de la file
+6. Possibilité de corriger le nom d’équipe **sans quitter la file**
+7. Passage avec le personnage
+8. Sortie de la file (uniquement action explicite équipe ou logique serveur de relève)
 
 ### Comportement UX play.html après sortie (état `free`)
 - Le front de `play.html` doit réagir uniquement sur le signal serveur (`state = free`).
@@ -111,6 +112,24 @@ Le serveur est l’unique source de vérité pour :
      - `Fermer cette page` (nouvelle tentative de fermeture).
 - La session équipe (token) et le nom d’équipe restent conservés (pas de recréation d’équipe, pas de ressaisie de nom).
 - Aucun état bloquant ne doit subsister côté joueur après passage en `free` (mobile et desktop, Safari iOS inclus).
+
+
+### Règles métier (files depuis l'Espace Équipe)
+- Le QR code n'est **jamais obligatoire** pour rejoindre une file.
+- Une équipe ne peut être engagée que dans **une seule file** à la fois (waiting ou active).
+- Si l'équipe tente de rejoindre un autre personnage alors qu'elle est déjà engagée, une **confirmation explicite** est obligatoire.
+- En cas de confirmation de changement de personnage :
+  - l'ancienne place est perdue immédiatement,
+  - l'équipe est retirée proprement de l'ancienne file,
+  - l'équipe rejoint la nouvelle file demandée.
+- Aucune sortie de file ne doit être déclenchée par des événements navigateur (`close`, `blur`, `sleep`, `visibilitychange`).
+
+### Donnée personnage `location`
+- Chaque personnage expose un champ texte libre `location` (emplacement physique).
+- `location` est éditable :
+  - par l'administration (`admin.html`),
+  - par le personnage lui-même (`character.html`).
+- Côté interface personnage, une confirmation explicite est requise avant persistance de la modification.
 
 ### Complément UX team.html (scan QR PC / mobile)
 - `team.html` propose un scan QR adapté au mobile, à la tablette et au PC.

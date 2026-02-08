@@ -93,9 +93,13 @@ foreach ($data as $characterId => $character) {
   $global[] = [
     'id' => (string) $characterId,
     'nom' => (string) ($character['nom'] ?? ''),
+    'location' => (string) ($character['location'] ?? ''),
+    'state' => count($queue) > 0 ? 'queue' : 'available',
+    'queue_total' => count($queue),
     'active_team_name' => $activeTeamName,
     'waiting_count' => $waitingCount,
     'estimated_wait_seconds' => $estimatedWait,
+    'is_current_team_engagement' => $teamState['character_id'] === (string) $characterId,
   ];
 }
 

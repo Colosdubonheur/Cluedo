@@ -8,6 +8,9 @@
   const characterPhotoEl = document.getElementById("characterPhoto");
   const characterPhotoInputEl = document.getElementById("characterPhotoInput");
   const characterPhotoButtonEl = document.getElementById("characterPhotoButton");
+  const characterLocationInputEl = document.getElementById("characterLocationInput");
+  const characterLocationButtonEl = document.getElementById("characterLocationButton");
+  const characterLocationFeedbackEl = document.getElementById("characterLocationFeedback");
 
   let currentPhoto = "";
 
@@ -76,11 +79,20 @@
     });
   }
 
-  async function control(action) {
+  function setLocationFeedback(message, status = "neutral") {
+    if (!characterLocationFeedbackEl) return;
+    characterLocationFeedbackEl.textContent = String(message || "");
+    characterLocationFeedbackEl.classList.remove("is-success", "is-error", "is-processing");
+    if (status === "success") characterLocationFeedbackEl.classList.add("is-success");
+    if (status === "error") characterLocationFeedbackEl.classList.add("is-error");
+    if (status === "processing") characterLocationFeedbackEl.classList.add("is-processing");
+  }
+
+  async function control(action, extraPayload = {}) {
     await fetch("./api/character_control.php", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ id, action }),
+      body: JSON.stringify({ id, action, ...extraPayload }),
     });
     refresh();
   }
@@ -104,6 +116,9 @@
 
     currentPhoto = character.photo || "";
     setPhotoPreview(currentPhoto);
+    if (characterLocationInputEl) {
+      characterLocationInputEl.value = character.location || "";
+    }
 
     const activeTeam = payload.current || payload.active || payload.active_team || null;
     const waitingQueue = Array.isArray(payload.queue)
@@ -151,6 +166,32 @@
   });
 
   characterPhotoInputEl.addEventListener("change", uploadCharacterPhoto);
+
+  if (characterLocationButtonEl) {
+    characterLocationButtonEl.addEventListener("click", async () => {
+      const location = (characterLocationInputEl?.value || "").trim();
+      const confirmed = window.confirm("Confirmer la mise à jour de l'emplacement du personnage ?");
+      if (!confirmed) {
+        setLocationFeedback("Mise à jour annulée.");
+        return;
+      }
+
+      setLocationFeedback("Mise à jour en cours…", "processing");
+      const response = await fetch("./api/character_control.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id, action: "set_location", location }),
+      });
+      const payload = await response.json().catch(() => ({ ok: false }));
+      if (!response.ok || !payload.ok) {
+        setLocationFeedback("Impossible de mettre à jour l'emplacement.", "error");
+        return;
+      }
+
+      setLocationFeedback("Emplacement mis à jour.", "success");
+      refresh();
+    });
+  }
 
   refresh();
   setInterval(refresh, 2000);

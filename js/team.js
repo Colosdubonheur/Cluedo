@@ -27,6 +27,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const qrFileInput = document.getElementById("team-qr-file-input");
   const historyEl = document.getElementById("team-history");
   const globalEl = document.getElementById("team-global");
+  const charactersEl = document.getElementById("team-characters");
+  const characterSortEl = document.getElementById("team-character-sort");
+  const characterFeedbackEl = document.getElementById("team-character-feedback");
   const participantsGuidanceEl = document.getElementById("team-guidance-participants");
   const photoGuidanceEl = document.getElementById("team-guidance-photo");
   const supervisionMessageEl = document.getElementById("team-supervision-message");
@@ -45,6 +48,8 @@ document.addEventListener("DOMContentLoaded", () => {
   let isSavingTeamName = false;
   let isTeamNameEditMode = false;
   let lastRenderedMessage = "";
+  let characterSortMode = "name";
+  let isQueueActionInProgress = false;
 
   const notificationAudio = new Audio("./assets/ding.mp3");
   notificationAudio.preload = "auto";
@@ -238,6 +243,149 @@ document.addEventListener("DOMContentLoaded", () => {
     previousTeamState = nextState;
   }
 
+  function setCharacterFeedback(message, status = "neutral") {
+    if (!characterFeedbackEl) return;
+    characterFeedbackEl.textContent = String(message || "");
+    characterFeedbackEl.classList.remove("is-success", "is-error", "is-processing");
+    if (status === "success") characterFeedbackEl.classList.add("is-success");
+    if (status === "error") characterFeedbackEl.classList.add("is-error");
+    if (status === "processing") characterFeedbackEl.classList.add("is-processing");
+  }
+
+  async function joinCharacterQueue(characterId, forceSwitch = false) {
+    const query = new URLSearchParams({
+      id: String(characterId),
+      token,
+      join: "1",
+      t: String(Date.now()),
+    });
+
+    const teamName = profileTeamName();
+    if (teamName) {
+      query.set("team_name", teamName);
+    }
+
+    if (forceSwitch) {
+      query.set("force_switch", "1");
+    }
+
+    const response = await fetch(`./api/status.php?${query.toString()}`);
+    const payload = await response.json();
+
+    if (!response.ok || payload?.error) {
+      throw new Error(payload?.error || "join failed");
+    }
+
+    return payload;
+  }
+
+  async function leaveCharacterQueue(characterId) {
+    const response = await fetch("./api/leave_queue.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: String(characterId), token }),
+    });
+
+    const payload = await response.json();
+    if (!response.ok || !payload?.ok) {
+      throw new Error(payload?.error || "leave failed");
+    }
+  }
+
+  async function handleCharacterAction(characterId, action) {
+    if (isQueueActionInProgress) return;
+
+    isQueueActionInProgress = true;
+    setCharacterFeedback("Mise à jour de la file en cours…", "processing");
+
+    try {
+      if (action === "leave") {
+        const confirmedLeave = window.confirm("Confirmer la sortie de la file en cours ?");
+        if (!confirmedLeave) {
+          setCharacterFeedback("Sortie annulée.");
+          return;
+        }
+
+        await leaveCharacterQueue(characterId);
+        setCharacterFeedback("Vous avez quitté la file.", "success");
+        await loadHub();
+        return;
+      }
+
+      const payload = await joinCharacterQueue(characterId, false);
+      if (payload?.state === "already_in_queue") {
+        const currentCharacter = payload.current_engagement?.personnage_nom || "le personnage actuel";
+        const confirmedSwitch = window.confirm(
+          `Vous êtes déjà engagé(e) avec ${currentCharacter}.\n\n` +
+          "Confirmez-vous l'abandon de votre place actuelle pour rejoindre ce nouveau personnage ?"
+        );
+
+        if (!confirmedSwitch) {
+          setCharacterFeedback("Changement de personnage annulé.");
+          return;
+        }
+
+        await joinCharacterQueue(characterId, true);
+        setCharacterFeedback("Changement confirmé : ancienne place perdue, nouvelle file rejointe.", "success");
+        await loadHub();
+        return;
+      }
+
+      setCharacterFeedback("File rejointe avec succès.", "success");
+      await loadHub();
+    } catch (_error) {
+      setCharacterFeedback("Action impossible pour le moment.", "error");
+    } finally {
+      isQueueActionInProgress = false;
+    }
+  }
+
+  function renderCharactersList(payload) {
+    if (!charactersEl) return;
+
+    const global = Array.isArray(payload.global) ? payload.global.slice() : [];
+    if (!global.length) {
+      charactersEl.textContent = "Aucun personnage disponible pour le moment.";
+      return;
+    }
+
+    if (characterSortMode === "wait") {
+      global.sort((a, b) => (Number(a.estimated_wait_seconds) || 0) - (Number(b.estimated_wait_seconds) || 0));
+    } else {
+      global.sort((a, b) => String(a.nom || "").localeCompare(String(b.nom || ""), "fr"));
+    }
+
+    charactersEl.innerHTML = `<ul class="team-character-list">${global
+      .map((entry) => {
+        const id = escapeHtml(entry.id);
+        const name = escapeHtml(entry.nom || `Personnage ${entry.id}`);
+        const location = escapeHtml(entry.location || "Emplacement non renseigné");
+        const stateLabel = entry.state === "queue" ? "file" : "disponible";
+        const queueTotal = Number(entry.queue_total) || 0;
+        const isCurrent = entry.is_current_team_engagement === true;
+        const actionLabel = isCurrent ? "Quitter la file" : "Rejoindre la file";
+        const action = isCurrent ? "leave" : "join";
+
+        return `<li class="team-character-item">
+          <div><strong>${name}</strong></div>
+          <div>État : ${escapeHtml(stateLabel)}</div>
+          <div>Attente estimée : ${fmt(entry.estimated_wait_seconds)}</div>
+          <div>Équipes engagées : ${queueTotal}</div>
+          <div>Emplacement : ${location}</div>
+          <button type="button" class="admin-button team-character-action" data-character-id="${id}" data-character-action="${action}">${escapeHtml(actionLabel)}</button>
+        </li>`;
+      })
+      .join("")}</ul>`;
+
+    charactersEl.querySelectorAll("[data-character-action]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const characterId = button.getAttribute("data-character-id") || "";
+        const action = button.getAttribute("data-character-action") || "join";
+        await handleCharacterAction(characterId, action);
+      });
+    });
+  }
+
   function ensurePlayerInputs() {
     const existing = playersWrap.querySelectorAll("input[data-player-index]");
     if (existing.length === 10) {
@@ -334,10 +482,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const global = Array.isArray(payload.global) ? payload.global : [];
     globalEl.innerHTML = global.length
       ? `<ul>${global
-        .map((entry) => `<li><strong>${escapeHtml(entry.nom || `Personnage ${entry.id}`)}</strong> — état : ${escapeHtml(entry.active_team_name ? "actif" : "attente")}, attente moyenne : ${fmt(entry.estimated_wait_seconds)}, équipes en attente : ${Number(entry.waiting_count) || 0}</li>`)
+        .map((entry) => `<li><strong>${escapeHtml(entry.nom || `Personnage ${entry.id}`)}</strong> — état : ${escapeHtml(entry.active_team_name ? "actif" : "disponible")}, attente moyenne : ${fmt(entry.estimated_wait_seconds)}, équipes en attente : ${Number(entry.waiting_count) || 0}</li>`)
         .join("")}</ul>`
       : "Aucune donnée globale disponible pour le moment.";
 
+    renderCharactersList(payload);
     maybePromptCloseOnFree(payload.team?.state?.state || "free");
   }
 
@@ -788,6 +937,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     await loadHub();
   });
+
+  if (characterSortEl) {
+    characterSortEl.addEventListener("change", () => {
+      characterSortMode = characterSortEl.value === "wait" ? "wait" : "name";
+      if (latestState) {
+        renderCharactersList(latestState);
+      }
+    });
+  }
 
   if (audioEnableBtn) {
     audioEnableBtn.addEventListener("click", () => {

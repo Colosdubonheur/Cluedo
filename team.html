@@ -43,8 +43,8 @@ cluedo_send_html_no_cache_headers();
     </section>
 
     <section class="card team-block team-qr-block" aria-label="Scanner QR code">
-      <h2>📱 Scanner QR code</h2>
-      <p class="team-feedback">Scannez puis ouvrez immédiatement le lien du personnage.</p>
+      <h2>📱 Scanner QR code (optionnel)</h2>
+      <p class="team-feedback">Le QR code est un raccourci. Vous pouvez aussi gérer les files directement depuis la liste des personnages ci-dessous.</p>
       <div class="team-qr-actions" aria-label="Actions de scan QR">
         <button id="team-qr-start-camera" type="button" class="admin-button team-qr-primary-btn">Scanner un QR code (caméra)</button>
         <button id="team-qr-import-btn" type="button" class="admin-button team-qr-secondary-btn">Importer une image</button>
@@ -52,6 +52,21 @@ cluedo_send_html_no_cache_headers();
       </div>
       <div id="team-qr-reader" aria-live="polite"></div>
       <p id="team-qr-feedback" class="team-feedback"></p>
+    </section>
+
+
+
+    <section class="card team-block" aria-label="Liste des personnages">
+      <h2>🧭 Personnages & files</h2>
+      <div class="team-character-toolbar">
+        <label class="admin-label" for="team-character-sort">Trier par</label>
+        <select id="team-character-sort" class="admin-input">
+          <option value="name">Nom</option>
+          <option value="wait">Temps d'attente</option>
+        </select>
+      </div>
+      <p id="team-character-feedback" class="team-feedback" role="status" aria-live="polite"></p>
+      <div id="team-characters">Chargement…</div>
     </section>
 
     <section class="team-accordion" aria-label="Sections de l'espace équipe">
