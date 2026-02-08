@@ -6,72 +6,77 @@
   <title>Cluedo - Équipe</title>
   <link rel="stylesheet" href="./css/style.css"/>
   <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="./js/photo-upload.js" defer></script>
   <script src="./js/team.js" defer></script>
 </head>
 <body>
   <main class="container team-page">
-    <h1>👥 Espace équipe</h1>
-    <p class="admin-subtitle">Page unique, persistante et mobile pour suivre votre équipe pendant tout le jeu.</p>
+    <header class="card team-hero" aria-label="Nom de l'équipe">
+      <p class="team-kicker">Espace équipe</p>
+      <div class="team-hero-main">
+        <h1 id="team-display-name" class="team-display-name">Équipe sans nom</h1>
+        <button id="team-edit-name-btn" type="button" class="admin-button team-edit-name-btn">✏️ Modifier</button>
+      </div>
+      <div id="team-token" class="team-token"></div>
+      <p id="team-name-feedback" class="team-feedback"></p>
+    </header>
+
+    <section class="card team-block team-qr-block" aria-label="Scanner QR code">
+      <h2>📱 Scanner QR code</h2>
+      <p class="team-feedback">Scannez puis ouvrez immédiatement le lien du personnage.</p>
+      <div id="team-qr-reader"></div>
+      <p id="team-qr-feedback" class="team-feedback"></p>
+    </section>
 
     <section class="team-accordion" aria-label="Sections de l'espace équipe">
-      <article class="card team-block team-accordion-item is-open" data-accordion-item>
-        <h2 class="team-accordion-heading">
-          <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="true" aria-controls="team-accordion-panel-qr" id="team-accordion-trigger-qr">
-            <span>📱 Scanner de QR code</span>
-            <span class="team-accordion-icon" aria-hidden="true">▾</span>
-          </button>
-        </h2>
-        <div class="team-accordion-panel" id="team-accordion-panel-qr" role="region" aria-labelledby="team-accordion-trigger-qr">
-          <p class="team-feedback">Scannez le QR d'un personnage pour rejoindre directement sa file.</p>
-          <div id="team-qr-reader"></div>
-          <p id="team-qr-feedback" class="team-feedback"></p>
-        </div>
-      </article>
-
       <article class="card team-block team-accordion-item" data-accordion-item>
         <h2 class="team-accordion-heading">
           <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-stats" id="team-accordion-trigger-stats">
-            <span>📊 Statistiques et récapitulatif</span>
+            <span>📊 Résumé & état du jeu</span>
             <span class="team-accordion-icon" aria-hidden="true">▾</span>
           </button>
         </h2>
         <div class="team-accordion-panel" id="team-accordion-panel-stats" role="region" aria-labelledby="team-accordion-trigger-stats" hidden>
-          <h3>Récapitulatif de votre parcours</h3>
+          <h3>Personnages déjà vus</h3>
           <div id="team-history">Chargement…</div>
 
-          <h3>État actuel des personnages</h3>
+          <h3>État global (actif / attente)</h3>
           <div id="team-global">Chargement…</div>
         </div>
       </article>
 
       <article class="card team-block team-accordion-item" data-accordion-item>
         <h2 class="team-accordion-heading">
-          <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-profile" id="team-accordion-trigger-profile">
-            <span>🛠️ Informations d'équipe</span>
+          <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-participants" id="team-accordion-trigger-participants">
+            <span>👥 Participants</span>
             <span class="team-accordion-icon" aria-hidden="true">▾</span>
           </button>
         </h2>
-        <div class="team-accordion-panel" id="team-accordion-panel-profile" role="region" aria-labelledby="team-accordion-trigger-profile" hidden>
-          <h3>Identité d'équipe</h3>
-          <div id="team-token" class="team-token"></div>
+        <div class="team-accordion-panel" id="team-accordion-panel-participants" role="region" aria-labelledby="team-accordion-trigger-participants" hidden>
           <form id="team-profile-form" class="team-form">
             <label class="admin-label" for="team-name">Nom de l'équipe</label>
-            <div class="team-inline">
-              <input id="team-name" class="admin-input" maxlength="80" placeholder="Nom affiché"/>
-              <button type="submit" class="admin-button">Valider</button>
-            </div>
-            <p id="team-name-feedback" class="team-feedback"></p>
+            <input id="team-name" class="admin-input" maxlength="80" placeholder="Nom affiché"/>
+            <button type="submit" class="admin-button">Enregistrer le nom</button>
 
             <h3>Joueurs (max 10)</h3>
             <div id="team-players" class="team-players"></div>
-            <button id="save-players" type="button" class="admin-button">Enregistrer les joueurs</button>
+            <button id="save-players" type="button" class="admin-button">Enregistrer</button>
           </form>
+        </div>
+      </article>
 
+      <article class="card team-block team-accordion-item" data-accordion-item>
+        <h2 class="team-accordion-heading">
+          <button type="button" class="team-accordion-trigger" data-accordion-trigger aria-expanded="false" aria-controls="team-accordion-panel-photo" id="team-accordion-trigger-photo">
+            <span>📷 Photo d'équipe</span>
+            <span class="team-accordion-icon" aria-hidden="true">▾</span>
+          </button>
+        </h2>
+        <div class="team-accordion-panel" id="team-accordion-panel-photo" role="region" aria-labelledby="team-accordion-trigger-photo" hidden>
           <div class="team-photo-wrap">
-            <h3>Photo d'équipe</h3>
-            <img id="team-photo" class="admin-photo" alt="Photo d'équipe"/>
+            <img id="team-photo" class="admin-photo team-photo-square" alt="Photo d'équipe"/>
             <input id="team-photo-input" type="file" accept="image/jpeg,image/png,image/webp"/>
-            <p class="team-feedback">Image carrée obligatoire (mêmes contraintes que les photos personnage).</p>
+            <p class="team-feedback">Image carrée + crop obligatoire. Envoi optimisé pour mobile/iOS.</p>
           </div>
         </div>
       </article>
