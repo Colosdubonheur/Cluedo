@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       <div id="list" class="admin-grid">Chargement…</div>
 
-      <button id="save" class="admin-save-button">💾 Enregistrer</button>
+      <div class="admin-save-wrap"><button id="save" class="admin-save-button">💾 Enregistrer</button></div>
     </div>
   `;
 
@@ -130,7 +130,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       <input class="nom admin-input" data-id="${id}" value="${p.nom || ""}" />
 
       <label class="admin-label">Photo</label>
-      <img ${p.photo ? `src="${p.photo}"` : ""} alt="Photo ${p.nom || `personnage ${id}`}" class="admin-photo${p.photo ? "" : " is-hidden"}" />
+      <img alt="Photo ${p.nom || `personnage ${id}`}" class="admin-photo is-hidden" />
       <input type="file" accept="image/*" class="photo" data-id="${id}" />
 
       <label class="admin-label">Temps de passage (secondes)</label>
@@ -138,6 +138,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
 
     list.appendChild(card);
+    setPhotoPreview(id, p.photo || "");
   }
 
   document.getElementById("apply-global-time").addEventListener("click", () => {
