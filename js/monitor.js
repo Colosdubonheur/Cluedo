@@ -11,6 +11,25 @@
   const messageFeedbackEl = document.getElementById("monitor-message-feedback");
 
   let messageTargets = [];
+  let monitorBaseTeamUrl = "";
+
+  function getBaseTeamUrl() {
+    if (monitorBaseTeamUrl) return monitorBaseTeamUrl;
+    monitorBaseTeamUrl = new URL("./team.html", window.location.href).toString();
+    return monitorBaseTeamUrl;
+  }
+
+  function buildTeamReconnectUrl(token) {
+    const url = new URL(getBaseTeamUrl());
+    url.searchParams.set("token", String(token || ""));
+    return url.toString();
+  }
+
+  function buildTeamQrImageUrl(team) {
+    const reconnectUrl = buildTeamReconnectUrl(team?.token || "");
+    const payload = encodeURIComponent(reconnectUrl);
+    return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&format=png&data=${payload}`;
+  }
 
   function escapeHtml(value) {
     return String(value || "")
@@ -102,19 +121,24 @@
 
   function renderCard(team) {
     const status = statusInfo(team);
+    const teamName = team.team_name || "Équipe sans nom";
     const photoHtml = team.photo
-      ? `<img src="${escapeHtml(team.photo)}" alt="Photo ${escapeHtml(team.team_name || "équipe")}" class="monitor-team-photo"/>`
+      ? `<img src="${escapeHtml(team.photo)}" alt="Photo ${escapeHtml(teamName || "équipe")}" class="monitor-team-photo"/>`
       : '<div class="monitor-team-photo monitor-team-photo-placeholder" aria-hidden="true"></div>';
 
     return `<article class="card monitor-team-card">
       <header class="monitor-team-header">
         ${photoHtml}
         <div class="monitor-team-header-meta">
-          <h3 class="monitor-team-name">${escapeHtml(team.team_name || "Équipe sans nom")}</h3>
+          <h3 class="monitor-team-name">${escapeHtml(teamName)}</h3>
           <span class="monitor-status ${status.css}">${escapeHtml(status.text)}</span>
           ${status.timeInfo ? `<p class="monitor-character-context">${escapeHtml(status.timeInfo)}</p>` : ""}
         </div>
       </header>
+      <section class="monitor-team-actions" aria-label="Actions équipe">
+        <button type="button" class="admin-button monitor-team-qr-btn" data-action="show-team-qr" data-token="${escapeHtml(team.token)}" data-team-name="${escapeHtml(teamName)}">QR Code de l'équipe</button>
+        <button type="button" class="admin-button monitor-team-delete-btn" data-action="delete-team" data-token="${escapeHtml(team.token)}" data-team-name="${escapeHtml(teamName)}">Supprimer l'équipe</button>
+      </section>
       <section>
         <h4>Dernier message reçu</h4>
         ${renderMessageSummary(team)}
@@ -288,6 +312,65 @@
     await refresh();
   }
 
+
+  function openTeamQrModal(teamToken, teamName) {
+    const reconnectUrl = buildTeamReconnectUrl(teamToken);
+    const qrImageUrl = buildTeamQrImageUrl({ token: teamToken });
+    const modal = document.createElement("div");
+    modal.className = "monitor-modal";
+    modal.innerHTML = `
+      <div class="monitor-modal-dialog" role="dialog" aria-modal="true" aria-label="QR Code de l'équipe ${escapeHtml(teamName)}">
+        <h3>QR Code de l'équipe</h3>
+        <p class="monitor-muted"><strong>${escapeHtml(teamName)}</strong></p>
+        <img class="monitor-team-qr-image" src="${escapeHtml(qrImageUrl)}" alt="QR code de récupération pour ${escapeHtml(teamName)}"/>
+        <p class="monitor-muted">Scanner ce QR code ouvre l'Espace Équipe avec le token existant.</p>
+        <div class="monitor-modal-link-wrap">
+          <input type="text" class="admin-input" value="${escapeHtml(reconnectUrl)}" readonly aria-label="Lien de récupération équipe"/>
+        </div>
+        <div class="monitor-modal-actions">
+          <a class="admin-button" href="${escapeHtml(qrImageUrl)}" download="cluedo-team-${escapeHtml(String(teamToken || ""))}.png">Télécharger le QR Code</a>
+          <button type="button" class="admin-button monitor-modal-close">Fermer</button>
+        </div>
+      </div>`;
+
+    const closeModal = () => {
+      modal.remove();
+      document.removeEventListener("keydown", onKeydown);
+    };
+
+    const onKeydown = (event) => {
+      if (event.key === "Escape") closeModal();
+    };
+
+    modal.addEventListener("click", (event) => {
+      if (event.target === modal) closeModal();
+    });
+
+    modal.querySelector(".monitor-modal-close")?.addEventListener("click", closeModal);
+    document.addEventListener("keydown", onKeydown);
+    document.body.appendChild(modal);
+  }
+
+  async function deleteTeam(teamToken, teamName) {
+    const confirmed = window.confirm(`Confirmer la suppression de l'équipe ${teamName} ? Cette action est irréversible.`);
+    if (!confirmed) return;
+
+    const body = new URLSearchParams({ action: "delete_team", token: teamToken });
+    const response = await fetch("./api/supervision.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: body.toString(),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok || !payload.ok) {
+      window.alert(payload.error || "Suppression impossible.");
+      return;
+    }
+
+    await refresh();
+  }
+
   async function refresh() {
     const response = await fetch(`./api/supervision.php?t=${Date.now()}`);
     const payload = await response.json();
@@ -383,6 +466,30 @@
     if (sent) {
       messageInputEl.value = "";
       await refresh();
+    }
+  });
+
+  listEl.addEventListener("click", async (event) => {
+    const button = event.target.closest("button[data-action]");
+    if (!button) return;
+
+    const action = String(button.dataset.action || "");
+    const teamToken = String(button.dataset.token || "");
+    const teamName = String(button.dataset.teamName || "Équipe sans nom");
+    if (!teamToken) return;
+
+    if (action === "show-team-qr") {
+      openTeamQrModal(teamToken, teamName);
+      return;
+    }
+
+    if (action === "delete-team") {
+      button.disabled = true;
+      try {
+        await deleteTeam(teamToken, teamName);
+      } finally {
+        button.disabled = false;
+      }
     }
   });
 
