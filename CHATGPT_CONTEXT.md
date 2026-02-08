@@ -415,8 +415,14 @@ Ces règles sont **non négociables** et doivent rester alignées avec `api/stat
 
 ### Photo visible dans chaque bloc admin
 - Si une photo est configurée pour un personnage, elle est affichée directement dans sa carte admin.
+- Lorsqu’une photo est uploadée depuis `admin.html`, son aperçu est visible immédiatement dans la carte du personnage concerné, sans rechargement de page.
+- Dans l’interface admin, la photo affichée est présentée sous forme circulaire.
 - Le mécanisme d’upload existant reste inchangé.
 - Aucun fallback visuel additionnel n’est ajouté.
+
+### Bouton Enregistrer toujours accessible
+- Sur `admin.html`, le bouton `Enregistrer` reste accessible en permanence sans nécessité de scroll.
+- Le bouton déclenche strictement la même sauvegarde (`POST /api/save.php`) qu’auparavant, sans logique parallèle.
 
 ### Action globale sur `time_per_player`
 - L’admin propose une action globale :
