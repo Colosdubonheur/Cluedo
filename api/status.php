@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_deleted_team_tokens_store.php';
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_queue_runtime.php';
 require_once __DIR__ . '/_character_visibility.php';
@@ -10,6 +11,14 @@ $id = $_GET['id'] ?? null;
 $token = $_GET['token'] ?? null;
 $teamNameInput = trim((string) ($_GET['team_name'] ?? ($_GET['team'] ?? '')));
 $joinIntent = (string) ($_GET['join'] ?? '') === '1';
+
+
+if (cluedo_is_team_token_deleted((string) $token)) {
+  http_response_code(410);
+  echo json_encode(['ok' => false, 'error' => 'token deleted', 'token_invalidated' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  exit;
+}
+
 $forceSwitch = (string) ($_GET['force_switch'] ?? '') === '1';
 
 function normalize_team_name(string $name): string {

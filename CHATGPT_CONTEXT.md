@@ -9,6 +9,17 @@
   - lien vers `team.html` avec le token existant,
   - aucun changement de règle métier ni d'identité.
 
+
+## Suppression d’équipe depuis la supervision (critique)
+
+- La suppression d’une équipe dans `monitor.html` est **définitive côté runtime serveur**.
+- Le token supprimé est **invalidé** et conservé dans une blacklist runtime pour empêcher toute réutilisation.
+- Toute reconnexion d’un appareil avec un ancien token supprimé doit forcer une **ré-initialisation complète** dans `team.html` :
+  - ressaisie du nom d’équipe,
+  - ressaisie des participants,
+  - aucune récupération automatique de l’ancien profil/données.
+- Une équipe supprimée ne doit jamais se recréer automatiquement à partir de son ancien token.
+
 ## Parcours joueur / équipe
 
 1. L'équipe ouvre `team.html`.

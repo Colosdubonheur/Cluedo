@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_deleted_team_tokens_store.php';
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_character_visibility.php';
 
@@ -12,6 +13,14 @@ if (!is_array($input)) {
 $id = $input['id'] ?? null;
 $teamId = $input['team_id'] ?? ($input['token'] ?? null);
 $newName = trim((string) ($input['nouveau_nom'] ?? ($input['team_name'] ?? '')));
+
+
+if (cluedo_is_team_token_deleted((string) $teamId)) {
+  http_response_code(410);
+  echo json_encode(["ok" => false, "error" => "token deleted", "token_invalidated" => true]);
+  exit;
+}
+
 
 if (!$id || !$teamId || $newName === '') {
   echo json_encode(["ok" => false, "error" => "missing id, team_id or nouveau_nom"]);

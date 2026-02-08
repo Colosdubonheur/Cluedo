@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_deleted_team_tokens_store.php';
 require_once __DIR__ . '/_team_profiles_store.php';
 
 if (!isset($_POST['token']) || !isset($_FILES['file'])) {
@@ -10,6 +11,14 @@ if (!isset($_POST['token']) || !isset($_FILES['file'])) {
 }
 
 $token = trim((string) $_POST['token']);
+
+
+if (cluedo_is_team_token_deleted($token)) {
+  http_response_code(410);
+  echo json_encode(['ok' => false, 'error' => 'token deleted', 'token_invalidated' => true]);
+  exit;
+}
+
 $file = $_FILES['file'];
 
 if ($token === '') {

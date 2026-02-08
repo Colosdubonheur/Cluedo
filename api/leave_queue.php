@@ -1,12 +1,21 @@
 <?php
 require_once __DIR__ . '/_bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
+require_once __DIR__ . '/_deleted_team_tokens_store.php';
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_character_visibility.php';
 
 $input = json_decode((string) file_get_contents('php://input'), true);
 $id = $input['id'] ?? null;
 $token = $input['token'] ?? null;
+
+
+if (cluedo_is_team_token_deleted((string) $token)) {
+  http_response_code(410);
+  echo json_encode(['ok' => false, 'error' => 'token deleted', 'token_invalidated' => true]);
+  exit;
+}
+
 
 if (!$id || !$token) {
   http_response_code(400);
