@@ -359,3 +359,39 @@ Ces règles sont **non négociables** et doivent rester alignées avec `api/stat
 - `file.temps_attente_estime_seconds`
   - estimation serveur pour les équipes en attente, compatible avec la logique de rotation automatique.
 
+
+---
+
+## 11. Supervision : historique équipes & état temps réel
+
+### Historique des équipes (runtime JSON)
+- La supervision maintient un **historique par équipe** en runtime JSON.
+- Chaque passage historisé conserve :
+  - personnage rencontré
+  - timestamp de début
+  - timestamp de fin
+- Cet historique est exploité uniquement par la supervision (pas par le gameplay joueur).
+
+### Nouvel état supervision : `free`
+- En supervision, une équipe peut être :
+  - `active`
+  - `waiting`
+  - `free`
+- `free` signifie : équipe connue de la supervision mais actuellement **ni en attente ni active**.
+- Cet état est **strictement observable en supervision** et ne modifie pas les états métier côté play (`need_name`, `waiting`, `active`).
+
+### Temps passé avec un personnage
+- Le temps par personnage est calculé à partir des timestamps `début` / `fin` de l’historique.
+- Ce calcul est **strictement informatif**.
+- Il n’a aucun impact sur :
+  - les timers
+  - les files FIFO
+  - la logique de relève
+
+### Remise à zéro de l’historique
+- La supervision expose une action explicite **« Remettre l’historique à zéro »**.
+- Cette action :
+  - efface l’historique runtime
+  - remet l’état supervision dans un état initial cohérent
+  - n’affecte pas le code versionné
+- Objectif : faciliter les tests terrain sans manipulation Git.
