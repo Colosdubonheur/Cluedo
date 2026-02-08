@@ -11,43 +11,26 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Récupération du code
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2️⃣ DEBUG – afficher l’arborescence réelle
-      - name: Debug project structure
-        run: |
-          echo "=== CURRENT DIRECTORY ==="
-          pwd
-          echo "=== ROOT FILES ==="
-          ls -la
-          echo "=== SEARCH package.json (max depth 4) ==="
-          find . -maxdepth 4 -type f -name package.json
-
-      # 3️⃣ Setup Node
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # 4️⃣ Install dependencies (À CORRIGER APRÈS DEBUG)
       - name: Install dependencies
         run: npm install
-        working-directory: Cluedo
 
-      # 5️⃣ Build project (À CORRIGER APRÈS DEBUG)
       - name: Build project
         run: npm run build
-        working-directory: Cluedo
 
-      # 6️⃣ Déploiement FTP
       - name: Upload to PlanetHoster
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
           server: ${{ secrets.FTP_SERVER }}
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
-          local-dir: Cluedo/dist/
+          local-dir: dist/
           server-dir: ${{ secrets.FTP_PATH }}
           log-level: verbose
