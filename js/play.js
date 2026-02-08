@@ -282,7 +282,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
       const myRemaining = data.my_remaining ?? 0;
       const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
-      const state = data.state || (data.can_access && myRemaining <= 0 ? "done" : "waiting");
+      const state = data.state || (data.can_access ? "active" : (myRemaining <= 0 ? "done" : "waiting"));
 
       if (!hasValidNameFromServer) {
         teamName = "";
@@ -319,12 +319,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         if (myRemaining > 0) {
           elTimer.textContent = fmt(myRemaining);
-          elStatus.textContent = "À vous de jouer !";
+          elStatus.textContent = "C’est votre tour, vous pouvez accéder au personnage";
           elStatus.style.background = "#fbbf24";
           elResult.style.display = "none";
         } else {
           elTimer.textContent = "00:00";
-          elStatus.textContent = "À vous de jouer !";
+          elStatus.textContent = "C’est votre tour, vous pouvez accéder au personnage";
           elStatus.style.background = "#4ade80";
 
           elResult.style.display = "block";

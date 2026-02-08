@@ -77,7 +77,7 @@ Le serveur est l’unique source de vérité pour :
 - conserve :
   - position
   - heure d’entrée
-  - état (waiting / done)
+  - état (`waiting` / `active`)
 
 ⚠️ L’identité d’une équipe repose sur son **id / token**, jamais sur son nom.
 
@@ -149,7 +149,8 @@ Toute évolution doit respecter ces principes.
 - `team_name` (optionnel, utilisé uniquement pour initialiser le nom à la première entrée)
 
 **Sortie contractuelle à consommer côté front**
-- `state`: `waiting` | `done`
+- `state`: `waiting` | `active`
+- `legacy_state`: `waiting` | `done` (compatibilité rétroactive)
 - `personnage`: `{ id, nom }`
 - `equipe`: `{ id, nom }`
 - `file`: `{ position, total, equipe_precedente, temps_attente_estime_seconds }`
@@ -202,6 +203,11 @@ Sur `play` :
 - États UI :
   - `need_name` : nom d’équipe absent
   - `waiting` : équipe dans la file en attente
+  - `active` : interaction autorisée (signal explicite serveur)
+
+Transition attendue :
+- `waiting` → `active` lorsque l’équipe est première dans la file et peut accéder au personnage.
+- Le front ne déduit pas cet état : il consomme le signal explicite envoyé par `status.php`.
   - `done` : interaction autorisée
 - Une équipe sans nom utilisateur valide est traitée comme `need_name`
   et ne doit jamais afficher un nom par défaut à l’écran
