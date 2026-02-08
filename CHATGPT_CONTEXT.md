@@ -219,10 +219,12 @@ Toute évolution doit respecter ces principes.
   - joueur : `play.html?id=X`
   - personnage : `character.html?id=X`
 - Sur desktop, chaque personnage propose un bouton **Télécharger le QR code** pour l’accès joueur (`play.html?id=X`).
+- Sur desktop, les cartes personnages du Hub sont affichées en **grille 3 colonnes**.
+- Le Hub propose une zone **Accès rapide** avec un bouton par personnage (`ID - Nom`) pour naviguer directement vers sa carte.
 - Le Hub propose des exports QR codes à la demande :
   - **unitaire** (par personnage)
   - **groupé en ZIP** (`Télécharger tous les QR codes (ZIP)`)
-  - **en PDF A4** à raison de **4 QR codes par page** (`Télécharger en PDF (A4 – 4 QR codes par page)`)
+  - **en PDF A4** à raison de **6 QR codes par page** (`Télécharger en PDF (A4 – 6 QR codes par page)`)
 - Les fichiers PNG de QR téléchargés sont nommés avec l’ID et le nom courant du personnage (`qr_{id}_{nom}.png`).
 - Les QR codes encodent strictement l’URL joueur existante (`play.html?id=X`).
 
