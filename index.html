@@ -10,15 +10,36 @@
 <body>
   <div class="container">
     <h1>Hub Cluedo</h1>
-    <div class="card">
-      <p>Choisissez une interface :</p>
-      <p><a href="./admin.html">🔐 Administration</a></p>
-      <p><a href="./character.html?id=1">🎭 Personnage 1</a></p>
-      <p><a href="./character.html?id=2">🎭 Personnage 2</a></p>
-      <p><a href="./character.html?id=3">🎭 Personnage 3</a></p>
-      <p><a href="./character.html?id=4">🎭 Personnage 4</a></p>
-      <p><a href="./character.html?id=5">🎭 Personnage 5</a></p>
-      <p><a href="./monitor.html">📊 Supervision</a></p>
+    <div class="card hub-card">
+      <section class="hub-section">
+        <h2>Accès principal</h2>
+        <div class="hub-grid">
+          <a class="hub-button" href="./admin.html">🔐 Administration</a>
+          <a class="hub-button" href="./monitor.html">📊 Supervision</a>
+        </div>
+      </section>
+
+      <section class="hub-section">
+        <h2>Accès joueur</h2>
+        <div class="hub-grid">
+          <a class="hub-button" href="./play.html?id=1">Jouer - Juju</a>
+          <a class="hub-button" href="./play.html?id=2">Jouer - Personnage 2</a>
+          <a class="hub-button" href="./play.html?id=3">Jouer - Personnage 3</a>
+          <a class="hub-button" href="./play.html?id=4">Jouer - Personnage 4</a>
+          <a class="hub-button" href="./play.html?id=5">Jouer - Personnage 5</a>
+        </div>
+      </section>
+
+      <section class="hub-section">
+        <h2>Accès personnage</h2>
+        <div class="hub-grid">
+          <a class="hub-button" href="./character.html?id=1">Interface - 1 - Juju</a>
+          <a class="hub-button" href="./character.html?id=2">Interface - 2 - Personnage 2</a>
+          <a class="hub-button" href="./character.html?id=3">Interface - 3 - Personnage 3</a>
+          <a class="hub-button" href="./character.html?id=4">Interface - 4 - Personnage 4</a>
+          <a class="hub-button" href="./character.html?id=5">Interface - 5 - Personnage 5</a>
+        </div>
+      </section>
     </div>
   </div>
 </body>

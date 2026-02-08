@@ -400,3 +400,52 @@ Ces règles sont **non négociables** et doivent rester alignées avec `api/stat
 
 - `admin.html` dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`.
 - `supervision.html` (implémentée via `monitor.html`) dispose d’un bouton **Retour au Hub** redirigeant vers `index.html`.
+---
+
+## 11. Hub Cluedo (point d’entrée)
+
+Le `Hub Cluedo` (`index.html`) est le point d’entrée terrain vers les interfaces de l’application.
+
+Le Hub doit proposer des boutons d’accès rapides, visibles et adaptés au tactile pour :
+- `Administration` (`admin.html`)
+- `Supervision` (`monitor.html`)
+- `play.html?id=X` pour chaque personnage (accès joueur)
+- `character.html?id=X` pour chaque personnage (accès interface personnage)
+
+Contraintes :
+- changement UI uniquement
+- aucune modification des règles métier
+- aucun impact gameplay / états / files d’attente / identification
+- aucune modification des routes existantes (URLs et paramètres conservés)
+## 12. Admin UI : lisibilité PC, navigation rapide, actions globales (UI uniquement)
+
+### Affichage responsive en grille
+- La page `admin.html` affiche désormais les personnages en **grille responsive**.
+- Comportement attendu :
+  - mobile : **1 colonne** ;
+  - écran large (PC) : **3 colonnes**.
+- Cette adaptation est CSS-only (aucun impact sur la logique métier).
+
+### Navigation rapide par personnage
+- En haut de l’admin, une zone **Accès rapide** affiche un bouton par personnage.
+- Format de libellé : `ID - Nom` (exemple : `1 - Juju`).
+- Le clic fait défiler la page vers le bloc du personnage ciblé.
+- Aucun renommage automatique, aucune logique serveur supplémentaire.
+
+### Photo visible dans chaque bloc admin
+- Si une photo est configurée pour un personnage, elle est affichée directement dans sa carte admin.
+- Le mécanisme d’upload existant reste inchangé.
+- Aucun fallback visuel additionnel n’est ajouté.
+
+### Action globale sur `time_per_player`
+- L’admin propose une action globale :
+  - saisir une valeur en secondes ;
+  - appliquer cette valeur à tous les personnages en un clic.
+- Cette action remplace les valeurs affichées des champs `time_per_player` et est persistée via le bouton de sauvegarde existant.
+- Aucun autre champ métier n’est modifié.
+
+### Garanties métier inchangées
+- Aucun impact sur le gameplay.
+- Aucun impact sur les files d’attente.
+- Aucun impact sur les états (`need_name`, `waiting`, `active`, `free`).
+- Aucune nouvelle règle métier introduite.
