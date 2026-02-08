@@ -240,10 +240,12 @@ Sur `play` :
   - ce countdown représente le **temps minimum réservé** à l’équipe active (`time_per_player`), indépendamment de la file derrière
   - ce countdown démarre dès l’accès au personnage et peut atteindre `00:00` sans action serveur tant qu’aucune autre équipe n’attend
   - ne jamais afficher littéralement le mot `personnage` dans les messages UI : utiliser systématiquement `{personnage.nom}`
-  - message principal (fond vert) à afficher en permanence en `active` :
-    `Échangez avec {personnage.nom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`
-  - message d’alerte (⚠️) **uniquement** s’il existe une équipe derrière (`queueTotal > 1`) :
-    `⚠️ L’équipe « {équipe_suivante} » attend et pourra prendre la place à la fin du temps.`
+  - message principal en `active` (UX uniquement, sans impact logique serveur) :
+    - **vert** s’il n’y a aucune équipe derrière (`queueTotal <= 1`) :
+      `Échangez avec {personnage.nom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`
+    - **orange** s’il existe une équipe derrière (`queueTotal > 1`) :
+      `L’équipe {équipe_suivante} attend et prendra votre place à la fin du temps.`
+  - le message secondaire (⚠️) peut rester affiché, mais le message principal doit porter l’information clé sans contradiction
 - Affichage photo côté play :
   - si une photo est configurée dans l’admin (upload runtime), `play.html` l’affiche
   - si aucune photo n’est configurée, aucun bloc photo n’est affiché

@@ -532,7 +532,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         elLeaveActive.style.display = "block";
         elElapsedWrap.style.display = "block";
         const hasQueuedTeam = Number(queueTotal) > 1;
-        const nextTeamName = hasQueuedTeam ? (data.file?.next_team_name || "L’équipe suivante") : "";
+        const nextTeamName = hasQueuedTeam
+          ? ((data.file?.next_team_name || data.file?.equipe_precedente || "").trim() || "L’équipe suivante")
+          : "";
 
         const configuredTimePerPlayer = Math.max(0, Number(activeReservedDuration) || 0);
         const serverActiveRemaining = Math.max(0, Number(activeRemainingBeforeTakeover) || 0);
@@ -547,12 +549,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         elQueueDetails.style.display = "none";
         elTimerLabel.textContent = "⏱️ Temps réservé";
         elTimer.style.color = "white";
-        elStatus.textContent = `Échangez avec ${personnageNom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`;
-        elStatus.style.background = "#4ade80";
+        if (hasQueuedTeam) {
+          elStatus.textContent = `L’équipe ${nextTeamName} attend et prendra votre place à la fin du temps.`;
+          elStatus.style.background = "#fb923c";
+          elMessage.textContent = "⚠️ Relève automatique à la fin du temps.";
+        } else {
+          elStatus.textContent = `Échangez avec ${personnageNom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`;
+          elStatus.style.background = "#4ade80";
+          elMessage.textContent = "";
+        }
         elResult.style.display = "block";
-        elMessage.textContent = hasQueuedTeam
-          ? `⚠️ L’équipe « ${nextTeamName} » attend et pourra prendre la place à la fin du temps.`
-          : "";
 
         if (!notified && unlocked) {
           audio.currentTime = 0;
