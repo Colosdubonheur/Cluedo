@@ -22,9 +22,10 @@ cluedo_send_html_no_cache_headers();
     </div>
 
     <section class="card team-block" aria-label="Notifications">
-      <h2>Notifications</h2>
-      <button id="team-audio-enable-btn" type="button" class="admin-button team-audio-button" aria-pressed="false">🔔 Activer le son</button>
-      <p id="team-audio-status" class="team-feedback">Le son est désactivé.</p>
+      <div class="team-notifications-header">
+        <h2>Notifications</h2>
+        <button id="team-audio-enable-btn" type="button" class="admin-button team-audio-button" aria-pressed="false">🔔 Activer le son</button>
+      </div>
       <p id="team-message" class="team-feedback">Aucun message reçu.</p>
       <p id="team-end-game-banner" class="team-endgame-banner" hidden>Fin de jeu</p>
     </section>
@@ -44,6 +45,7 @@ cluedo_send_html_no_cache_headers();
         </label>
       </div>
       <p id="team-character-feedback" class="team-feedback"></p>
+      <p class="team-character-hint">Sélectionnez un suspect pour rejoindre ou quitter sa file d’attente</p>
       <div id="team-characters" class="team-characters">Chargement…</div>
     </section>
 

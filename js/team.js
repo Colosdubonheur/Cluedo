@@ -24,10 +24,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const messageEl = document.getElementById("team-message");
   const endGameBannerEl = document.getElementById("team-end-game-banner");
   const audioEnableBtn = document.getElementById("team-audio-enable-btn");
-  const audioStatusEl = document.getElementById("team-audio-status");
-
   const messageAudio = new Audio("./assets/message.wav");
   messageAudio.preload = "auto";
+  const soundOnAudio = new Audio("./assets/soundon.wav");
+  soundOnAudio.preload = "auto";
 
   let latestState = null;
   let isQueueActionInProgress = false;
@@ -35,6 +35,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let filterOnlyUnseen = false;
   let players = [];
   let lastMessageKey = "";
+  let isProfileEditing = false;
+  let hubRequestSequence = 0;
+  let lastAppliedHubSequence = 0;
 
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
@@ -97,6 +100,14 @@ document.addEventListener("DOMContentLoaded", () => {
       item.append(text, removeBtn);
       playersWrap.appendChild(item);
     });
+  }
+
+  function markProfileEditing() {
+    isProfileEditing = true;
+  }
+
+  function clearProfileEditing() {
+    isProfileEditing = false;
   }
 
   function getWaitColorClass(row) {
@@ -217,21 +228,25 @@ document.addEventListener("DOMContentLoaded", () => {
       const isCurrent = currentCharacterId === String(row.id);
       const endGameActive = isEndGameActive(state);
       const blockedByEndGame = endGameActive && !isCurrent;
-      const buttonLabel = isCurrent ? "Quitter cette file" : "Rejoindre la file";
+      const actionLabel = isCurrent ? "Quitter" : "Rejoindre";
       const photo = row.photo
         ? `<img src="${row.photo}" alt="${row.nom}" class="team-character-photo"/>`
         : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
-      const unseenBadge = seen.has(String(row.id || "")) ? "" : '<span class="team-seen-badge">Jamais vu</span>';
+      const seenStatus = seen.has(String(row.id || "")) ? '<span class="team-seen-badge">Déjà vu</span>' : '<span class="team-seen-badge">Jamais vu</span>';
       const waitClass = getWaitColorClass(row);
 
       item.innerHTML = `
-        ${photo}
-        <div class="team-character-meta">
+        <div class="team-character-col team-character-col-photo">
+          ${photo}
+        </div>
+        <div class="team-character-col team-character-col-meta">
           <h3>${row.nom || "Personnage"}</h3>
-          <p class="team-character-line">🏠 ${row.location || "Non renseignée"}</p>
+          <p class="team-character-line">🏠</p>
           <p class="team-character-line team-character-wait ${waitClass}">⏱ ${fmt(row.estimated_wait_seconds || 0)}</p>
-          ${unseenBadge}
-          <button type="button" class="admin-button team-character-action-btn" data-id="${String(row.id)}" ${isBlocked || isQueueActionInProgress || blockedByEndGame ? "disabled" : ""}>${buttonLabel}</button>
+          ${seenStatus}
+        </div>
+        <div class="team-character-col team-character-col-action">
+          <button type="button" class="admin-button team-character-action-btn" data-id="${String(row.id)}" ${isBlocked || isQueueActionInProgress || blockedByEndGame ? "disabled" : ""}>${actionLabel}<span>la file</span></button>
         </div>
       `;
       list.appendChild(item);
@@ -274,19 +289,24 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   async function loadHub() {
+    const requestSequence = ++hubRequestSequence;
     const response = await fetch(`./api/team_hub.php?token=${encodeURIComponent(token)}`);
     const state = await response.json();
     if (!response.ok || !state.ok) throw new Error(state.error || "hub failed");
+    if (requestSequence < lastAppliedHubSequence) return;
+    lastAppliedHubSequence = requestSequence;
 
     latestState = state;
     renderEndGameBanner(state);
     const profile = state.team?.profile || {};
     const init = resolveInitialization(profile);
 
-    teamNameInput.value = init.teamName;
-    players = [...init.players];
-    renderPlayers();
-    updateTeamNameUi(init.teamName);
+    if (!isProfileEditing) {
+      teamNameInput.value = init.teamName;
+      players = [...init.players];
+      renderPlayers();
+      updateTeamNameUi(init.teamName);
+    }
 
     const isBlocked = renderLockState(init);
     renderCharactersList(state, isBlocked);
@@ -328,6 +348,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const saved = await saveProfile();
       updateTeamNameUi(saved.team_name || "");
+      clearProfileEditing();
       await loadHub();
       setFeedback(feedbackName, "Profil équipe sauvegardé.", "success");
     } catch (_error) {
@@ -335,11 +356,15 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  addPlayerBtn?.addEventListener("click", addPlayerFromInput);
+  addPlayerBtn?.addEventListener("click", () => {
+    markProfileEditing();
+    addPlayerFromInput();
+  });
 
   playerInput?.addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
     event.preventDefault();
+    markProfileEditing();
     addPlayerFromInput();
   });
 
@@ -349,6 +374,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!target.classList.contains("team-player-remove")) return;
     const index = Number(target.dataset.index);
     if (!Number.isInteger(index) || index < 0 || index >= players.length) return;
+    markProfileEditing();
     players.splice(index, 1);
     renderPlayers();
   });
@@ -373,19 +399,32 @@ document.addEventListener("DOMContentLoaded", () => {
     teamNameInput.scrollIntoView({ behavior: "smooth", block: "center" });
   });
 
-  audioEnableBtn?.addEventListener("click", () => {
-    localStorage.setItem(AUDIO_ENABLED_KEY, "1");
-    setFeedback(audioStatusEl, "Son activé pour les nouveaux messages.", "success");
-    audioEnableBtn.textContent = "🔔 Son activé";
+  teamNameInput?.addEventListener("input", () => {
+    markProfileEditing();
   });
 
-  setFeedback(audioStatusEl, localStorage.getItem(AUDIO_ENABLED_KEY) === "1" ? "Son activé pour les nouveaux messages." : "Son désactivé.");
+
+  async function syncAudioButtonState() {
+    const enabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
+    audioEnableBtn.textContent = enabled ? "🔔 Son activé" : "🔔 Activer le son";
+    audioEnableBtn.setAttribute("aria-pressed", enabled ? "true" : "false");
+  }
+
+  audioEnableBtn?.addEventListener("click", async () => {
+    localStorage.setItem(AUDIO_ENABLED_KEY, "1");
+    await syncAudioButtonState();
+    soundOnAudio.currentTime = 0;
+    try { await soundOnAudio.play(); } catch (_error) { /* noop */ }
+  });
+
+  void syncAudioButtonState();
 
   loadHub().catch(() => {
     setFeedback(feedbackName, "Impossible de charger l'espace équipe.", "error");
   });
 
   setInterval(() => {
+    if (isProfileEditing) return;
     loadHub().catch(() => {
       setFeedback(characterFeedbackEl, "Rafraîchissement temporairement indisponible.", "error");
     });
