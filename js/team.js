@@ -4,306 +4,334 @@ document.addEventListener("DOMContentLoaded", () => {
   const AUDIO_ENABLED_KEY = "cluedo_team_audio_enabled";
 
   let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
-  if (!token) {
-    token = crypto.randomUUID();
-  }
+  if (!token) token = crypto.randomUUID();
   localStorage.setItem(TOKEN_KEY, token);
   sessionStorage.setItem(TOKEN_KEY, token);
 
   const displayNameEl = document.getElementById("team-display-name");
-  const editNameBtn = document.getElementById("team-edit-name-btn");
-  const profileForm = document.getElementById("team-profile-form");
-  const profileSubmitBtn = profileForm?.querySelector('button[type="submit"]');
+  const heroTeamNameEl = document.getElementById("team-hero-name");
   const teamNameInput = document.getElementById("team-name");
-  const feedbackName = document.getElementById("team-name-feedback");
   const playersWrap = document.getElementById("team-players");
   const savePlayersBtn = document.getElementById("save-players");
-  const photoEl = document.getElementById("team-photo");
-  const photoInput = document.getElementById("team-photo-input");
+  const profileForm = document.getElementById("team-profile-form");
+  const feedbackName = document.getElementById("team-name-feedback");
+  const participantsGuidanceEl = document.getElementById("team-guidance-participants");
+  const photoGuidanceEl = document.getElementById("team-guidance-photo");
   const historyEl = document.getElementById("team-history");
   const globalEl = document.getElementById("team-global");
   const charactersEl = document.getElementById("team-characters");
   const characterSortEl = document.getElementById("team-character-sort");
+  const characterFilterUnseenEl = document.getElementById("team-character-filter-unseen");
   const characterFeedbackEl = document.getElementById("team-character-feedback");
-  const participantsGuidanceEl = document.getElementById("team-guidance-participants");
-  const photoGuidanceEl = document.getElementById("team-guidance-photo");
-  const supervisionMessageEl = document.getElementById("team-supervision-message");
+  const lockMessageEl = document.getElementById("team-lock-message");
+  const messageEl = document.getElementById("team-message");
   const audioEnableBtn = document.getElementById("team-audio-enable-btn");
   const audioStatusEl = document.getElementById("team-audio-status");
 
-  let latestState = null;
-  let previousTeamState = "free";
-  let userEditingLockUntil = 0;
-  let isSavingTeamName = false;
-  let isTeamNameEditMode = false;
-  let lastRenderedMessage = "";
-  let characterSortMode = "name";
-  let isQueueActionInProgress = false;
-
-  const soundOnAudio = new Audio("./assets/soundon.wav");
   const messageAudio = new Audio("./assets/message.wav");
-  soundOnAudio.preload = "auto";
   messageAudio.preload = "auto";
 
-  const audioState = {
-    isEnabled: localStorage.getItem(AUDIO_ENABLED_KEY) === "1",
-    unlockSucceeded: localStorage.getItem(AUDIO_ENABLED_KEY) === "1",
-    unlockAttempted: false,
-  };
-
-  function setAudioStatus(message, status = "neutral") {
-    if (!audioStatusEl) return;
-    audioStatusEl.textContent = String(message || "");
-    audioStatusEl.classList.remove("is-success", "is-error", "is-processing");
-    if (status === "success") audioStatusEl.classList.add("is-success");
-    if (status === "error") audioStatusEl.classList.add("is-error");
-    if (status === "processing") audioStatusEl.classList.add("is-processing");
-  }
-
-  function renderAudioUi() {
-    if (!audioEnableBtn || !audioStatusEl) return;
-
-    if (audioState.isEnabled) {
-      audioEnableBtn.textContent = "🔔 Son activé";
-      audioEnableBtn.setAttribute("aria-pressed", "true");
-      audioEnableBtn.classList.add("is-enabled");
-      setAudioStatus("Le son est activé pour cette session. Les nouveaux messages déclenchent une notification.", "success");
-      return;
-    }
-
-    audioEnableBtn.textContent = "🔔 Son activé";
-    audioEnableBtn.setAttribute("aria-pressed", "false");
-    audioEnableBtn.classList.remove("is-enabled");
-    setAudioStatus("Le son est désactivé. Activez-le pour recevoir les notifications.", "neutral");
-  }
-
-  async function unlockAudioFromGesture() {
-    audioState.unlockAttempted = true;
-    soundOnAudio.currentTime = 0;
-    try {
-      await soundOnAudio.play();
-      audioState.unlockSucceeded = true;
-      return true;
-    } catch (_error) {
-      audioState.unlockSucceeded = false;
-      return false;
-    }
-  }
-
-  async function enableAudioNotifications() {
-    if (!audioEnableBtn) return;
-    audioEnableBtn.disabled = true;
-    setAudioStatus("Activation du son en cours…", "processing");
-
-    const unlocked = await unlockAudioFromGesture();
-    if (!unlocked) {
-      audioState.isEnabled = false;
-      localStorage.removeItem(AUDIO_ENABLED_KEY);
-      renderAudioUi();
-      setAudioStatus("Activation refusée par le navigateur. Touchez à nouveau « Activer le son » après avoir autorisé l'audio.", "error");
-      audioEnableBtn.disabled = false;
-      return;
-    }
-
-    audioState.isEnabled = true;
-    localStorage.setItem(AUDIO_ENABLED_KEY, "1");
-    renderAudioUi();
-    audioEnableBtn.disabled = false;
-  }
-
-  async function playNotificationSound() {
-    if (!audioState.isEnabled) return;
-
-    if (!audioState.unlockSucceeded && audioState.unlockAttempted) {
-      return;
-    }
-
-    messageAudio.currentTime = 0;
-    try {
-      await messageAudio.play();
-    } catch (_error) {
-      audioState.isEnabled = false;
-      audioState.unlockSucceeded = false;
-      localStorage.removeItem(AUDIO_ENABLED_KEY);
-      renderAudioUi();
-      setAudioStatus("Le son a été bloqué par le navigateur. Touchez « Activer le son » pour rétablir les notifications.", "error");
-    }
-  }
-
-  function setNameFeedback(message, status = "neutral") {
-    feedbackName.textContent = String(message || "");
-    feedbackName.classList.remove("is-success", "is-error", "is-processing");
-    if (status === "success") feedbackName.classList.add("is-success");
-    if (status === "error") feedbackName.classList.add("is-error");
-    if (status === "processing") feedbackName.classList.add("is-processing");
-  }
-
-  function setNameSavingUi(isSaving) {
-    if (!profileSubmitBtn) return;
-    profileSubmitBtn.disabled = isSaving;
-    profileSubmitBtn.textContent = isSaving ? "Enregistrement…" : "Enregistrer le nom";
-  }
-
-  function markUserEditing(durationMs = 5000) {
-    userEditingLockUntil = Math.max(userEditingLockUntil, Date.now() + durationMs);
-  }
-
-  function isUserEditing() {
-    return Date.now() < userEditingLockUntil || isSavingTeamName || isTeamNameEditMode || profileForm.contains(document.activeElement);
-  }
+  let latestState = null;
+  let isQueueActionInProgress = false;
+  let characterSortMode = "name";
+  let filterOnlyUnseen = false;
+  let lastMessageText = "";
 
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
-    const m = String(Math.floor(s / 60)).padStart(2, "0");
-    const r = String(s % 60).padStart(2, "0");
-    return `${m}:${r}`;
+    return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
   }
 
-  function escapeHtml(value) {
-    return String(value || "")
-      .replaceAll("&", "&amp;")
-      .replaceAll("<", "&lt;")
-      .replaceAll(">", "&gt;")
-      .replaceAll('"', "&quot;")
-      .replaceAll("'", "&#39;");
+  function hasValidTeamName(name) {
+    return String(name || "").trim().length > 0;
   }
 
-  function profileTeamName() {
-    return (teamNameInput.value || "").trim() || (localStorage.getItem(TEAM_KEY) || "").trim();
+  function getPlayers() {
+    return Array.from(playersWrap.querySelectorAll("input")).map((input) => input.value.trim());
   }
 
-  function refreshTeamNameUi(name, options = {}) {
+  function countValidPlayers(players) {
+    return players.filter((name) => name.length > 0).length;
+  }
+
+  function ensurePlayerInputs(players = []) {
+    playersWrap.innerHTML = "";
+    for (let i = 0; i < 10; i += 1) {
+      const row = document.createElement("div");
+      row.className = "team-input-row";
+      const label = document.createElement("label");
+      label.setAttribute("for", `team-player-${i + 1}`);
+      label.textContent = `Participant ${i + 1}`;
+      const input = document.createElement("input");
+      input.id = `team-player-${i + 1}`;
+      input.type = "text";
+      input.className = "admin-input";
+      input.maxLength = 40;
+      input.placeholder = "Prénom";
+      input.value = players[i] || "";
+      row.append(label, input);
+      playersWrap.appendChild(row);
+    }
+  }
+
+  function setFeedback(el, message, status = "neutral") {
+    el.textContent = String(message || "");
+    el.classList.remove("is-success", "is-error", "is-processing");
+    if (status === "success") el.classList.add("is-success");
+    if (status === "error") el.classList.add("is-error");
+    if (status === "processing") el.classList.add("is-processing");
+  }
+
+  function updateTeamNameUi(name) {
     const resolved = String(name || "").trim() || "Équipe sans nom";
-    const preserveInput = options.preserveInput === true;
-
     displayNameEl.textContent = resolved;
-    if (!preserveInput) {
-      teamNameInput.value = String(name || "").trim();
-    }
+    heroTeamNameEl.textContent = resolved;
+    if (hasValidTeamName(name)) localStorage.setItem(TEAM_KEY, String(name).trim());
   }
 
-  async function uploadTeamPhotoWithCrop(file) {
-    const formData = new FormData();
-    formData.append("token", token);
-    formData.append("file", file);
+  function resolveInitialization(profile) {
+    const teamName = String(profile?.team_name || "").trim();
+    const players = Array.isArray(profile?.players) ? profile.players.map((v) => String(v || "").trim()) : [];
+    const validPlayers = countValidPlayers(players);
+    const isTeamNameValid = hasValidTeamName(teamName);
+    return {
+      teamName,
+      players,
+      validPlayers,
+      isTeamNameValid,
+      isReady: isTeamNameValid && validPlayers >= 2,
+    };
+  }
 
-    const response = await fetch("./api/upload_team_photo.php", {
+  async function saveProfile() {
+    const payload = {
+      token,
+      team_name: teamNameInput.value.trim(),
+      players: getPlayers(),
+    };
+
+    const response = await fetch("./api/team_profile.php", {
       method: "POST",
-      body: formData,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
     });
-
-    return response.json().catch(() => ({ ok: false, error: "Réponse serveur invalide" }));
+    const result = await response.json();
+    if (!response.ok || !result.ok) throw new Error(result.error || "save failed");
+    return result.profile;
   }
 
-  profileForm.addEventListener("focusin", () => {
-    markUserEditing();
-  });
+  async function leaveQueue(characterId) {
+    await fetch("./api/leave_queue.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: characterId, token }),
+    });
+  }
 
-  profileForm.addEventListener("input", () => {
-    markUserEditing();
-  });
+  async function joinQueue(characterId, teamName, forceSwitch = false) {
+    const params = new URLSearchParams({
+      id: characterId,
+      token,
+      team_name: teamName,
+      join: "1",
+    });
+    if (forceSwitch) params.set("force_switch", "1");
+    const response = await fetch(`./api/status.php?${params.toString()}`);
+    return response.json();
+  }
 
-  profileForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    isSavingTeamName = true;
-    setNameSavingUi(true);
-    setNameFeedback("Enregistrement du nom d'équipe…", "processing");
+  async function onQueueAction(characterId) {
+    if (!latestState || isQueueActionInProgress) return;
+
+    const init = resolveInitialization(latestState.team?.profile || {});
+    if (!init.isReady) return;
+
+    const currentCharacterId = String(latestState.team?.state?.character_id || "");
+
+    isQueueActionInProgress = true;
     try {
-      await renameTeam(teamNameInput.value);
-      isTeamNameEditMode = false;
-      accordionController?.closeAll();
-      teamNameInput.blur();
+      if (currentCharacterId === String(characterId)) {
+        await leaveQueue(characterId);
+      } else {
+        let joinResult = await joinQueue(characterId, init.teamName, false);
+        if (joinResult?.state === "already_in_queue" && joinResult?.can_join_after_confirm) {
+          const fromName = joinResult.current_engagement?.personnage_nom || "un autre personnage";
+          const confirmed = window.confirm(`Votre équipe est déjà en file pour « ${fromName} ». Confirmer le changement ?`);
+          if (!confirmed) return;
+          joinResult = await joinQueue(characterId, init.teamName, true);
+        }
+      }
       await loadHub();
-    } catch (_error) {
-      setNameFeedback("Erreur : impossible de sauvegarder le nom d'équipe pour le moment.", "error");
     } finally {
-      isSavingTeamName = false;
-      setNameSavingUi(false);
+      isQueueActionInProgress = false;
     }
-  });
+  }
 
-  let accordionController = null;
+  function renderCharactersList(state, isBlocked) {
+    const seen = new Set((state.team?.history || []).map((entry) => String(entry.id || "")));
+    let rows = Array.isArray(state.global) ? [...state.global] : [];
 
-  editNameBtn.addEventListener("click", () => {
-    isTeamNameEditMode = true;
-    accordionController?.openByTriggerId("team-accordion-trigger-participants");
+    if (filterOnlyUnseen) {
+      rows = rows.filter((row) => !seen.has(String(row.id || "")));
+    }
 
-    requestAnimationFrame(() => {
-      teamNameInput.focus();
-      teamNameInput.select();
+    rows.sort((a, b) => {
+      if (characterSortMode === "wait") return (a.estimated_wait_seconds || 0) - (b.estimated_wait_seconds || 0);
+      return String(a.nom || "").localeCompare(String(b.nom || ""), "fr");
     });
 
-    markUserEditing();
-  });
-
-  savePlayersBtn.addEventListener("click", async () => {
-    markUserEditing();
-    try {
-      await saveProfile();
-      setNameFeedback("Participants sauvegardés.", "success");
-      await loadHub();
-    } catch (_error) {
-      setNameFeedback("Impossible de sauvegarder les joueurs.", "error");
-    }
-  });
-
-  photoInput.addEventListener("change", async () => {
-    if (!window.CluedoPhotoUpload) {
-      window.alert("Recadrage photo indisponible.");
+    if (rows.length === 0) {
+      charactersEl.innerHTML = '<p class="team-feedback">Aucun personnage à afficher avec ce filtre.</p>';
       return;
     }
 
-    await window.CluedoPhotoUpload.uploadFromInput({
-      id: token,
-      input: photoInput,
-      getPreviousPhoto: () => photoEl.getAttribute("src") || "",
-      setPhotoPreview: (value) => {
-        if (value) {
-          photoEl.src = value;
-          photoEl.style.display = "block";
-        } else {
-          photoEl.removeAttribute("src");
-          photoEl.style.display = "none";
-        }
-      },
-      sendUploadRequest: ({ file }) => uploadTeamPhotoWithCrop(file),
+    const currentCharacterId = String(state.team?.state?.character_id || "");
+    const list = document.createElement("ul");
+    list.className = "team-character-list";
+
+    rows.forEach((row) => {
+      const item = document.createElement("li");
+      item.className = "team-character-item";
+
+      const isCurrent = currentCharacterId === String(row.id);
+      const button = `<button type="button" class="admin-button team-character-action-btn" data-id="${String(row.id)}" ${isBlocked || isQueueActionInProgress ? "disabled" : ""}>${isCurrent ? "Quitter cette file" : "Rejoindre la file"}</button>`;
+      const photo = row.photo ? `<img src="${row.photo}" alt="${row.nom}" class="team-character-photo"/>` : "<div class=\"team-character-photo team-character-photo-placeholder\">Photo indisponible</div>";
+      const unseenBadge = seen.has(String(row.id || "")) ? "" : '<p class="team-feedback is-success">Jamais vu</p>';
+
+      item.innerHTML = `
+        <h3>${row.nom || "Personnage"}</h3>
+        ${photo}
+        <p><strong>Localisation :</strong> ${row.location || "Non renseignée"}</p>
+        <p><strong>Attente estimée :</strong> ${fmt(row.estimated_wait_seconds || 0)}</p>
+        ${unseenBadge}
+        ${button}
+      `;
+      list.appendChild(item);
     });
 
-    await loadHub();
+    charactersEl.innerHTML = "";
+    charactersEl.appendChild(list);
+
+    list.querySelectorAll(".team-character-action-btn").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        void onQueueAction(btn.dataset.id || "");
+      });
+    });
+  }
+
+  async function maybePlayMessageSound(messageText) {
+    const enabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
+    if (!enabled || !messageText || messageText === lastMessageText) return;
+    lastMessageText = messageText;
+    messageAudio.currentTime = 0;
+    try { await messageAudio.play(); } catch (_error) { /* noop */ }
+  }
+
+  function renderLockState(init) {
+    const tooFew = init.validPlayers < 2;
+    const tooMany = init.validPlayers > 10;
+    const missingName = !init.isTeamNameValid;
+    const isBlocked = missingName || tooFew || tooMany;
+
+    if (missingName) {
+      setFeedback(participantsGuidanceEl, "Nom d'équipe obligatoire.", "error");
+    } else if (tooFew) {
+      setFeedback(participantsGuidanceEl, "Au moins 2 participants sont requis (max 10).", "error");
+    } else if (tooMany) {
+      setFeedback(participantsGuidanceEl, "Maximum 10 participants autorisés.", "error");
+    } else {
+      setFeedback(participantsGuidanceEl, `Équipe initialisée (${init.validPlayers} participants).`, "success");
+    }
+
+    lockMessageEl.textContent = isBlocked
+      ? "Blocage actif : vous devez saisir un nom d'équipe et au moins 2 prénoms avant toute action sur les personnages."
+      : "Espace équipe prêt : vous pouvez gérer les files des personnages.";
+    lockMessageEl.classList.toggle("is-error", isBlocked);
+    lockMessageEl.classList.toggle("is-success", !isBlocked);
+
+    return isBlocked;
+  }
+
+  async function loadHub() {
+    const response = await fetch(`./api/team_hub.php?token=${encodeURIComponent(token)}`);
+    const state = await response.json();
+    if (!response.ok || !state.ok) throw new Error(state.error || "hub failed");
+
+    latestState = state;
+    const profile = state.team?.profile || {};
+    const init = resolveInitialization(profile);
+
+    teamNameInput.value = init.teamName;
+    ensurePlayerInputs(init.players);
+    updateTeamNameUi(init.teamName);
+
+    const isBlocked = renderLockState(init);
+    renderCharactersList(state, isBlocked);
+
+    const messageText = String(state.team?.message?.message || "").trim();
+    messageEl.textContent = messageText || "Aucun message reçu.";
+    void maybePlayMessageSound(messageText);
+
+    const historyRows = Array.isArray(state.team?.history) ? state.team.history : [];
+    historyEl.innerHTML = historyRows.length
+      ? `<h3>Historique équipe</h3><ul>${historyRows.map((row) => `<li>${row.nom}: ${fmt(row.duration_seconds || 0)}</li>`).join("")}</ul>`
+      : "";
+
+    const teamState = state.team?.state?.state || "free";
+    globalEl.textContent = teamState === "free" ? "Votre équipe n'est dans aucune file." : `État courant : ${teamState}`;
+    photoGuidanceEl.textContent = "La photo d'équipe reste optionnelle.";
+
+    setFeedback(characterFeedbackEl, isBlocked ? "Actions personnages désactivées tant que l'équipe n'est pas initialisée." : "Sélectionnez un personnage pour rejoindre ou quitter sa file.", isBlocked ? "error" : "success");
+  }
+
+  profileForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setFeedback(feedbackName, "Sauvegarde en cours…", "processing");
+    try {
+      const saved = await saveProfile();
+      updateTeamNameUi(saved.team_name || "");
+      await loadHub();
+      setFeedback(feedbackName, "Profil équipe sauvegardé.", "success");
+    } catch (_error) {
+      setFeedback(feedbackName, "Impossible de sauvegarder le profil.", "error");
+    }
   });
 
-  if (characterSortEl) {
-    characterSortEl.addEventListener("change", () => {
-      characterSortMode = characterSortEl.value === "wait" ? "wait" : "name";
-      if (latestState) {
-        renderCharactersList(latestState);
-      }
-    });
-  }
+  savePlayersBtn.addEventListener("click", () => {
+    profileForm.requestSubmit();
+  });
 
-  if (audioEnableBtn) {
-    audioEnableBtn.addEventListener("click", () => {
-      void enableAudioNotifications();
-    });
-  }
+  characterSortEl?.addEventListener("change", () => {
+    characterSortMode = characterSortEl.value === "wait" ? "wait" : "name";
+    if (latestState) {
+      const init = resolveInitialization(latestState.team?.profile || {});
+      renderCharactersList(latestState, !init.isReady);
+    }
+  });
 
-  ensurePlayerInputs();
-  renderAudioUi();
+  characterFilterUnseenEl?.addEventListener("change", () => {
+    filterOnlyUnseen = characterFilterUnseenEl.checked;
+    if (latestState) {
+      const init = resolveInitialization(latestState.team?.profile || {});
+      renderCharactersList(latestState, !init.isReady);
+    }
+  });
+
+  audioEnableBtn?.addEventListener("click", () => {
+    localStorage.setItem(AUDIO_ENABLED_KEY, "1");
+    setFeedback(audioStatusEl, "Son activé pour les nouveaux messages.", "success");
+    audioEnableBtn.textContent = "🔔 Son activé";
+  });
+
+  setFeedback(audioStatusEl, localStorage.getItem(AUDIO_ENABLED_KEY) === "1" ? "Son activé pour les nouveaux messages." : "Son désactivé.");
+
   loadHub().catch(() => {
-    participantsGuidanceEl.textContent = "Impossible de vérifier les participants pour le moment.";
-    photoGuidanceEl.textContent = "Impossible de vérifier la photo pour le moment.";
-    historyEl.textContent = "Les données de résumé sont temporairement indisponibles.";
-    globalEl.textContent = "L'état global est temporairement indisponible.";
+    setFeedback(feedbackName, "Impossible de charger l'espace équipe.", "error");
   });
-  accordionController = initAccordion();
+
   setInterval(() => {
     loadHub().catch(() => {
-      if (!historyEl.textContent.trim()) {
-        historyEl.textContent = "Les données de résumé sont temporairement indisponibles.";
-      }
-      if (!globalEl.textContent.trim()) {
-        globalEl.textContent = "L'état global est temporairement indisponible.";
-      }
+      setFeedback(characterFeedbackEl, "Rafraîchissement temporairement indisponible.", "error");
     });
-  }, 2000);
+  }, 3000);
 });
