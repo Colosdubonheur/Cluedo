@@ -1,32 +1,30 @@
-## Projet : Gestion Passage Cluedo LCDB
+# CHATGPT_CONTEXT — Cluedo
 
-## Utilisation avec ChatGPT
-- À coller en début de chaque nouvelle conversation
-- Ne pas modifier sans décision technique claire
+## Décisions produit verrouillées
 
----
+- L'**Espace Équipe** (`team.html`) est désormais l'**entrée unique** pour gérer l'engagement dans les files des personnages.
+- Le **token équipe** reste la seule identité technique côté front.
+- Le mécanisme par **QR Code est abandonné volontairement** :
+  - aucun scan,
+  - aucune génération,
+  - aucun téléchargement,
+  - aucune logique caméra,
+  - aucune dépendance de permissions navigateur liée à la caméra.
 
-## 1. Objectif du projet
-Outil de gestion de files d’attente pour des interactions physiques entre des **équipes de joueurs** et des **personnages**, utilisé en environnement terrain (jeux, colos, événements).
+## Parcours joueur / équipe
 
-Le système garantit :
-- une interaction équitable
-- non contournable
-- compréhensible pour tous les acteurs
+1. L'équipe ouvre `team.html`.
+2. Elle gère son profil (nom, participants, photo).
+3. Elle rejoint/quitte les files personnages uniquement depuis la liste des personnages de l'Espace Équipe.
+4. Les règles existantes de file sont conservées (unicité, confirmation de changement/sortie).
 
----
+## Portée technique
 
-## 2. Acteurs du système
+- `team.html` + `js/team.js` : gestion des files sans scan.
+- `index.html` : hub simplifié (Administration, Supervision, Espace équipe + accès Joueur/Personnage).
+- Aucun appel `getUserMedia`, aucun usage de librairie de scan.
 
-### Équipes (côté joueurs)
-- Une équipe correspond à un **token d'équipe stable** (persisté côté client).
-- L’équipe saisit un **nom d’équipe** (libellé utilisateur)
-- Le nom d’équipe :
-  - est purement déclaratif
-  - peut être erroné
-  - **doit pouvoir être corrigé**
-  - **ne sert jamais d’identifiant**
-- Une équipe ne peut être présente que dans **une seule file à la fois**
+## Note de maintenance
 
 ### Personnages (animateurs)
 - Un personnage correspond à :
@@ -854,3 +852,4 @@ Contraintes non négociables :
   - stockage runtime en JSON,
   - affichage côté `team.html`,
   - **informatif uniquement** : aucun impact sur gameplay, files, rotations ou timers.
+Si une dépendance liée à un ancien mécanisme visuel/code devait réapparaître, elle doit être explicitement validée côté métier avant réintroduction.
