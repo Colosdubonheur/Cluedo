@@ -239,4 +239,9 @@ Règles d’identité :
 3. En environnement terrain, l’application lit/écrit `data/personnages.json`.
 4. Si `data/personnages.json` est absent, il est recréé automatiquement depuis `data/personnages.sample.json`.
 
+### Comportement attendu au démarrage (admin)
+- `admin.html` consomme `GET /api/get.php`, qui lit **toujours** `data/personnages.json`.
+- Au premier accès (ou si le runtime est absent / invalide), le backend initialise `data/personnages.json` depuis `data/personnages.sample.json`.
+- Toute sauvegarde depuis l’admin (`POST /api/save.php`) écrit **uniquement** dans `data/personnages.json`.
+
 Objectif : conserver un dépôt propre tout en laissant les animateurs modifier les données en direct sans conflit Git.

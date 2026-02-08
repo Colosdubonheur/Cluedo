@@ -36,16 +36,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       <input type="file" accept="image/*" class="photo" data-id="${id}"
         style="font-size:16px;margin-bottom:10px">
 
-      <label>Temps</label>
-      <select class="mode" data-id="${id}"
-        style="width:100%;padding:12px;font-size:16px;margin-bottom:10px">
-        ${["random","30s","1mn","2mn","3mn","5mn","custom"].map(m =>
-          `<option value="${m}" ${p.mode===m?"selected":""}>${m}</option>`
-        ).join("")}
-      </select>
-
-      <input type="number" placeholder="Secondes (si custom)"
-        class="custom" data-id="${id}" value="${p.custom ?? ""}"
+      <label>Temps de passage (secondes)</label>
+      <input type="number" min="1" class="time-per-player" data-id="${id}"
+        value="${p.time_per_player ?? 120}"
         style="width:100%;padding:12px;font-size:16px">
     `;
 
@@ -87,12 +80,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       data[i.dataset.id].nom = i.value;
     });
 
-    document.querySelectorAll(".mode").forEach(i => {
-      data[i.dataset.id].mode = i.value;
-    });
-
-    document.querySelectorAll(".custom").forEach(i => {
-      data[i.dataset.id].custom = i.value ? parseInt(i.value,10) : null;
+    document.querySelectorAll(".time-per-player").forEach(i => {
+      const parsed = parseInt(i.value, 10);
+      data[i.dataset.id].time_per_player = Number.isFinite(parsed) && parsed > 0 ? parsed : 120;
     });
 
     const r = await fetch("./api/save.php", {
