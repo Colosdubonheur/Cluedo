@@ -147,7 +147,8 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    messageHistory.forEach((entry) => {
+    for (let index = messageHistory.length - 1; index >= 0; index -= 1) {
+      const entry = messageHistory[index];
       const row = document.createElement("div");
       row.className = "team-message-item";
 
@@ -161,9 +162,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       row.append(ts, text);
       messageHistoryEl.appendChild(row);
-    });
+    }
 
-    messageHistoryEl.scrollTop = messageHistoryEl.scrollHeight;
+    messageHistoryEl.scrollTop = 0;
   }
 
   function pushMessageToHistory(messageText, createdAt) {
