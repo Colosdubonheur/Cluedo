@@ -792,3 +792,17 @@ Contraintes non négociables :
   - versionnés via paramètre serveur `?v=` (hash/mtime) => cache long (`immutable`)
   - non versionnés => cache court (`max-age=300`) pour limiter le stale.
 - La version d'asset est calculée côté serveur (jamais via horloge navigateur).
+
+## 11. Supervision terrain (`monitor.html`)
+
+- La supervision est un **outil de pilotage terrain** : vue globale, lecture rapide, suivi multi-équipes, sans action métier sur les files.
+- Les états visibles en supervision sont strictement :
+  - `active` : équipe en interaction avec un personnage,
+  - `waiting` : équipe en attente dans une file,
+  - `free` : équipe non engagée dans une file (état autorisé en supervision uniquement).
+- Les données affichées en supervision sont informatives (nom d’équipe, membres, photo, historique simplifié des personnages rencontrés).
+- La supervision inclut un canal de messages `supervision -> équipes` :
+  - envoi individuel (par équipe) ou global (toutes les équipes),
+  - stockage runtime en JSON,
+  - affichage côté `team.html`,
+  - **informatif uniquement** : aucun impact sur gameplay, files, rotations ou timers.
