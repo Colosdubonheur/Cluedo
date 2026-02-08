@@ -3,11 +3,13 @@ require_once __DIR__ . '/_bootstrap.php';
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_character_visibility.php';
+require_once __DIR__ . '/_team_profiles_store.php';
 
 $payload = json_decode((string) file_get_contents('php://input'), true);
 $id = $payload['id'] ?? null;
 $action = $payload['action'] ?? null;
 $location = trim((string) ($payload['location'] ?? ''));
+$penaltyValue = !empty($payload['value']);
 
 if (!$id || !$action) {
   http_response_code(400);
@@ -74,6 +76,21 @@ switch ($action) {
   case 'eject':
     array_splice($queue, $activeIndex, 1);
     break;
+  case 'set_incomplete_team_penalty':
+    $activeToken = trim((string) ($queue[$activeIndex]['token'] ?? ''));
+    if ($activeToken === '') {
+      http_response_code(400);
+      echo json_encode(['ok' => false, 'error' => 'missing active token']);
+      exit;
+    }
+
+    $profilesStore = cluedo_load_team_profiles();
+    $profile = cluedo_get_team_profile($profilesStore, $activeToken);
+    $profile['incomplete_team_penalty'] = $penaltyValue;
+    $profilesStore['teams'][$activeToken] = $profile;
+    cluedo_save_team_profiles($profilesStore);
+    echo json_encode(['ok' => true, 'changed' => true, 'incomplete_team_penalty' => $penaltyValue]);
+    exit;
   default:
     http_response_code(400);
     echo json_encode(['ok' => false, 'error' => 'unknown action']);
