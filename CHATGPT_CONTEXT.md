@@ -244,6 +244,11 @@ Transition attendue :
   en `active`).
 - **Polling non destructif** : le polling met à jour l'état métier/valeurs serveur mais ne recrée pas le
   timer local à chaque tick ; il ne fait qu'ajuster/synchroniser la valeur si nécessaire.
+- **Règle countdown strictement limitée à l'attente** :
+  - ne jamais démarrer/afficher un countdown quand `state === "active"`,
+  - le timer est autorisé uniquement quand `state === "waiting"`,
+  - si l'équipe est première et le personnage libre (`state === "active"`), afficher directement :
+    `C’est votre tour, vous pouvez accéder au personnage`.
 
 Règles d’identité :
 - utiliser `equipe.id` (token) comme identifiant technique
