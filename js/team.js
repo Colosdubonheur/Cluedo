@@ -190,8 +190,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    for (let index = messageHistory.length - 1; index >= 0; index -= 1) {
-      const entry = messageHistory[index];
+    for (const entry of messageHistory) {
       const row = document.createElement("div");
       row.className = "team-message-item";
 
@@ -208,6 +207,9 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     messageHistoryEl.scrollTop = 0;
+    requestAnimationFrame(() => {
+      messageHistoryEl.scrollTop = 0;
+    });
   }
 
   function pushMessageToHistory(messageText, createdAt) {
