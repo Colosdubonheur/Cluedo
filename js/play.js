@@ -78,6 +78,13 @@ document.addEventListener("DOMContentLoaded", async () => {
           <button id="leaveActiveBtn" style="padding:10px 14px;border-radius:10px">Je ne suis plus avec …</button>
         </div>
 
+        <div id="freeActions" style="display:none;margin-top:12px;text-align:center;">
+          <button id="closeWindowBtn" style="padding:10px 14px;border-radius:10px">Fermer la fenêtre</button>
+          <div id="closeHint" style="display:none;margin-top:10px;color:#cbd5e1;font-size:14px;line-height:1.4;">
+            Votre navigateur bloque la fermeture automatique. Vous pouvez fermer cet onglet manuellement.
+          </div>
+        </div>
+
         <div id="elapsedWrap" style="display:none;margin-top:12px;text-align:center;">
           <div style="font-size:15px;color:#cbd5e1;">Temps passé</div>
           <div id="elapsedTimer" style="font-size:32px;font-weight:bold;margin-top:4px;">00:00</div>
@@ -147,6 +154,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const elLeaveQueueBtn = document.getElementById("leaveQueueBtn");
   const elLeaveActive = document.getElementById("leaveActive");
   const elLeaveActiveBtn = document.getElementById("leaveActiveBtn");
+  const elFreeActions = document.getElementById("freeActions");
+  const elCloseWindowBtn = document.getElementById("closeWindowBtn");
+  const elCloseHint = document.getElementById("closeHint");
   const elElapsedWrap = document.getElementById("elapsedWrap");
   const elElapsedTimer = document.getElementById("elapsedTimer");
   const elPhotoWrap = document.getElementById("photoWrap");
@@ -371,9 +381,20 @@ document.addEventListener("DOMContentLoaded", async () => {
         elResult.style.display = "none";
         elLeaveQueue.style.display = "none";
         elLeaveActive.style.display = "none";
+        elFreeActions.style.display = "none";
         elElapsedWrap.style.display = "none";
         elQueueDetails.style.display = "none";
         elTimer.textContent = "--:--";
+      }
+    }, 250);
+  }
+
+  function tryCloseWindowWithFallback() {
+    window.close();
+
+    setTimeout(() => {
+      if (!document.hidden) {
+        elCloseHint.style.display = "block";
       }
     }, 250);
   }
@@ -479,6 +500,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     closePlayWindow("Sortie effectuée. Fermez cette fenêtre si elle ne s’est pas fermée automatiquement.");
   };
 
+  elCloseWindowBtn.onclick = () => {
+    tryCloseWindowWithFallback();
+  };
+
   async function loop() {
     if (hasFatalError || hasVoluntarilyLeft) {
       return;
@@ -529,7 +554,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
       // (`state === "active"` ou `can_access === true`). Sans signal explicite => `waiting`.
       const hasExplicitAccess = data.state === "active" || data.can_access === true;
-      const state = data.state === "free"
+      const isEffectivelyFree = data.state === "free" || (!hasExplicitAccess && !inQueue && data.state !== "need_name");
+      const state = isEffectivelyFree
         ? "free"
         : (data.state === "need_name" ? "need_name" : (hasExplicitAccess ? "active" : "waiting"));
       canRenameOnServer = inQueue && hasValidNameFromServer;
@@ -544,20 +570,17 @@ document.addEventListener("DOMContentLoaded", async () => {
         elNeedName.style.display = "none";
         elLeaveQueue.style.display = "none";
         elLeaveActive.style.display = "none";
+        elFreeActions.style.display = "block";
+        elCloseHint.style.display = "none";
         elElapsedWrap.style.display = "none";
         elQueueDetails.style.display = "none";
         elTimerLabel.textContent = "Session terminée";
         elTimer.textContent = "--:--";
         elTimer.style.color = "white";
-        elStatus.textContent = "Votre passage est terminé. Vous êtes désormais libre.";
+        elStatus.textContent = `Le temps avec ${personnageNom} est terminé. Vous êtes maintenant libre.`;
         elStatus.style.background = "#94a3b8";
         elResult.style.display = "none";
         pollTimeoutId = setTimeout(loop, 1000);
-        return;
-      }
-
-      if (previousState === "active" && state !== "active") {
-        closePlayWindow("Interaction terminée. Fermez cette fenêtre si elle ne s’est pas fermée automatiquement.");
         return;
       }
 
@@ -578,6 +601,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         elNeedName.style.display = "block";
         elLeaveQueue.style.display = "none";
         elLeaveActive.style.display = "none";
+        elFreeActions.style.display = "none";
         elElapsedWrap.style.display = "none";
         elStatus.textContent = "Merci de saisir le nom de votre équipe";
         elStatus.style.background = "#fbbf24";
@@ -622,6 +646,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         elNeedName.style.display = "none";
         elLeaveQueue.style.display = "block";
         elLeaveActive.style.display = "none";
+        elFreeActions.style.display = "none";
         elElapsedWrap.style.display = "none";
         syncLocalTimer("waiting", waitRemaining);
         const waitingText = fmt(localTimerRemaining);
@@ -638,6 +663,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         elNeedName.style.display = "none";
         elLeaveQueue.style.display = "none";
         elLeaveActive.style.display = "block";
+        elFreeActions.style.display = "none";
         elElapsedWrap.style.display = "block";
         const hasQueuedTeam = Number(queueTotal) > 1;
         const nextTeamName = hasQueuedTeam
