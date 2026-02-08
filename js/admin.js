@@ -359,8 +359,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      data[id].photo = j.path;
-      setPhotoPreview(id, j.path);
+      const persistedPhoto = j.photo || j.path;
+      data[id].photo = persistedPhoto;
+      setPhotoPreview(id, persistedPhoto);
       URL.revokeObjectURL(previewUrl);
       alert("Photo enregistrée 👍");
     });
