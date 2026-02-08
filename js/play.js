@@ -195,6 +195,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       return "Lien invalide. Merci de réouvrir le lien joueur.";
     }
 
+    if (normalizedError.includes("character unavailable")) {
+      return "Personnage indisponible.";
+    }
+
     return "Une erreur est survenue. Merci de réessayer.";
   }
 

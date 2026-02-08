@@ -205,6 +205,65 @@ document.addEventListener("DOMContentLoaded", () => {
     refreshTeamNameUi(trimmed);
   }
 
+  function parseCharacterIdFromQr(text) {
+    const raw = String(text || "").trim();
+    if (!raw) {
+      return null;
+    }
+
+    try {
+      const parsed = new URL(raw, window.location.href);
+      const id = parsed.searchParams.get("id");
+      if (!id) {
+        return null;
+      }
+      const normalizedId = String(id).replace(/[^0-9]/g, "");
+      return normalizedId || null;
+    } catch (error) {
+      const match = raw.match(/[?&]id=(\d+)/i);
+      return match ? match[1] : null;
+    }
+  }
+
+  async function tryJoinCharacter(id) {
+    const teamName = profileTeamName();
+    const query = new URLSearchParams({
+      id,
+      token,
+      team_name: teamName,
+      join: "1",
+      t: String(Date.now()),
+    });
+
+    let response = await fetch(`./api/status.php?${query.toString()}`);
+    let payload = await response.json();
+
+    if (payload.state === "already_in_queue" && payload.can_join_after_confirm) {
+      const current = payload.current_engagement || {};
+      const ok = window.confirm(`Votre équipe est déjà ${current.state === "active" ? "active" : "en attente"} chez ${current.personnage_nom || "un personnage"}.\nVoulez-vous perdre votre place et rejoindre la nouvelle file ?`);
+      if (!ok) {
+        qrFeedback.textContent = "Changement de file annulé.";
+        return;
+      }
+
+      query.set("force_switch", "1");
+      response = await fetch(`./api/status.php?${query.toString()}`);
+      payload = await response.json();
+    }
+
+    if (!response.ok || payload.error) {
+      const isUnavailable = String(payload.error || "").toLowerCase().includes("character unavailable");
+      qrFeedback.textContent = isUnavailable
+        ? "Personnage indisponible."
+        : "Impossible de rejoindre cette file.";
+      return;
+    }
+
+    qrFeedback.textContent = `Demande envoyée pour ${payload.personnage?.nom || `personnage ${id}`}.`;
+    await loadHub();
+  }
+
+
   function initAccordion() {
     const items = Array.from(document.querySelectorAll("[data-accordion-item]"));
     const triggers = Array.from(document.querySelectorAll("[data-accordion-trigger]"));

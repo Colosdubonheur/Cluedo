@@ -24,7 +24,7 @@
       </section>
 
       <section class="hub-section">
-        <h2>Accès personnages (1 à 15)</h2>
+        <h2>Accès personnages actifs</h2>
         <div class="hub-bulk-actions hub-desktop-only">
           <button id="hub-download-zip-qr" type="button" class="hub-button hub-button-qr">Télécharger tous les QR codes (ZIP)</button>
           <button id="hub-download-pdf-qr" type="button" class="hub-button hub-button-secondary">Télécharger en PDF (A4 – 6 QR codes par page)</button>
@@ -154,7 +154,14 @@
       const fragment = document.createDocumentFragment();
       const quickAccessFragment = document.createDocumentFragment();
 
-      for (let id = 1; id <= 15; id += 1) {
+      const configuredIds = Object.keys(personnages)
+        .filter((id) => personnages[id]?.active !== false)
+        .map((id) => Number(id))
+        .filter((id) => Number.isInteger(id) && id > 0)
+        .sort((a, b) => a - b);
+      const idsToRender = configuredIds.length ? configuredIds : Array.from({ length: 15 }, (_, index) => index + 1);
+
+      for (const id of idsToRender) {
         const rawName = personnages[String(id)]?.nom;
         const name = rawName && rawName.trim() ? rawName.trim() : fallbackName(id);
         characterEntries.push({ id, name });
