@@ -549,3 +549,9 @@ Contraintes non négociables :
 - Aucune référence JSON sans fichier réel écrit dans `uploads/`.
 - Aucun enregistrement d'image brute sans traitement crop + normalisation.
 - Une photo active par personnage ; lors d'un remplacement, l'ancienne photo n'est supprimée que si elle n'est plus référencée.
+
+### Spécificité iOS (HEIC/HEIF) et crop mobile
+
+- Sur iPhone, le recadrage carré doit rester **obligatoire et visible** avant tout upload : aucun envoi serveur sans validation explicite du crop.
+- Les formats `HEIC/HEIF` fournis par iOS ne sont pas traités dans le pipeline client actuel sans bibliothèque externe dédiée ; ils sont donc **refusés explicitement** côté UI avec un message clair demandant une image `JPEG/PNG`.
+- En cas de format non supporté, `admin.html` doit bloquer l'appel à `POST /api/upload.php` et afficher une explication utilisateur (pas de message générique `error upload`).
