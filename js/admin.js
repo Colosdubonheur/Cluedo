@@ -44,12 +44,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     return fetch(url, { ...options, headers });
   };
 
-  document.body.innerHTML = `
-    <div class="container admin-page">
-      <nav class="admin-top-nav" aria-label="Navigation admin">
-        <a href="./index.html" class="admin-hub-link">Retour au Hub</a>
-      </nav>
-      <h1>Admin Cluedo</h1>
+  const appRoot = document.getElementById("app");
+  if (!appRoot) {
+    return;
+  }
+
+  appRoot.innerHTML = `
+    <div class="admin-page">
       <p class="admin-subtitle">Gestion des personnages</p>
       ${isPinEnabled ? "" : '<p class="admin-open-access">Aucun code configuré, accès libre.</p>'}
 
@@ -89,7 +90,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   list.innerHTML = "";
   quickNavList.innerHTML = "";
 
-  const ids = Object.keys(data).sort((a, b) => Number(a) - Number(b));
+  const ids = Object.keys(data)
+    .filter((id) => data[id] && typeof data[id] === "object" && !Array.isArray(data[id]))
+    .sort((a, b) => Number(a) - Number(b));
 
   const setPhotoPreview = (id, src) => {
     const card = document.getElementById(`player-${id}`);
@@ -126,27 +129,71 @@ document.addEventListener("DOMContentLoaded", async () => {
     card.id = `player-${id}`;
     card.className = "card admin-player-card";
 
-    card.innerHTML = `
-      <h3>#${id}</h3>
+    const title = document.createElement("h3");
+    title.textContent = `#${id}`;
 
-      <label class="admin-label">Nom</label>
-      <input class="nom admin-input" data-id="${id}" value="${p.nom || ""}" />
+    const nameLabel = document.createElement("label");
+    nameLabel.className = "admin-label";
+    nameLabel.textContent = "Nom";
+    const nameInput = document.createElement("input");
+    nameInput.className = "nom admin-input";
+    nameInput.dataset.id = id;
+    nameInput.value = p.nom || "";
 
-      <label class="admin-label">Photo</label>
-      <img alt="Photo ${p.nom || `personnage ${id}`}" class="admin-photo is-hidden" />
-      <input type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="photo" data-id="${id}" />
+    const photoLabel = document.createElement("label");
+    photoLabel.className = "admin-label";
+    photoLabel.textContent = "Photo";
+    const photoPreview = document.createElement("img");
+    photoPreview.className = "admin-photo is-hidden";
+    photoPreview.alt = `Photo ${p.nom || `personnage ${id}`}`;
+    const photoInput = document.createElement("input");
+    photoInput.type = "file";
+    photoInput.accept = ".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp";
+    photoInput.className = "photo";
+    photoInput.dataset.id = id;
 
-      <label class="admin-label">Temps de passage (secondes)</label>
-      <input type="number" min="1" class="time-per-player admin-input" data-id="${id}" value="${p.time_per_player ?? 120}" />
+    const timeLabel = document.createElement("label");
+    timeLabel.className = "admin-label";
+    timeLabel.textContent = "Temps de passage (secondes)";
+    const timeInput = document.createElement("input");
+    timeInput.type = "number";
+    timeInput.min = "1";
+    timeInput.className = "time-per-player admin-input";
+    timeInput.dataset.id = id;
+    timeInput.value = String(p.time_per_player ?? 120);
 
-      <label class="admin-label">Emplacement (location)</label>
-      <input class="location admin-input" data-id="${id}" value="${p.location || ""}" maxlength="160" />
+    const locationLabel = document.createElement("label");
+    locationLabel.className = "admin-label";
+    locationLabel.textContent = "Emplacement (location)";
+    const locationInput = document.createElement("input");
+    locationInput.className = "location admin-input";
+    locationInput.dataset.id = id;
+    locationInput.maxLength = 160;
+    locationInput.value = p.location || "";
 
-      <label class="admin-label admin-toggle-label">
-        <input type="checkbox" class="active-flag" data-id="${id}" ${p.active !== false ? "checked" : ""} />
-        Personnage actif
-      </label>
-    `;
+    const activeLabel = document.createElement("label");
+    activeLabel.className = "admin-label admin-toggle-label";
+    const activeInput = document.createElement("input");
+    activeInput.type = "checkbox";
+    activeInput.className = "active-flag";
+    activeInput.dataset.id = id;
+    activeInput.checked = p.active !== false;
+    activeLabel.appendChild(activeInput);
+    activeLabel.append(" Personnage actif");
+
+    card.append(
+      title,
+      nameLabel,
+      nameInput,
+      photoLabel,
+      photoPreview,
+      photoInput,
+      timeLabel,
+      timeInput,
+      locationLabel,
+      locationInput,
+      activeLabel,
+    );
 
     list.appendChild(card);
     setPhotoPreview(id, p.photo || "");
