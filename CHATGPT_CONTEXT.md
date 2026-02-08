@@ -42,6 +42,13 @@
   - temps tampon
 - Ont une vision globale des files
 
+### Règle responsive admin (UI)
+- `admin.html` doit exploiter toute la largeur utile sur desktop (pas de conteneur centré type mobile).
+- La grille des cartes personnages est pilotée uniquement par CSS, sans impact métier :
+  - mobile : 1 colonne,
+  - tablette : 2 à 3 colonnes selon breakpoint,
+  - desktop : 4 à 5 colonnes selon largeur écran.
+
 ---
 
 ## 3. Principe fondamental (règle non négociable)
@@ -121,6 +128,15 @@ Le serveur est l’unique source de vérité pour :
   - l'équipe est retirée proprement de l'ancienne file,
   - l'équipe rejoint la nouvelle file demandée.
 - Aucune sortie de file ne doit être déclenchée par des événements navigateur (`close`, `blur`, `sleep`, `visibilitychange`).
+
+### Messagerie supervision (équipes + personnages)
+- La supervision (`monitor.html`) permet d'envoyer des messages ciblés :
+  - globaux vers toutes les équipes,
+  - individuels vers une équipe,
+  - individuels vers un personnage.
+- Le point d'entrée est la zone **Communication supervision** de `monitor.html`.
+- Côté `character.html?id=X`, le message ciblé personnage est affiché dans une zone dédiée **Messages supervision** et rafraîchi par polling.
+- Cette messagerie personnage est isolée de la messagerie équipe (stockages séparés par portée) pour éviter tout conflit de diffusion.
 
 ### Donnée personnage `location`
 - Chaque personnage expose un champ texte libre `location` (emplacement physique).
@@ -860,3 +876,36 @@ Si une dépendance liée à un ancien mécanisme visuel/code devait réapparaît
 - Le **Hub** (`index.html`) est le **point de navigation central** de l'application.
 - **Toutes les pages** utilisateur et admin accessibles directement (ex. `admin.html`, `team.html`, `play.html`, `character.html`, `monitor.html`) doivent proposer un bouton/lien explicite **« Retour au Hub »**.
 - Ce retour vers `index.html` doit rester immédiat, visible et homogène sur desktop, tablette et mobile (pas de menu caché).
+## 10. Espace Équipe — verrouillage d'initialisation (obligatoire)
+
+### Initialisation requise à la première arrivée
+- L'équipe doit renseigner un **nom d'équipe valide**.
+- L'équipe doit renseigner les **prénoms des participants**.
+- Contraintes participants :
+  - **minimum : 2**
+  - **maximum : 10**
+
+### Blocage strict tant que profil incomplet
+Tant que les prérequis d'initialisation ne sont pas satisfaits :
+- impossible de rejoindre une file d'attente personnage,
+- toutes les actions liées aux personnages sont désactivées côté UI,
+- le blocage est explicite et visible (message de verrouillage + contrôles désactivés).
+
+### Règles d'affichage des personnages dans `team.html`
+Chaque entrée personnage doit afficher :
+- le nom,
+- la photo,
+- la localisation (`location`),
+- le temps d'attente estimé (valeur serveur),
+- une action explicite pour rejoindre/quitter la file.
+
+### Tri et filtre obligatoires
+- Tri :
+  - par nom,
+  - par temps d'attente estimé.
+- Filtre :
+  - afficher uniquement les personnages jamais vus par l'équipe (déduit de l'historique équipe).
+
+Les règles d'unicité de file restent inchangées :
+- une équipe ne peut être engagée que dans une seule file à la fois,
+- confirmation obligatoire avant changement de personnage.

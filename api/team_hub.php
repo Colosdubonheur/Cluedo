@@ -94,6 +94,7 @@ foreach ($data as $characterId => $character) {
     'id' => (string) $characterId,
     'nom' => (string) ($character['nom'] ?? ''),
     'location' => (string) ($character['location'] ?? ''),
+    'photo' => (string) ($character['photo'] ?? ''),
     'state' => count($queue) > 0 ? 'queue' : 'available',
     'queue_total' => count($queue),
     'active_team_name' => $activeTeamName,

@@ -63,8 +63,26 @@ if ($method === 'POST' && $action === 'send_message') {
 
   if ($target === 'all') {
     $messages['global'] = $payload;
+  } elseif (str_starts_with($target, 'team:')) {
+    $teamToken = substr($target, strlen('team:'));
+    if ($teamToken === '') {
+      http_response_code(400);
+      echo json_encode(['ok' => false, 'error' => 'destinataire équipe invalide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+      exit;
+    }
+    $messages['teams'][$teamToken] = $payload;
+  } elseif (str_starts_with($target, 'character:')) {
+    $characterId = substr($target, strlen('character:'));
+    if ($characterId === '') {
+      http_response_code(400);
+      echo json_encode(['ok' => false, 'error' => 'destinataire personnage invalide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+      exit;
+    }
+    $messages['characters'][$characterId] = $payload;
   } else {
-    $messages['teams'][$target] = $payload;
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'destinataire inconnu'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
   }
 
   cluedo_save_supervision_messages($messages);
@@ -294,4 +312,24 @@ $historyStore['teams'] = $teamHistory;
 cluedo_save_history($historyStore);
 file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
-echo json_encode(['ok' => true, 'teams' => $teamsPayload], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+$charactersPayload = [];
+foreach ($data as $characterId => $character) {
+  if (!cluedo_character_is_active($character)) {
+    continue;
+  }
+
+  $charactersPayload[] = [
+    'id' => (string) $characterId,
+    'nom' => (string) ($character['nom'] ?? ''),
+  ];
+}
+
+usort($charactersPayload, function ($a, $b) {
+  return strcasecmp((string) ($a['nom'] ?? ''), (string) ($b['nom'] ?? ''));
+});
+
+echo json_encode([
+  'ok' => true,
+  'teams' => $teamsPayload,
+  'characters' => $charactersPayload,
+], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

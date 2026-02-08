@@ -85,23 +85,6 @@ body {
 
 .hub-character-list { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
-.hub-quick-access h3 { margin: 0 0 8px; font-size: 1rem; }
-.hub-quick-access-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
-.hub-quick-access-button {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 34px;
-  border-radius: 8px;
-  padding: 6px 8px;
-  background: #243042;
-  color: #dbe7ff;
-  text-decoration: none;
-  font-size: 13px;
-  font-weight: 700;
-}
-.hub-quick-access-button:hover,
-.hub-quick-access-button:focus-visible { background: #31445f; }
 .hub-character-card {
   background: #10151f;
   border: 1px solid #263247;
@@ -187,7 +170,13 @@ body {
 
 /* ===================== ADMIN ===================== */
 
-.admin-page { padding-bottom: 110px; }
+.admin-page {
+  max-width: none;
+  width: 100%;
+  padding-bottom: 110px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
 
 .admin-subtitle { color: var(--muted); margin-top: -6px; }
 
@@ -381,7 +370,6 @@ body {
 
 @media (min-width: 768px) {
   .hub-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .hub-quick-access-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .hub-character-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .hub-desktop-only { display: flex; }
   .hub-bulk-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
@@ -391,14 +379,57 @@ body {
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 720px) {
+  .admin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 980px) {
   .admin-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1280px) {
+  .admin-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1560px) {
+  .admin-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 
 /* ===================== TEAM HUB ===================== */
 
 
 .team-page { padding-bottom: 40px; }
+
+.team-hero-name {
+  margin: 4px 0 16px;
+  text-align: center;
+  font-size: clamp(2rem, 9vw, 3rem);
+  font-weight: 800;
+}
+
+.team-input-row {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.team-character-photo {
+  width: 96px;
+  height: 96px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #1f2937;
+}
+
+.team-character-photo-placeholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #cbd5e1;
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 8px;
+}
 .team-hero {
   margin-bottom: 14px;
   text-align: center;
@@ -677,6 +708,17 @@ body {
   color: #fef08a;
   font-weight: 700;
 }
+
+.character-supervision-message-text {
+  margin: 0;
+  color: #cfe0ff;
+}
+
+.character-supervision-message-text.is-active {
+  color: #fef08a;
+  font-weight: 700;
+}
+
 
 @media (min-width: 900px) {
   .monitor-grid {
