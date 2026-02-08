@@ -882,36 +882,56 @@ Si une dépendance liée à un ancien mécanisme visuel/code devait réapparaît
 - Le **Hub** (`index.html`) est le **point de navigation central** de l'application.
 - **Toutes les pages** utilisateur et admin accessibles directement (ex. `admin.html`, `team.html`, `play.html`, `character.html`, `monitor.html`) doivent proposer un bouton/lien explicite **« Retour au Hub »**.
 - Ce retour vers `index.html` doit rester immédiat, visible et homogène sur desktop, tablette et mobile (pas de menu caché).
-## 10. Espace Équipe — verrouillage d'initialisation (obligatoire)
+## 10. Espace Équipe — organisation UI + verrouillage d'initialisation
 
-### Initialisation requise à la première arrivée
-- L'équipe doit renseigner un **nom d'équipe valide**.
-- L'équipe doit renseigner les **prénoms des participants**.
+### Ordre des blocs (`team.html`)
+De haut en bas :
+1. **Nom d'équipe** centré (sans titre « Espace Équipe ») avec un bouton crayon pour éditer.
+2. Bloc **Notifications**.
+3. Bloc **Suspects** (anciennement « Personnages »).
+4. Bloc bas de page **Nom d'équipe + participants** (édition unique).
+
+### Édition du profil équipe (bloc unique bas de page)
+- Une seule zone d'édition gère :
+  - le nom d'équipe,
+  - la liste des participants.
+- Participants :
+  - un champ d'ajout de prénom,
+  - chaque prénom validé apparaît sous le champ,
+  - chaque entrée affiche une croix de suppression.
 - Contraintes participants :
-  - **minimum : 2**
-  - **maximum : 10**
+  - **minimum : 2**,
+  - **maximum : 10**.
 
 ### Blocage strict tant que profil incomplet
-Tant que les prérequis d'initialisation ne sont pas satisfaits :
-- impossible de rejoindre une file d'attente personnage,
-- toutes les actions liées aux personnages sont désactivées côté UI,
-- le blocage est explicite et visible (message de verrouillage + contrôles désactivés).
+Tant que le nom d'équipe n'est pas valide **ou** qu'il y a moins de 2 participants :
+- impossible de rejoindre/quitter une file,
+- les actions de file sont désactivées,
+- un message rouge explicite est affiché.
 
-### Règles d'affichage des personnages dans `team.html`
-Chaque entrée personnage doit afficher :
-- le nom,
-- la photo,
-- la localisation (`location`),
-- le temps d'attente estimé (valeur serveur),
-- une action explicite pour rejoindre/quitter la file.
+Quand les prérequis sont remplis (nom valide + 2 à 10 participants), l'équipe peut agir sur les files.
+Le texte d'état « Espace équipe prêt : vous pouvez gérer les files des personnages » est supprimé.
 
-### Tri et filtre obligatoires
-- Tri :
-  - par nom,
-  - par temps d'attente estimé.
-- Filtre :
-  - afficher uniquement les personnages jamais vus par l'équipe (déduit de l'historique équipe).
+### Section Suspects (affichage ligne unique)
+Chaque suspect affiche sur une ligne horizontale :
+- photo,
+- nom,
+- localisation avec icône uniquement (sans libellé « localisation »),
+- temps d'attente avec icône uniquement (sans libellé « temps d'attente »),
+- action rejoindre/quitter.
+
+Règle d'affichage du temps :
+- si `estimated_wait_seconds = 0` => afficher **« Disponible »**.
+
+### Couleur stricte du temps d'attente
+- **Vert** : 1 équipe avec le personnage, 0 équipe en attente.
+- **Orange** : 1 équipe avec le personnage, 1 équipe en attente.
+- **Rouge** : 1 équipe avec le personnage, 2 équipes (ou plus) en attente.
+
+### Tri et filtre conservés
+- Tri : par nom ou par temps d'attente estimé.
+- Filtre : suspects jamais vus par l'équipe (selon historique).
 
 Les règles d'unicité de file restent inchangées :
 - une équipe ne peut être engagée que dans une seule file à la fois,
-- confirmation obligatoire avant changement de personnage.
+- confirmation obligatoire avant changement de suspect.

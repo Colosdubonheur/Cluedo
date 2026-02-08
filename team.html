@@ -14,26 +14,12 @@ cluedo_send_html_no_cache_headers();
 <body>
   <div class="hub-app-version" data-app-version aria-label="Version applicative"></div>
   <a class="hub-return-link" href="./index.html">Retour au Hub</a>
-  <div class="container">
-    <h1>👥 Espace Équipe</h1>
-  <div class="container team-page">
-    <h1>Espace Équipe</h1>
-    <p id="team-hero-name" class="team-hero-name">Équipe sans nom</p>
 
-    <section class="card team-block team-profile-block" aria-label="Profil équipe">
-      <h2>Profil équipe</h2>
-      <p id="team-display-name" class="team-display-name">Équipe sans nom</p>
-      <form id="team-profile-form" class="team-form" autocomplete="off">
-        <div class="team-input-row">
-          <label for="team-name">Nom d'équipe</label>
-          <input id="team-name" type="text" class="admin-input" maxlength="40" placeholder="Ex: Équipe rouge"/>
-        </div>
-        <div id="team-players" class="team-players"></div>
-        <button id="save-players" type="button" class="admin-button">Sauvegarder les joueurs</button>
-        <button type="submit" class="admin-button team-profile-save-name-btn">Enregistrer le profil</button>
-        <p id="team-name-feedback" class="team-feedback"></p>
-      </form>
-    </section>
+  <div class="container team-page">
+    <div class="team-title-row">
+      <h1 id="team-hero-name" class="team-hero-name">Équipe sans nom</h1>
+      <button id="team-edit-name-btn" type="button" class="admin-button team-hero-edit-btn" aria-label="Modifier le nom d'équipe">✏️</button>
+    </div>
 
     <section class="card team-block" aria-label="Notifications">
       <h2>Notifications</h2>
@@ -42,8 +28,8 @@ cluedo_send_html_no_cache_headers();
       <p id="team-message" class="team-feedback">Aucun message reçu.</p>
     </section>
 
-    <section class="card team-block" aria-label="Files personnages">
-      <h2>Files des personnages</h2>
+    <section class="card team-block" aria-label="Files suspects">
+      <h2>Suspects</h2>
       <p id="team-lock-message" class="team-feedback"></p>
       <div class="team-character-toolbar">
         <label for="team-character-sort" class="team-character-sort-label">Trier par</label>
@@ -53,19 +39,34 @@ cluedo_send_html_no_cache_headers();
         </select>
         <label for="team-character-filter-unseen">
           <input type="checkbox" id="team-character-filter-unseen"/>
-          Personnages jamais vus
+          Suspects jamais vus
         </label>
       </div>
       <p id="team-character-feedback" class="team-feedback"></p>
       <div id="team-characters" class="team-characters">Chargement…</div>
     </section>
 
-    <section class="card team-block" aria-label="État équipe">
-      <h2>État équipe</h2>
-      <p id="team-guidance-participants" class="team-feedback"></p>
-      <p id="team-guidance-photo" class="team-feedback"></p>
-      <div id="team-history" class="team-history"></div>
-      <div id="team-global" class="team-global"></div>
+    <section class="card team-block team-profile-block" aria-label="Édition équipe et participants">
+      <h2>Nom d'équipe et participants</h2>
+      <form id="team-profile-form" class="team-form" autocomplete="off">
+        <div class="team-input-row">
+          <label for="team-name">Nom d'équipe</label>
+          <input id="team-name" type="text" class="admin-input" maxlength="40" placeholder="Ex: Équipe rouge"/>
+        </div>
+
+        <div class="team-input-row">
+          <label for="team-player-input">Ajouter un participant</label>
+          <div class="team-participant-add-row">
+            <input id="team-player-input" type="text" class="admin-input" maxlength="40" placeholder="Prénom"/>
+            <button id="team-player-add-btn" type="button" class="admin-button">Ajouter</button>
+          </div>
+        </div>
+
+        <ul id="team-players" class="team-players-list" aria-live="polite"></ul>
+
+        <button type="submit" class="admin-button">Enregistrer</button>
+        <p id="team-name-feedback" class="team-feedback"></p>
+      </form>
     </section>
   </div>
 
