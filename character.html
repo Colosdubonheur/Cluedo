@@ -5,15 +5,22 @@
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Interface personnage</title>
   <link rel="stylesheet" href="./css/style.css"/>
-<link rel="icon" href="./favicon.ico" type="image/x-icon"/>
+  <link rel="icon" href="./favicon.ico" type="image/x-icon"/>
 </head>
 <body>
   <div class="container">
     <h1>🎭 Interface personnage</h1>
     <div id="characterName" class="card">Chargement…</div>
+    <section class="card character-photo-card" style="margin-top:12px">
+      <h3>Photo du personnage</h3>
+      <img id="characterPhoto" class="admin-photo is-hidden" alt="Photo du personnage"/>
+      <input id="characterPhotoInput" type="file" accept=".jpg,.jpeg,.png,.webp,image/jpeg,image/png,image/webp" class="photo character-photo-input"/>
+      <button id="characterPhotoButton" type="button" class="admin-button">Modifier la photo</button>
+    </section>
     <div id="currentTeam" class="card" style="margin-top:12px"></div>
     <div id="queue" class="card" style="margin-top:12px"></div>
   </div>
+  <script src="./js/photo-upload.js"></script>
   <script src="./js/character.js"></script>
 </body>
 </html>

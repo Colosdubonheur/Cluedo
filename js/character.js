@@ -5,6 +5,11 @@
   const characterNameEl = document.getElementById("characterName");
   const currentEl = document.getElementById("currentTeam");
   const queueEl = document.getElementById("queue");
+  const characterPhotoEl = document.getElementById("characterPhoto");
+  const characterPhotoInputEl = document.getElementById("characterPhotoInput");
+  const characterPhotoButtonEl = document.getElementById("characterPhotoButton");
+
+  let currentPhoto = "";
 
   if (!id) {
     characterNameEl.textContent = "Paramètre id manquant.";
@@ -16,6 +21,59 @@
     const m = String(Math.floor(s / 60)).padStart(2, "0");
     const r = String(s % 60).padStart(2, "0");
     return `${m}:${r}`;
+  }
+
+  function setPhotoPreview(src) {
+    if (!src) {
+      characterPhotoEl.classList.add("is-hidden");
+      characterPhotoEl.removeAttribute("src");
+      return;
+    }
+
+    characterPhotoEl.src = src;
+    characterPhotoEl.classList.remove("is-hidden");
+  }
+
+  async function uploadCharacterPhoto() {
+    await window.CluedoPhotoUpload.uploadFromInput({
+      id,
+      input: characterPhotoInputEl,
+      getPreviousPhoto: () => currentPhoto,
+      setPhotoPreview: (src) => setPhotoPreview(src),
+      sendUploadRequest: async ({ id: uploadId, file }) => {
+        const fd = new FormData();
+        fd.append("id", uploadId);
+        fd.append("character_id", uploadId);
+        fd.append("file", file);
+
+        const response = await fetch("./api/upload.php", {
+          method: "POST",
+          body: fd,
+        });
+
+        const rawResponse = await response.text();
+        const payload = (() => {
+          try {
+            return JSON.parse(rawResponse);
+          } catch (_error) {
+            return {};
+          }
+        })();
+
+        if (!payload.ok) {
+          return {
+            ok: false,
+            error: payload.error || (rawResponse ? `Erreur upload (${rawResponse.slice(0, 120)})` : "Erreur upload"),
+          };
+        }
+
+        currentPhoto = payload.photo || payload.path || "";
+        return {
+          ok: true,
+          photo: currentPhoto,
+        };
+      },
+    });
   }
 
   async function control(action) {
@@ -38,6 +96,9 @@
 
     const character = payload.character;
     characterNameEl.innerHTML = `Personnage : <strong>${character.nom || "(sans nom)"}</strong> (#${character.id})`;
+
+    currentPhoto = character.photo || "";
+    setPhotoPreview(currentPhoto);
 
     const activeTeam = payload.current || payload.active || payload.active_team || null;
     const waitingQueue = Array.isArray(payload.queue)
@@ -79,6 +140,12 @@
       })
       .join("")}`;
   }
+
+  characterPhotoButtonEl.addEventListener("click", () => {
+    characterPhotoInputEl.click();
+  });
+
+  characterPhotoInputEl.addEventListener("change", uploadCharacterPhoto);
 
   refresh();
   setInterval(refresh, 2000);
