@@ -1119,3 +1119,33 @@ Les règles d'unicité de file restent inchangées :
   - si la page est rafraîchie ou réouverte avec l’ancien token, l’équipe est traitée comme nouvelle,
   - aucune récupération implicite des anciennes données runtime,
   - le parcours repart de zéro (nom d’équipe + participants à ressaisir, historique vide).
+
+## Administration centralisée (`admin.html`) — verrou fonctionnel
+
+- `admin.html` est l'interface centrale de configuration runtime du jeu.
+- Le paramètre de durée de session (temps de passage) reste global dans son effet gameplay : la valeur configurée depuis l'administration doit rester visible, modifiable, sauvegardable et appliquée sur les pages consommatrices des données runtime.
+- La structure des personnages est verrouillée à **15 entrées fixes** avec des IDs **1 à 15** (pas de génération dynamique d'ID, pas de variation du nombre de personnages).
+- L'administration doit toujours afficher les 15 personnages, de manière stable et cohérente.
+
+### Champs configurables par personnage (admin)
+
+Pour chaque ID de 1 à 15, les champs suivants sont configurables et persistés dans les données runtime :
+
+- **Photo** :
+  - upload autorisé ;
+  - recadrage carré obligatoire avant sauvegarde ;
+  - persistance après refresh ;
+  - réutilisation sur les autres pages (`team.html`, `character.html`, `monitor.html`, hub).
+- **Nom** : modifiable depuis l'admin, persistant, propagé sur les pages qui affichent l'identité du personnage.
+- **Lieu (`location`)** : modifiable depuis l'admin, persistant, propagé sur les pages qui consomment ce champ.
+- **Activation** : bascule actif/inactif (sans suppression du personnage).
+
+### Impact global des paramètres admin
+
+- Les modifications faites dans `admin.html` (photo, nom, lieu, activation, timing) sont sauvegardées dans le runtime JSON.
+- Après sauvegarde et rafraîchissement, les valeurs doivent rester cohérentes et être immédiatement prises en compte par :
+  - `team.html`
+  - `character.html`
+  - `monitor.html`
+  - `index.html` (hub)
+- Un personnage inactif n'est pas disponible côté équipes et ne doit pas être sélectionnable en jeu.

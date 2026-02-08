@@ -24,7 +24,7 @@ if (!is_array($currentData)) {
   $currentData = [];
 }
 
-$mergedData = $incomingData;
+$mergedData = cluedo_normalize_characters_data($incomingData);
 
 foreach ($mergedData as $id => &$character) {
   if (!is_array($character)) {
