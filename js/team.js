@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", () => {
   const TOKEN_KEY = "cluedo_player_token";
   const TEAM_KEY = "cluedo_team_name";
+  const AUDIO_ENABLED_KEY = "cluedo_team_audio_enabled";
 
   let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
   if (!token) {
@@ -29,6 +30,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const participantsGuidanceEl = document.getElementById("team-guidance-participants");
   const photoGuidanceEl = document.getElementById("team-guidance-photo");
   const supervisionMessageEl = document.getElementById("team-supervision-message");
+  const audioEnableBtn = document.getElementById("team-audio-enable-btn");
+  const audioStatusEl = document.getElementById("team-audio-status");
 
   let latestState = null;
   let previousTeamState = "free";
@@ -40,6 +43,97 @@ document.addEventListener("DOMContentLoaded", () => {
   let userEditingLockUntil = 0;
   let isSavingTeamName = false;
   let isTeamNameEditMode = false;
+  let lastRenderedMessage = "";
+
+  const notificationAudio = new Audio("./assets/ding.mp3");
+  notificationAudio.preload = "auto";
+
+  const audioState = {
+    isEnabled: localStorage.getItem(AUDIO_ENABLED_KEY) === "1",
+    unlockSucceeded: false,
+    unlockAttempted: false,
+  };
+
+  function setAudioStatus(message, status = "neutral") {
+    if (!audioStatusEl) return;
+    audioStatusEl.textContent = String(message || "");
+    audioStatusEl.classList.remove("is-success", "is-error", "is-processing");
+    if (status === "success") audioStatusEl.classList.add("is-success");
+    if (status === "error") audioStatusEl.classList.add("is-error");
+    if (status === "processing") audioStatusEl.classList.add("is-processing");
+  }
+
+  function renderAudioUi() {
+    if (!audioEnableBtn || !audioStatusEl) return;
+
+    if (audioState.isEnabled) {
+      audioEnableBtn.textContent = "🔔 Son activé";
+      audioEnableBtn.setAttribute("aria-pressed", "true");
+      audioEnableBtn.classList.add("is-enabled");
+      setAudioStatus("Le son est activé pour cette session. Les nouveaux messages déclenchent une notification.", "success");
+      return;
+    }
+
+    audioEnableBtn.textContent = "🔔 Activer le son";
+    audioEnableBtn.setAttribute("aria-pressed", "false");
+    audioEnableBtn.classList.remove("is-enabled");
+    setAudioStatus("Le son est désactivé. Activez-le pour recevoir les notifications.", "neutral");
+  }
+
+  async function unlockAudioFromGesture() {
+    audioState.unlockAttempted = true;
+    notificationAudio.currentTime = 0;
+    try {
+      await notificationAudio.play();
+      notificationAudio.pause();
+      notificationAudio.currentTime = 0;
+      audioState.unlockSucceeded = true;
+      return true;
+    } catch (_error) {
+      audioState.unlockSucceeded = false;
+      return false;
+    }
+  }
+
+  async function enableAudioNotifications() {
+    if (!audioEnableBtn) return;
+    audioEnableBtn.disabled = true;
+    setAudioStatus("Activation du son en cours…", "processing");
+
+    const unlocked = await unlockAudioFromGesture();
+    if (!unlocked) {
+      audioState.isEnabled = false;
+      localStorage.removeItem(AUDIO_ENABLED_KEY);
+      renderAudioUi();
+      setAudioStatus("Activation refusée par le navigateur. Touchez à nouveau « Activer le son » après avoir autorisé l'audio.", "error");
+      audioEnableBtn.disabled = false;
+      return;
+    }
+
+    audioState.isEnabled = true;
+    localStorage.setItem(AUDIO_ENABLED_KEY, "1");
+    renderAudioUi();
+    audioEnableBtn.disabled = false;
+  }
+
+  async function playNotificationSound() {
+    if (!audioState.isEnabled) return;
+
+    if (!audioState.unlockSucceeded && audioState.unlockAttempted) {
+      return;
+    }
+
+    notificationAudio.currentTime = 0;
+    try {
+      await notificationAudio.play();
+    } catch (_error) {
+      audioState.isEnabled = false;
+      audioState.unlockSucceeded = false;
+      localStorage.removeItem(AUDIO_ENABLED_KEY);
+      renderAudioUi();
+      setAudioStatus("Le son a été bloqué par le navigateur. Touchez « Activer le son » pour rétablir les notifications.", "error");
+    }
+  }
 
   function setNameFeedback(message, status = "neutral") {
     feedbackName.textContent = String(message || "");
@@ -147,8 +241,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ensurePlayerInputs();
     for (let i = 0; i < 10; i += 1) {
       const input = playersWrap.querySelector(`input[data-player-index="${i}"]`);
-      if (!input) continue;
-      if (keepUserInput) continue;
+      if (!input || (keepUserInput && document.activeElement === input)) continue;
       input.value = String(players[i] || "");
     }
   }
@@ -207,6 +300,12 @@ document.addEventListener("DOMContentLoaded", () => {
       : "Aucun personnage vu pour l'instant.";
 
     const teamMessage = payload.team?.message || { scope: "none", text: "" };
+    const incomingMessage = String(teamMessage.text || "").trim();
+    if (incomingMessage && incomingMessage !== lastRenderedMessage) {
+      void playNotificationSound();
+    }
+    lastRenderedMessage = incomingMessage;
+
     if (teamMessage.text) {
       const prefix = teamMessage.scope === "team" ? "Message individuel : " : "Message global : ";
       supervisionMessageEl.textContent = `${prefix}${teamMessage.text}`;
@@ -640,7 +739,14 @@ document.addEventListener("DOMContentLoaded", () => {
     await loadHub();
   });
 
+  if (audioEnableBtn) {
+    audioEnableBtn.addEventListener("click", () => {
+      void enableAudioNotifications();
+    });
+  }
+
   ensurePlayerInputs();
+  renderAudioUi();
   loadHub().catch(() => {
     participantsGuidanceEl.textContent = "Impossible de vérifier les participants pour le moment.";
     photoGuidanceEl.textContent = "Impossible de vérifier la photo pour le moment.";

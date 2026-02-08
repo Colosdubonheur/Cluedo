@@ -764,6 +764,20 @@ body {
   margin: 0 0 8px;
 }
 
+.team-audio-controls {
+  margin-bottom: 10px;
+}
+
+.team-audio-controls .admin-button {
+  margin-bottom: 8px;
+}
+
+.team-audio-controls .admin-button.is-enabled {
+  background: #22c55e;
+  color: #062b14;
+  border-color: #22c55e;
+}
+
 .team-supervision-message-text {
   margin: 0;
   color: #cfe0ff;
