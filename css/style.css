@@ -39,27 +39,33 @@ body {
 .hub-character-card {
   background: #10151f;
   border: 1px solid #263247;
-  border-radius: 12px;
+  border-radius: 10px;
   padding: 12px;
 }
 .hub-character-title { margin: 0 0 10px; font-size: 1rem; color: #dbe7ff; }
-.hub-character-actions { display: grid; gap: 8px; }
+.hub-character-actions { display: grid; gap: 6px; }
+
+.hub-bulk-actions {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 10px;
+}
 
 .hub-button {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: 52px;
+  min-height: 42px;
   width: 100%;
-  border-radius: 12px;
+  border-radius: 10px;
   background: var(--accent);
   color: #fff;
   text-decoration: none;
   font-weight: 700;
-  padding: 12px;
+  padding: 8px 10px;
   text-align: center;
   border: none;
-  font-size: 16px;
+  font-size: 14px;
   cursor: pointer;
 }
 .hub-button:hover,
@@ -201,6 +207,7 @@ body {
   .hub-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hub-character-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .hub-desktop-only { display: flex; }
+  .hub-bulk-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (min-width: 900px) {
