@@ -307,7 +307,8 @@ Objectif : conserver un dépôt propre tout en laissant les animateurs modifier 
 - Seule l'interface admin est protégée par PIN.
 - Vérification **front** : `js/admin.js` demande le PIN puis vérifie via `api/admin_auth.php`.
 - Vérification **API** : endpoints admin valident `X-Admin-Pin` (ou `admin_pin` en query).
-- PIN stocké dans `data/config.json` (initialisé depuis `data/config.sample.json`).
+- Le code admin est lu dans `data/config.json` (clé recommandée : `admin_code`, rétrocompatibilité `admin_pin`).
+- **Protection activée uniquement si un code non vide est configuré**. Si la clé est absente / vide / `null`, l'admin est en accès libre (sans prompt PIN).
 
 ### Endpoints ajoutés
 - `GET /api/admin_auth.php` : vérifie le PIN admin.
