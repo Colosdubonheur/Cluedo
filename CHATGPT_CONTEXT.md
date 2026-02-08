@@ -748,3 +748,40 @@ Contraintes non négociables :
   - desktop : `Télécharger` est l’option recommandée pour récupérer le QR code.
 - La logique de génération des QR codes ne doit pas être modifiée par ces ajustements UX.
 
+---
+
+## 12. Convention dossiers + déploiement FTP + cache (post-déploiement)
+
+### Convention stricte des dossiers
+- `includes/`
+  - logique interne PHP (helpers, fonctions utilitaires, cache helpers)
+  - **interdit en accès direct HTTP** (doit retourner 403)
+  - uniquement chargé via `require`/`require_once` par des scripts publics
+- `api/`
+  - endpoints appelés par le frontend
+  - validation d'entrée minimale (types attendus + présence) et réponses JSON contrôlées
+  - les fichiers internes préfixés par `_` sont réservés à l'inclusion interne et ne doivent pas être exposés
+- `data/`
+  - données versionnées de référence (`*.sample.json`, configuration de version)
+  - exclut les fichiers runtime utilisateurs
+- `uploads/`
+  - runtime utilisateur uniquement (photos, QR, assets générés)
+  - non versionné (sauf placeholder `.gitkeep`)
+  - non déployé par le pipeline FTP
+
+### Règles de déploiement FTP (PlanetHoster)
+- Le pipeline GitHub Actions doit exclure explicitement :
+  - `.git/`, `.github/`
+  - documentation (`*.md`), dont `README.md` et `CHATGPT_CONTEXT.md`
+  - fichiers locaux (ex: `.DS_Store`)
+  - `uploads/` (pour ne jamais écraser/supprimer les fichiers runtime terrain)
+- Un fichier `.ftpignore` doit être maintenu à la racine avec ces exclusions.
+- Objectif opérationnel : le dossier `uploads/` en production doit survivre à tous les déploiements.
+
+### Règles de cache navigateur
+- HTML (`*.html` servi en PHP) : en-têtes anti-cache (`no-store/no-cache`) envoyés côté serveur.
+- API (`/api/`) : en-têtes anti-cache stricts (`Cache-Control: no-store...`, `Pragma`, `Expires`).
+- Assets statiques (`css/js/assets/uploads`) :
+  - versionnés via paramètre serveur `?v=` (hash/mtime) => cache long (`immutable`)
+  - non versionnés => cache court (`max-age=300`) pour limiter le stale.
+- La version d'asset est calculée côté serveur (jamais via horloge navigateur).

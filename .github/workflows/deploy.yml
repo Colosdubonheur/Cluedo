@@ -22,5 +22,13 @@ jobs:
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
           server-dir: ${{ secrets.FTP_PATH }}
+          exclude: |
+            **/.git/**
+            **/.github/**
+            **/README.md
+            **/CHATGPT_CONTEXT.md
+            **/*.md
+            **/.DS_Store
+            **/uploads/**
           log-level: verbose
           force: true
