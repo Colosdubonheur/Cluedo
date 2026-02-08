@@ -15,14 +15,48 @@
 
 1. L'équipe ouvre `team.html`.
 2. Elle gère son profil (nom, participants, photo).
-3. Elle rejoint/quitte les files personnages uniquement depuis la liste des personnages de l'Espace Équipe.
-4. Les règles existantes de file sont conservées (unicité, confirmation de changement/sortie).
+3. Elle sélectionne un suspect et lance un interrogatoire depuis la liste des personnages de l'Espace Équipe.
+4. Les règles métier existantes côté serveur sont conservées (FIFO, unicité d’engagement, confirmation de changement/sortie).
 
 ## Portée technique
 
 - `team.html` + `js/team.js` : gestion des files sans scan.
 - `index.html` : hub simplifié (Administration, Supervision, Espace équipe + accès Joueur/Personnage).
 - Aucun appel `getUserMedia`, aucun usage de librairie de scan.
+
+
+## Règles de vocabulaire UI (obligatoire)
+
+- Les expressions techniques suivantes sont **strictement internes** (serveur/dev) et **invisibles côté utilisateur** :
+  - « file d’attente »
+  - « rejoindre une file »
+  - « quitter une file »
+- Le vocabulaire utilisateur officiel est désormais :
+  - « Interroger un suspect »
+  - « Interrogatoire en cours »
+  - « Préparez-vous à libérer la place »
+  - « Quitter l’interrogatoire »
+- La mécanique FIFO existe toujours côté serveur, mais **n’est jamais exposée à l’utilisateur**.
+
+### team.html — logique fonctionnelle documentée
+- L’équipe sélectionne un suspect puis entre dans un interrogatoire (ou une attente implicite), sans visualiser la notion de file.
+- Le bouton STOP correspond à une sortie volontaire de l’interrogatoire (ou de l’attente implicite).
+- Lorsqu’une autre équipe arrive sur le même suspect :
+  - l’état visuel change,
+  - le chronomètre devient orange,
+  - le message « Préparez-vous à libérer la place » apparaît.
+
+### Séparation stricte UI / métier
+- Les termes « interrogatoire », « suspect » et « interrogation » sont des abstractions UI.
+- Les règles métier réelles restent : FIFO, états serveur, timers.
+- Aucune logique ne doit être déduite côté front à partir du wording affiché.
+
+### Cohérence globale du wording
+- Ces règles de vocabulaire sont obligatoires et doivent être appliquées de manière cohérente sur :
+  - `team.html`
+  - `monitor.html`
+  - `character.html`
+- Toute nouvelle UI doit respecter ce vocabulaire utilisateur officiel.
 
 ## Note de maintenance
 
