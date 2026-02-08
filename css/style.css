@@ -898,7 +898,7 @@ body {
   gap: 12px;
 }
 
-@media (min-width: 428px) {
+@media (min-width: 640px) {
   .monitor-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -1016,13 +1016,25 @@ body {
 
 .monitor-team-actions {
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 8px;
   margin: 0;
 }
 
 .monitor-team-actions .admin-button {
-  width: 100%;
+  flex: 1 1 calc(50% - 4px);
+  min-width: 96px;
+  width: auto;
+}
+
+@media (max-width: 360px) {
+  .monitor-team-actions {
+    flex-direction: column;
+  }
+
+  .monitor-team-actions .admin-button {
+    width: 100%;
+  }
 }
 
 .monitor-team-delete-btn {
