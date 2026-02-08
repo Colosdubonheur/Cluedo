@@ -164,6 +164,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     return trimmed;
   }
 
+  function isPlaceholderTeamName(name) {
+    const normalized = String(name || "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "");
+
+    return normalized === "equipe sans nom";
+  }
+
+  function hasValidUserTeamName(name) {
+    const trimmed = String(name || "").trim();
+    return !!trimmed && !isPlaceholderTeamName(trimmed);
+  }
+
   async function updateTeamNameOnServer(newName) {
     if (!newName) {
       return;
@@ -207,7 +222,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   elRenameBtn.onclick = async () => {
-    if (!teamName) {
+    if (!hasValidUserTeamName(teamName)) {
       elSetNameBtn.click();
       return;
     }
@@ -219,7 +234,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    if (!teamName) {
+    if (!hasValidUserTeamName(teamName)) {
+      teamName = "";
+      localStorage.removeItem(TEAM_KEY);
       elNeedName.style.display = "block";
       elStatus.textContent = "Merci de saisir le nom de votre équipe";
       elStatus.style.background = "#fbbf24";
@@ -259,12 +276,26 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       const personnageNom = data.personnage?.nom || data.nom || `Personnage #${id}`;
       const equipeNom = data.equipe?.nom || teamName;
+      const hasValidNameFromServer = hasValidUserTeamName(equipeNom);
       const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : 0);
       const queueTotal = data.file?.total ?? data.queue_length ?? 1;
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
       const myRemaining = data.my_remaining ?? 0;
       const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
       const state = data.state || (data.can_access ? "active" : (myRemaining <= 0 ? "done" : "waiting"));
+
+      if (!hasValidNameFromServer) {
+        teamName = "";
+        localStorage.removeItem(TEAM_KEY);
+        elNeedName.style.display = "block";
+        elStatus.textContent = "Merci de saisir le nom de votre équipe";
+        elStatus.style.background = "#fbbf24";
+        elTimer.textContent = "--:--";
+        elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
+        document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
+        pollTimeoutId = setTimeout(loop, 1000);
+        return;
+      }
 
       teamName = equipeNom;
       localStorage.setItem(TEAM_KEY, teamName);

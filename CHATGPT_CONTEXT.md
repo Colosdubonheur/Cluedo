@@ -208,6 +208,9 @@ Sur `play` :
 Transition attendue :
 - `waiting` → `active` lorsque l’équipe est première dans la file et peut accéder au personnage.
 - Le front ne déduit pas cet état : il consomme le signal explicite envoyé par `status.php`.
+  - `done` : interaction autorisée
+- Une équipe sans nom utilisateur valide est traitée comme `need_name`
+  et ne doit jamais afficher un nom par défaut à l’écran
 
 Règles d’identité :
 - utiliser `equipe.id` (token) comme identifiant technique
