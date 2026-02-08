@@ -452,7 +452,7 @@ Contraintes :
 - Aucun renommage automatique, aucune logique serveur supplémentaire.
 
 ### Photo visible dans chaque bloc admin
-- Si une photo est configurée pour un personnage, elle est affichée directement dans sa carte admin.
+- Si une photo est configurée pour un personnage, elle est affichée directement dans sa carte admin, y compris après ouverture initiale ou refresh de `admin.html`.
 - Lorsqu’une photo est uploadée depuis `admin.html`, son aperçu est visible immédiatement dans la carte du personnage concerné, sans rechargement de page.
 - Dans l’interface admin, la photo affichée est présentée sous forme circulaire.
 - Le mécanisme d’upload existant reste inchangé.

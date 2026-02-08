@@ -11,6 +11,8 @@
 
 * { box-sizing: border-box; }
 
+.is-hidden { display: none !important; }
+
 body {
   margin: 0;
   font-family: Arial, sans-serif;
@@ -73,9 +75,23 @@ body {
 
 /* ===================== ADMIN ===================== */
 
-.admin-page { padding-bottom: 32px; }
+.admin-page { padding-bottom: 110px; }
 
 .admin-subtitle { color: var(--muted); margin-top: -6px; }
+
+
+.admin-save-wrap {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 30;
+  padding: 10px 14px calc(10px + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, rgba(15, 17, 21, 0.96), rgba(15, 17, 21, 0.8), rgba(15, 17, 21, 0));
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
 .admin-open-access { color: #6ee7b7; margin-top: -6px; }
 
 .admin-label {
@@ -111,12 +127,13 @@ body {
 }
 
 .admin-save-button {
-  width: 100%;
+  width: min(1100px, calc(100% - 28px));
   padding: 14px;
   font-size: 18px;
-  margin-top: 20px;
   background: #16a34a;
   color: #fff;
+  pointer-events: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .admin-quick-nav,
