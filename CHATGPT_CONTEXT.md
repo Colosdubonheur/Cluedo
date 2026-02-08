@@ -286,10 +286,9 @@ Le serveur est l’unique source de vérité pour :
 
 ### Supervision — lisibilité des cartes équipe (monitor.html)
 - Affichage des équipes en grille responsive (UI uniquement) :
-  - 1 colonne sur mobile étroit (jusqu'à 427px) pour préserver la lisibilité,
-  - 2 colonnes dès 428px (inclut les mobiles larges type iPhone Pro Max et au-delà),
-  - 3 à 4 colonnes sur écrans moyens,
-  - jusqu'à 5 ou 6 colonnes sur écrans desktop larges.
+  - 1 colonne sur **tous les téléphones** (y compris iPhone Pro Max) pour préserver la lisibilité,
+  - passage en multi-colonnes à partir d'environ **640px**,
+  - au-delà de 640px, conservation des paliers existants (3 à 4 colonnes sur écrans moyens, puis jusqu'à 5 ou 6 colonnes sur desktop large).
 - Objectif supervision : maximiser le nombre d'équipes visibles simultanément et limiter le scroll vertical.
 - Le contenu fonctionnel de chaque tuile équipe reste strictement inchangé (photo, nom, statut, dernier message reçu, dernier suspect vu, membres, actions QR/suppression).
 - Les ajustements de lisibilité ci-dessous s'appliquent **uniquement** à `monitor.html`.
@@ -299,9 +298,9 @@ Le serveur est l’unique source de vérité pour :
   - retour à la ligne automatique des messages longs,
   - aucun débordement horizontal, quelle que soit la langue/longueur.
 - Zone actions équipe :
-  - les boutons **« QR Code de l'équipe »** et **« Supprimer l'équipe »** sont affichés verticalement,
-  - une colonne dédiée aux actions est conservée sur desktop,
-  - sur tablette/mobile la disposition reste cohérente avec empilement vertical des actions.
+  - les boutons **« QR Code de l'équipe »** et **« Supprimer l'équipe »** sont alignés horizontalement quand l'espace le permet,
+  - en cas d'espace insuffisant (très petit écran), un retour en empilement vertical est autorisé (fallback CSS),
+  - une colonne dédiée aux actions est conservée sur desktop.
 - Ces règles sont purement UI/CSS et ne modifient aucune logique métier.
 
 ### Donnée personnage `location`
