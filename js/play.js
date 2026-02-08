@@ -89,6 +89,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const elMessage = document.getElementById("message");
   const elPhoto = document.getElementById("photo");
 
+  let pollTimeoutId = null;
+  let hasFatalError = false;
+
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
     const m = String(Math.floor(sec / 60)).padStart(2, "0");
@@ -96,17 +99,63 @@ document.addEventListener("DOMContentLoaded", async () => {
     return `${m}:${s}`;
   }
 
+  /**
+   * Transforme les erreurs API techniques en message lisible côté joueur.
+   */
+  function getReadableErrorMessage(rawError) {
+    const normalizedError = String(rawError || "").toLowerCase();
+
+    if (normalizedError.includes("unknown id")) {
+      return "Partie introuvable.";
+    }
+
+    if (normalizedError.includes("missing id or token")) {
+      return "Lien invalide. Merci de réouvrir le lien joueur.";
+    }
+
+    return "Une erreur est survenue. Merci de réessayer.";
+  }
+
+  /**
+   * Affiche une erreur bloquante et stoppe toute transition vers les états actifs.
+   */
+  function showFatalError(message) {
+    hasFatalError = true;
+
+    if (pollTimeoutId) {
+      clearTimeout(pollTimeoutId);
+      pollTimeoutId = null;
+    }
+
+    elName.textContent = "Erreur";
+    elTimer.textContent = "--:--";
+    elStatus.textContent = message;
+    elStatus.style.background = "#ef4444";
+    elResult.style.display = "none";
+  }
+
   async function loop() {
+    if (hasFatalError) {
+      return;
+    }
+
     try {
       const r = await fetch(`./api/status.php?id=${id}&token=${playerToken}&t=${Date.now()}`);
       const data = await r.json();
 
+      if (!r.ok) {
+        showFatalError("Service momentanément indisponible.");
+        return;
+      }
+
+      if (!data || typeof data !== "object") {
+        showFatalError("Réponse serveur invalide.");
+        return;
+      }
+
       if (data.error) {
-        elName.textContent = "Erreur serveur";
-        elStatus.textContent = data.error;
-        elStatus.style.background = "#ef4444";
-        elTimer.textContent = "00:00";
-        elResult.style.display = "none";
+        const readableError = getReadableErrorMessage(data.error);
+        showFatalError(readableError);
         return;
       }
 
@@ -154,12 +203,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     } catch (e) {
-      elName.textContent = "Erreur serveur";
-      elStatus.textContent = "Impossible de récupérer le statut";
-      elStatus.style.background = "#ef4444";
+      showFatalError("Impossible de récupérer le statut.");
+      return;
     }
 
-    setTimeout(loop, 1000);
+    pollTimeoutId = setTimeout(loop, 1000);
   }
 
   loop();
