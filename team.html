@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Cluedo - Équipe</title>
+  <link rel="stylesheet" href="./css/style.css"/>
+  <script src="https://unpkg.com/html5-qrcode" defer></script>
+  <script src="./js/team.js" defer></script>
+</head>
+<body>
+  <main class="container team-page">
+    <h1>👥 Espace équipe</h1>
+    <p class="admin-subtitle">Page unique, persistante et mobile pour suivre votre équipe pendant tout le jeu.</p>
+
+    <section class="card team-block">
+      <h2>Identité d'équipe</h2>
+      <div id="team-token" class="team-token"></div>
+      <form id="team-profile-form" class="team-form">
+        <label class="admin-label" for="team-name">Nom de l'équipe</label>
+        <div class="team-inline">
+          <input id="team-name" class="admin-input" maxlength="80" placeholder="Nom affiché"/>
+          <button type="submit" class="admin-button">Valider</button>
+        </div>
+        <p id="team-name-feedback" class="team-feedback"></p>
+
+        <h3>Joueurs (max 10)</h3>
+        <div id="team-players" class="team-players"></div>
+        <button id="save-players" type="button" class="admin-button">Enregistrer les joueurs</button>
+      </form>
+
+      <div class="team-photo-wrap">
+        <h3>Photo d'équipe</h3>
+        <img id="team-photo" class="admin-photo" alt="Photo d'équipe"/>
+        <input id="team-photo-input" type="file" accept="image/jpeg,image/png,image/webp"/>
+        <p class="team-feedback">Image carrée obligatoire (mêmes contraintes que les photos personnage).</p>
+      </div>
+    </section>
+
+    <section class="card team-block">
+      <h2>📱 Scanner QR personnage</h2>
+      <div id="team-qr-reader"></div>
+      <p id="team-qr-feedback" class="team-feedback"></p>
+    </section>
+
+    <section class="card team-block">
+      <h2>Récapitulatif de votre parcours</h2>
+      <div id="team-history">Chargement…</div>
+    </section>
+
+    <section class="card team-block">
+      <h2>État global du jeu</h2>
+      <div id="team-global">Chargement…</div>
+    </section>
+  </main>
+</body>
+</html>

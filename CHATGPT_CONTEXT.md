@@ -555,3 +555,37 @@ Contraintes non négociables :
 - Sur iPhone, le recadrage carré doit rester **obligatoire et visible** avant tout upload : aucun envoi serveur sans validation explicite du crop.
 - Les formats `HEIC/HEIF` fournis par iOS ne sont pas traités dans le pipeline client actuel sans bibliothèque externe dédiée ; ils sont donc **refusés explicitement** côté UI avec un message clair demandant une image `JPEG/PNG`.
 - En cas de format non supporté, `admin.html` doit bloquer l'appel à `POST /api/upload.php` et afficher une explication utilisateur (pas de message générique `error upload`).
+
+## 11. Page équipe unique (`team.html`) — hub joueur permanent
+
+- `team.html` est le **point d’entrée joueur unique** qui peut rester ouvert avant, pendant et après les passages.
+- La page conserve l’identité d’équipe avec le **token stable existant** (stockage local/session déjà utilisé), sans login, sans compte, sans session PHP et sans identifiant alternatif.
+- Cette page n’introduit **aucune redirection forcée** et ne remplace pas les règles serveur de file.
+
+### Contenu fonctionnel
+
+- **Récapitulatif équipe (lecture seule)** :
+  - temps total cumulé par personnage rencontré (informatif uniquement, basé sur l’historique runtime).
+- **État global du jeu (temps réel)** :
+  - pour chaque personnage : équipe active affichée, nombre d’équipes en attente, attente moyenne/estimée actuelle issue des calculs serveur.
+- **Édition contrôlée équipe** :
+  - renommage via le mécanisme existant (`rename_team.php`) quand l’équipe est engagée,
+  - jusqu’à 10 champs joueurs informatifs stockés en runtime JSON,
+  - photo d’équipe dédiée (upload PHP, carré obligatoire, compression/standardisation, stockage `uploads/`, remplacement + suppression ancienne photo).
+
+### QR intégré
+
+- La page équipe embarque un lecteur QR interne.
+- Scanner un QR `play.html?id=X` déclenche une tentative d’entrée dans la file correspondante via les **API serveur existantes** (`status.php`).
+- Le comportement est strictement équivalent au scan classique :
+  - contrôles serveur,
+  - gestion du cas « équipe déjà dans une autre file »,
+  - confirmation explicite en cas de perte de place.
+- Aucun scan QR depuis `team.html` ne redirige vers `play.html`.
+
+### Garantie métier
+
+- Cette fusion ne modifie **aucune règle métier verrouillée** :
+  - files et états (`need_name`, `waiting`, `active`, `free`) restent pilotés serveur,
+  - les temps restent informatifs,
+  - aucun impact gameplay.
