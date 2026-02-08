@@ -301,8 +301,6 @@ document.addEventListener("DOMContentLoaded", async () => {
         const current = fmt(localTimerRemaining);
         elTimer.textContent = current;
         elEstimatedWait.textContent = current;
-      } else if (localTimerMode === "active") {
-        elTimer.textContent = fmt(localTimerRemaining);
       }
     }, 250);
   }
@@ -395,7 +393,6 @@ document.addEventListener("DOMContentLoaded", async () => {
       const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : null);
       const queueTotal = data.file?.total ?? data.queue_length ?? 0;
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
-      const myRemaining = data.my_remaining ?? 0;
       const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
       // Règle de sécurité métier : ne jamais inférer l'état "active" à partir du temps restant.
       // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
@@ -450,36 +447,28 @@ document.addEventListener("DOMContentLoaded", async () => {
         elResult.style.display = "none";
         notified = false;
       } else {
-        if (myRemaining > 0) {
-          syncLocalTimer("active", myRemaining);
-          elTimer.textContent = fmt(localTimerRemaining);
-          elStatus.textContent = "C’est votre tour, vous pouvez accéder au personnage";
-          elStatus.style.background = "#fbbf24";
-          elResult.style.display = "none";
+        stopLocalTimer();
+        elTimer.textContent = "--:--";
+        elStatus.textContent = "C’est votre tour, vous pouvez accéder au personnage";
+        elStatus.style.background = "#4ade80";
+
+        elResult.style.display = "block";
+        elMessage.textContent =
+          queueTotal > 1
+            ? "⚠️ Une autre équipe arrive dans quelques secondes"
+            : `Vous pouvez parler à ${personnageNom} tant qu'aucune autre équipe n'arrive.`;
+
+        if (data.photo) {
+          elPhoto.src = data.photo;
+          elPhoto.style.display = "block";
         } else {
-          stopLocalTimer();
-          elTimer.textContent = "00:00";
-          elStatus.textContent = "C’est votre tour, vous pouvez accéder au personnage";
-          elStatus.style.background = "#4ade80";
+          elPhoto.style.display = "none";
+        }
 
-          elResult.style.display = "block";
-          elMessage.textContent =
-            queueTotal > 1
-              ? "⚠️ Une autre équipe arrive dans quelques secondes"
-              : `Vous pouvez parler à ${personnageNom} tant qu'aucune autre équipe n'arrive.`;
-
-          if (data.photo) {
-            elPhoto.src = data.photo;
-            elPhoto.style.display = "block";
-          } else {
-            elPhoto.style.display = "none";
-          }
-
-          if (!notified && unlocked) {
-            audio.currentTime = 0;
-            audio.play().catch(() => {});
-            notified = true;
-          }
+        if (!notified && unlocked) {
+          audio.currentTime = 0;
+          audio.play().catch(() => {});
+          notified = true;
         }
       }
     } catch (e) {
