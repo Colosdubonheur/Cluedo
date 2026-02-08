@@ -1214,3 +1214,19 @@ Pour chaque ID de 1 à 15, les champs suivants sont configurables et persistés 
   - `monitor.html`
   - `index.html` (hub)
 - Un personnage inactif n'est pas disponible côté équipes et ne doit pas être sélectionnable en jeu.
+
+## Ajustements UI — Character + Supervision (participants)
+
+### Character / UI (`character.html`)
+- Quand une équipe est active avec le personnage, le libellé participants affiche le total dérivé des prénoms : **`Participants (X)`** où `X` est le nombre de prénoms non vides enregistrés.
+- La présentation des prénoms participants est compacte : affichage sur une ligne logique avec séparateur virgule (`, `) et retour à la ligne automatique selon la largeur disponible (mobile inclus).
+- Le bouton **« Appliquer pénalité d’équipe incomplète »** est supprimé de l’interface personnage (fonction obsolète, non affichée).
+- Les boutons d’action personnage conservent leur comportement mais changent de style/libellé :
+  - `+30 secondes` devient **`+30 S`** (couleur verte),
+  - `-30 secondes` devient **`-30 S`** (couleur orange),
+  - `Éjecter l’équipe` reste **`Éjecter l’équipe`** (couleur rouge).
+- Disposition des actions : les trois boutons sont alignés côte à côte tant que l’espace le permet, avec retour à la ligne CSS autorisé sur petit écran.
+
+### Supervision / UI (`monitor.html`)
+- Dans chaque tuile équipe, le bloc membres affiche le total dérivé des prénoms : **`Membres de l’équipe (X)`** où `X` est le nombre de prénoms non vides enregistrés pour l’équipe.
+- Ce total est un calcul d’affichage uniquement (aucune donnée métier supplémentaire).
