@@ -121,14 +121,17 @@
       return;
     }
 
-    if (!payload.teams.length) {
+    const teams = Array.isArray(payload.teams) ? payload.teams : [];
+    const characters = Array.isArray(payload.characters) ? payload.characters : [];
+
+    if (!teams.length) {
       listEl.textContent = "Aucune équipe connue.";
-      fillMessageTargets([], []);
+      fillMessageTargets([], characters);
       return;
     }
 
-    fillMessageTargets(payload.teams, Array.isArray(payload.characters) ? payload.characters : []);
-    listEl.innerHTML = payload.teams.map(renderCard).join("");
+    fillMessageTargets(teams, characters);
+    listEl.innerHTML = teams.map(renderCard).join("");
   }
 
   resetBtn.addEventListener("click", async () => {
