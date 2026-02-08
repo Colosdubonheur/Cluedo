@@ -6,6 +6,8 @@
   <title>Cluedo - Hub</title>
   <link rel="stylesheet" href="./css/style.css"/>
   <link rel="icon" href="./favicon.ico" type="image/x-icon"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js" defer></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
 </head>
 <body>
   <div class="container">
@@ -21,7 +23,10 @@
 
       <section class="hub-section">
         <h2>Accès personnages (1 à 15)</h2>
-        <button id="hub-download-all-qr" type="button" class="hub-button hub-button-qr hub-desktop-only">Télécharger tous les QR codes</button>
+        <div class="hub-bulk-actions hub-desktop-only">
+          <button id="hub-download-zip-qr" type="button" class="hub-button hub-button-qr">Télécharger tous les QR codes (ZIP)</button>
+          <button id="hub-download-pdf-qr" type="button" class="hub-button hub-button-secondary">Télécharger en PDF (A4 – 4 QR codes par page)</button>
+        </div>
         <div id="hub-character-list" class="hub-character-list">Chargement…</div>
       </section>
     </div>
@@ -30,7 +35,8 @@
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       const container = document.getElementById("hub-character-list");
-      const downloadAllButton = document.getElementById("hub-download-all-qr");
+      const downloadZipButton = document.getElementById("hub-download-zip-qr");
+      const downloadPdfButton = document.getElementById("hub-download-pdf-qr");
       const fallbackName = (id) => `Personnage ${id}`;
       const characterEntries = [];
 
@@ -40,10 +46,41 @@
         .replace(/[^a-zA-Z0-9_-]+/g, "_")
         .replace(/^_+|_+$/g, "") || "Personnage";
 
-      const buildQrImage = async (id, name) => {
+      const setButtonBusy = (button, busyLabel, callback) => {
+        const originalLabel = button.textContent;
+        button.disabled = true;
+        button.textContent = busyLabel;
+
+        return callback()
+          .catch((error) => {
+            console.error(error);
+            alert("Une erreur est survenue pendant la génération des QR codes.");
+          })
+          .finally(() => {
+            button.disabled = false;
+            button.textContent = originalLabel;
+          });
+      };
+
+      const triggerDownload = (blob, filename) => {
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = blobUrl;
+        downloadLink.download = filename;
+        downloadLink.rel = "noopener";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        URL.revokeObjectURL(blobUrl);
+      };
+
+      const buildQrCanvas = async (id, name) => {
         const playUrl = new URL(`./play.html?id=${id}`, window.location.href).href;
         const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1024x1024&data=${encodeURIComponent(playUrl)}`;
         const qrResponse = await fetch(qrApiUrl);
+        if (!qrResponse.ok) {
+          throw new Error(`Impossible de générer le QR code pour le personnage ${id}`);
+        }
         const qrBlob = await qrResponse.blob();
 
         const imageBitmap = await createImageBitmap(qrBlob);
@@ -62,6 +99,12 @@
         context.textBaseline = "middle";
         context.fillText(`${id} - ${name}`, canvas.width / 2, 1092);
 
+        return canvas;
+      };
+
+      const buildQrImage = async (id, name) => {
+        const canvas = await buildQrCanvas(id, name);
+
         return new Promise((resolve) => {
           canvas.toBlob((blob) => resolve(blob), "image/png");
         });
@@ -70,15 +113,7 @@
       const downloadQr = async (id, name) => {
         const fileSafeName = sanitizeForFilename(name);
         const blob = await buildQrImage(id, name);
-        const blobUrl = URL.createObjectURL(blob);
-        const downloadLink = document.createElement("a");
-        downloadLink.href = blobUrl;
-        downloadLink.download = `qr_${id}_${fileSafeName}.png`;
-        downloadLink.rel = "noopener";
-        document.body.appendChild(downloadLink);
-        downloadLink.click();
-        downloadLink.remove();
-        URL.revokeObjectURL(blobUrl);
+        triggerDownload(blob, `qr_${id}_${fileSafeName}.png`);
       };
 
       let personnages = {};
@@ -134,11 +169,67 @@
       container.innerHTML = "";
       container.appendChild(fragment);
 
-      downloadAllButton.addEventListener("click", async () => {
-        for (const entry of characterEntries) {
-          await downloadQr(entry.id, entry.name);
+      downloadZipButton.addEventListener("click", () => setButtonBusy(downloadZipButton, "Préparation du ZIP…", async () => {
+        if (!window.JSZip) {
+          throw new Error("La librairie JSZip n'est pas disponible.");
         }
-      });
+
+        const zip = new window.JSZip();
+        for (const entry of characterEntries) {
+          const blob = await buildQrImage(entry.id, entry.name);
+          const fileSafeName = sanitizeForFilename(entry.name);
+          zip.file(`qr_${entry.id}_${fileSafeName}.png`, blob);
+        }
+
+        const zipBlob = await zip.generateAsync({ type: "blob" });
+        triggerDownload(zipBlob, "cluedo_qr_codes.zip");
+      }));
+
+      downloadPdfButton.addEventListener("click", () => setButtonBusy(downloadPdfButton, "Préparation du PDF…", async () => {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+          throw new Error("La librairie jsPDF n'est pas disponible.");
+        }
+
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF({ unit: "mm", format: "a4", orientation: "portrait" });
+        const pageWidth = 210;
+        const pageHeight = 297;
+        const margin = 12;
+        const gap = 8;
+        const columns = 2;
+        const rows = 2;
+        const cellWidth = (pageWidth - (margin * 2) - gap) / columns;
+        const cellHeight = (pageHeight - (margin * 2) - gap) / rows;
+
+        for (let index = 0; index < characterEntries.length; index += 1) {
+          if (index > 0 && index % 4 === 0) {
+            pdf.addPage();
+          }
+
+          const entry = characterEntries[index];
+          const slot = index % 4;
+          const col = slot % columns;
+          const row = Math.floor(slot / columns);
+          const x = margin + col * (cellWidth + gap);
+          const y = margin + row * (cellHeight + gap);
+          const canvas = await buildQrCanvas(entry.id, entry.name);
+          const dataUrl = canvas.toDataURL("image/png");
+
+          pdf.setDrawColor(200);
+          pdf.rect(x, y, cellWidth, cellHeight);
+          pdf.setFont("helvetica", "bold");
+          pdf.setFontSize(11);
+          pdf.text(`${entry.id} - ${entry.name}`, x + (cellWidth / 2), y + 8, { align: "center" });
+
+          const qrSize = Math.min(cellWidth - 12, cellHeight - 20);
+          const qrX = x + (cellWidth - qrSize) / 2;
+          const qrY = y + 12;
+          pdf.addImage(dataUrl, "PNG", qrX, qrY, qrSize, qrSize);
+        }
+
+        const pdfBlob = pdf.output("blob");
+        triggerDownload(pdfBlob, "cluedo_qr_codes_a4.pdf");
+      }));
     });
   </script>
 </body>
