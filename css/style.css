@@ -565,6 +565,7 @@ body {
 .monitor-page {
   max-width: none;
   width: 100%;
+  padding-top: 56px;
   padding-left: 14px;
   padding-right: 14px;
 }
