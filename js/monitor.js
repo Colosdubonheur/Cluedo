@@ -1,6 +1,7 @@
 (function () {
   const listEl = document.getElementById("teams");
   const resetBtn = document.getElementById("reset-history");
+  const clearMessagesHistoryBtn = document.getElementById("clear-messages-history");
   const toggleEndGameBtn = document.getElementById("toggle-end-game");
   const endGameStatusEl = document.getElementById("monitor-end-game-status");
 
@@ -499,6 +500,30 @@
   toggleEndGameBtn.addEventListener("click", async () => {
     const active = !toggleEndGameBtn.classList.contains("is-active");
     await setEndGame(active);
+  });
+
+
+  clearMessagesHistoryBtn?.addEventListener("click", async () => {
+    const confirmed = window.confirm("Confirmer la suppression de tout l’historique des messages ?");
+    if (!confirmed) return;
+
+    clearMessagesHistoryBtn.disabled = true;
+    const response = await fetch("./api/supervision.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: new URLSearchParams({ action: "clear_messages_history" }).toString(),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    clearMessagesHistoryBtn.disabled = false;
+
+    if (!response.ok || !payload.ok) {
+      window.alert(payload.error || "Échec de la suppression de l'historique des messages.");
+      return;
+    }
+
+    messageFeedbackEl.textContent = "Historique des messages supprimé globalement.";
+    await refresh();
   });
 
   messageTargetSearchEl.addEventListener("input", () => {

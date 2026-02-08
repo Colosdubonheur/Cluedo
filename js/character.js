@@ -26,6 +26,7 @@
   let lastKnownServerLocation = "";
   let hasUnsavedLocationChanges = false;
   let lastPlayedMessageKey = "";
+  let lastMessagesClearedAt = 0;
   let audioEnabled = localStorage.getItem(CHARACTER_AUDIO_ENABLED_KEY) === "1";
   const messageHistory = [];
   const messageHistoryKeys = new Set();
@@ -152,6 +153,20 @@
     persistMessageHistory();
     renderMessageHistory();
     void maybePlayMessageSound(text, createdAt);
+  }
+
+  function clearMessageHistoryFromSupervision(clearedAt) {
+    const clearedTimestamp = Number(clearedAt || 0);
+    if (!Number.isFinite(clearedTimestamp) || clearedTimestamp <= 0 || clearedTimestamp <= lastMessagesClearedAt) {
+      return;
+    }
+
+    lastMessagesClearedAt = clearedTimestamp;
+    messageHistory.length = 0;
+    messageHistoryKeys.clear();
+    lastPlayedMessageKey = "";
+    clearPersistedMessageHistoryForCurrentCharacter();
+    renderMessageHistory();
   }
 
   async function maybePlayMessageSound(messageText, createdAt) {
@@ -302,6 +317,7 @@
     characterNameEl.innerHTML = `Personnage : <strong>${character.nom || "(sans nom)"}</strong> (#${character.id})`;
 
     const messagePayload = payload.message || {};
+    clearMessageHistoryFromSupervision(messagePayload.cleared_at || 0);
     pushMessageToHistory(messagePayload.text || "", messagePayload.created_at || 0);
 
     currentPhoto = character.photo || "";
