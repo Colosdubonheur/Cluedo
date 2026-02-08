@@ -894,8 +894,14 @@ body {
 
 .monitor-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
   gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .monitor-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 .monitor-team-card {
@@ -1245,6 +1251,12 @@ body {
 @media (min-width: 1560px) {
   .monitor-grid {
     grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1880px) {
+  .monitor-grid {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
   }
 }
 

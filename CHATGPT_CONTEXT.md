@@ -282,6 +282,12 @@ Le serveur est l’unique source de vérité pour :
 - L'historique est simplifié, lisible, non interactif et sans impact sur files/timers/transitions.
 
 ### Supervision — lisibilité des cartes équipe (monitor.html)
+- Affichage des équipes en grille responsive (UI uniquement) :
+  - 2 colonnes à partir du mobile paysage / tablette,
+  - 3 à 4 colonnes sur écrans moyens,
+  - jusqu'à 5 ou 6 colonnes sur écrans desktop larges.
+- Objectif supervision : maximiser le nombre d'équipes visibles simultanément et limiter le scroll vertical.
+- Le contenu fonctionnel de chaque tuile équipe reste strictement inchangé (photo, nom, statut, dernier message reçu, dernier suspect vu, membres, actions QR/suppression).
 - Les ajustements de lisibilité ci-dessous s'appliquent **uniquement** à `monitor.html`.
 - Zone « Dernier message reçu » :
   - largeur maximale fixe dans la carte équipe,
