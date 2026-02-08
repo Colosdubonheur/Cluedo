@@ -40,12 +40,14 @@ document.addEventListener("DOMContentLoaded", () => {
   let characterSortMode = "name";
   let isQueueActionInProgress = false;
 
-  const notificationAudio = new Audio("./assets/ding.mp3");
-  notificationAudio.preload = "auto";
+  const soundOnAudio = new Audio("./assets/soundon.wav");
+  const messageAudio = new Audio("./assets/message.wav");
+  soundOnAudio.preload = "auto";
+  messageAudio.preload = "auto";
 
   const audioState = {
     isEnabled: localStorage.getItem(AUDIO_ENABLED_KEY) === "1",
-    unlockSucceeded: false,
+    unlockSucceeded: localStorage.getItem(AUDIO_ENABLED_KEY) === "1",
     unlockAttempted: false,
   };
 
@@ -69,7 +71,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    audioEnableBtn.textContent = "🔔 Activer le son";
+    audioEnableBtn.textContent = "🔔 Son activé";
     audioEnableBtn.setAttribute("aria-pressed", "false");
     audioEnableBtn.classList.remove("is-enabled");
     setAudioStatus("Le son est désactivé. Activez-le pour recevoir les notifications.", "neutral");
@@ -77,11 +79,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function unlockAudioFromGesture() {
     audioState.unlockAttempted = true;
-    notificationAudio.currentTime = 0;
+    soundOnAudio.currentTime = 0;
     try {
-      await notificationAudio.play();
-      notificationAudio.pause();
-      notificationAudio.currentTime = 0;
+      await soundOnAudio.play();
       audioState.unlockSucceeded = true;
       return true;
     } catch (_error) {
@@ -118,9 +118,9 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    notificationAudio.currentTime = 0;
+    messageAudio.currentTime = 0;
     try {
-      await notificationAudio.play();
+      await messageAudio.play();
     } catch (_error) {
       audioState.isEnabled = false;
       audioState.unlockSucceeded = false;
