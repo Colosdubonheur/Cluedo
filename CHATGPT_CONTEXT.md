@@ -42,6 +42,13 @@
   - temps tampon
 - Ont une vision globale des files
 
+### Règle responsive admin (UI)
+- `admin.html` doit exploiter toute la largeur utile sur desktop (pas de conteneur centré type mobile).
+- La grille des cartes personnages est pilotée uniquement par CSS, sans impact métier :
+  - mobile : 1 colonne,
+  - tablette : 2 à 3 colonnes selon breakpoint,
+  - desktop : 4 à 5 colonnes selon largeur écran.
+
 ---
 
 ## 3. Principe fondamental (règle non négociable)

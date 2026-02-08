@@ -163,7 +163,13 @@ body {
 
 /* ===================== ADMIN ===================== */
 
-.admin-page { padding-bottom: 110px; }
+.admin-page {
+  max-width: none;
+  width: 100%;
+  padding-bottom: 110px;
+  padding-left: 14px;
+  padding-right: 14px;
+}
 
 .admin-subtitle { color: var(--muted); margin-top: -6px; }
 
@@ -367,8 +373,20 @@ body {
   }
 }
 
-@media (min-width: 900px) {
+@media (min-width: 720px) {
+  .admin-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 980px) {
   .admin-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1280px) {
+  .admin-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1560px) {
+  .admin-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); }
 }
 
 /* ===================== TEAM HUB ===================== */
