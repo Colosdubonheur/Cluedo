@@ -11,20 +11,13 @@ if (is_readable($versionFile)) {
   if ($rawContent !== false) {
     $decoded = json_decode($rawContent, true);
 
-    if (is_array($decoded)) {
-      if (array_key_exists('version', $decoded) && is_string($decoded['version'])) {
-        $candidate = trim($decoded['version']);
-        if ($candidate !== '') {
-          $version = $candidate;
-        }
-      } elseif (array_key_exists('n', $decoded) && is_int($decoded['n']) && $decoded['n'] >= 0) {
-        // Compatibilité ascendante avec l'ancien format basé sur un compteur.
-        $n = $decoded['n'];
-        $major = intdiv($n, 100) + 1;
-        $minor = intdiv($n % 100, 10);
-        $patch = $n % 10;
-        $version = $major . '.' . $minor . '.' . $patch;
-      }
+    if (is_array($decoded) && array_key_exists('build', $decoded) && is_int($decoded['build']) && $decoded['build'] >= 0) {
+      $build = $decoded['build'];
+      $major = intdiv($build, 1000) + 1;
+      $minor = intdiv($build % 1000, 100);
+      $patch = $build % 100;
+      $patchDisplay = $patch === 0 ? '0' : str_pad((string) $patch, 2, '0', STR_PAD_LEFT);
+      $version = $major . '.' . $minor . '.' . $patchDisplay;
     }
   }
 }
