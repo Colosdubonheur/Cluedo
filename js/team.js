@@ -431,13 +431,14 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderCharactersList(state, isBlocked) {
     const seen = new Set(
       (state.team?.history || [])
-        .filter((entry) => Number(entry?.duration_seconds || 0) > SEEN_THRESHOLD_SECONDS)
+        .filter((entry) => Number(entry?.duration_seconds || 0) >= SEEN_THRESHOLD_SECONDS)
         .map((entry) => String(entry.id || "")),
     );
     const currentCharacterId = String(state.team?.state?.character_id || "");
-    let rows = Array.isArray(state.global) ? [...state.global] : [];
+    const allRows = Array.isArray(state.global) ? [...state.global] : [];
+    const currentRow = allRows.find((row) => String(row.id || "") === currentCharacterId) || null;
 
-    rows = rows.filter((row) => String(row.id || "") !== currentCharacterId);
+    let rows = allRows.filter((row) => String(row.id || "") !== currentCharacterId);
 
     if (filterOnlyUnseen) {
       rows = rows.filter((row) => !seen.has(String(row.id || "")));
@@ -447,6 +448,10 @@ document.addEventListener("DOMContentLoaded", () => {
       if (characterSortMode === "time") return (a.estimated_wait_seconds || 0) - (b.estimated_wait_seconds || 0);
       return String(a.nom || "").localeCompare(String(b.nom || ""), "fr");
     });
+
+    if (currentRow) {
+      rows.unshift(currentRow);
+    }
 
     if (rows.length === 0) {
       charactersEl.innerHTML = '<p class="team-feedback">Aucun suspect à afficher avec ce filtre.</p>';
@@ -463,6 +468,10 @@ document.addEventListener("DOMContentLoaded", () => {
       item.setAttribute("tabindex", "0");
 
       const isCurrent = currentCharacterId === String(row.id);
+      if (isCurrent) {
+        item.classList.add("is-current");
+      }
+
       const endGameActive = isEndGameActive(state);
       const blockedByEndGame = endGameActive && !isCurrent;
       const rowDisabled = isBlocked || isQueueActionInProgress || blockedByEndGame;
@@ -477,6 +486,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const waitClass = getWaitColorClass(row);
       const waitValue = fmt(row.estimated_wait_seconds || 0);
       const locationTitle = String(row.location || "").trim() || "Localisation non renseignée";
+      const currentStatusText = isCurrent ? `<p class="team-character-line team-current-state is-active">Vous pouvez interroger ${String(row.nom || "ce suspect")}</p>` : "";
 
       item.innerHTML = `
         <div class="team-character-col team-character-col-photo">
@@ -487,14 +497,16 @@ document.addEventListener("DOMContentLoaded", () => {
           <p class="team-character-line team-character-location" title="${locationTitle}" aria-label="${locationTitle}">📍 ${locationTitle}</p>
           <p class="team-character-line team-character-wait ${waitClass}">⏱ ${waitValue}</p>
           ${seenStatus}
+          ${currentStatusText}
         </div>
       `;
 
       const triggerQueueAction = () => {
         if (rowDisabled) return;
-        const action = isCurrent ? "quitter l’interrogatoire" : "interroger";
         const name = String(row.nom || "ce suspect");
-        const confirmed = window.confirm(`Confirmer : ${action} « ${name} » ?`);
+        const confirmed = isCurrent
+          ? window.confirm(`Voulez-vous quitter l’interrogatoire avec ${name} ?`)
+          : window.confirm(`Confirmer : interroger « ${name} » ?`);
         if (!confirmed) return;
         void onQueueAction(String(row.id || ""));
       };
@@ -512,6 +524,7 @@ document.addEventListener("DOMContentLoaded", () => {
     charactersEl.innerHTML = "";
     charactersEl.appendChild(list);
   }
+
 
 
   async function loadQueueStatus(characterId) {
