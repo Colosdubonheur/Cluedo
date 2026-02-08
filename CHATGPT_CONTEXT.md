@@ -675,3 +675,11 @@ Contraintes non négociables :
 - Règle verrouillée : la version est générée à partir de l'heure réelle du serveur, au moment effectif de la génération, sans cache ni valeur figée.
 - Source unique de vérité : génération côté serveur dans `api/version.php`, puis affichage côté UI.
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
+
+## 11. Team UX technique (stabilité terrain)
+
+- `team.html` doit protéger la saisie utilisateur contre le polling : pendant l’édition des champs (nom d’équipe / joueurs), les mises à jour automatiques ne doivent pas écraser la saisie en cours.
+- Le scan QR de `team.html` doit rester stable : démarrage caméra robuste, et fallback clair via import d’image quand la caméra est indisponible.
+- Les erreurs techniques brutes ne doivent pas être exposées aux joueurs ; l’interface doit afficher des messages UX compréhensibles et actionnables.
+- Ces points sont techniques/UX uniquement et ne modifient aucune règle métier verrouillée (file, token, statut, timers).
+
