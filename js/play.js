@@ -71,7 +71,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
 
         <div id="leaveQueue" style="display:none;margin-top:12px;text-align:center;">
-          <button id="leaveQueueBtn" style="padding:10px 14px;border-radius:10px">Quitter la file d’attente</button>
+          <button id="leaveQueueBtn" style="padding:10px 14px;border-radius:10px">Quitter l’interrogatoire</button>
         </div>
 
         <div id="leaveActive" style="display:none;margin-top:12px;text-align:center;">
@@ -341,7 +341,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const payload = await response.json();
     if (!response.ok || !payload.ok) {
-      window.alert("Impossible de quitter la file d’attente.");
+      window.alert("Impossible de quitter l’interrogatoire.");
       return;
     }
 
@@ -551,7 +551,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (!hasDeclinedQueueSwitch) {
           const confirmed = window.confirm(
-            `Vous êtes déjà dans la file de ${currentCharacter} (état : ${currentState}).\n\n` +
+            `Vous êtes déjà en interrogatoire pour ${currentCharacter} (état : ${currentState}).\n\n` +
             "Vous allez perdre votre place actuelle. Continuer ?"
           );
 
@@ -576,7 +576,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         elTimerLabel.textContent = "Inscription bloquée";
         elTimer.textContent = "--:--";
         elTimer.style.color = "white";
-        elStatus.textContent = `Vous restez dans la file de ${currentCharacter}.`;
+        elStatus.textContent = `Interrogatoire en cours avec ${currentCharacter}.`;
         elStatus.style.background = "#f59e0b";
         elResult.style.display = "none";
         pollTimeoutId = setTimeout(loop, 1000);
@@ -706,7 +706,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         elTimer.style.color = "white";
         elTimerLabel.textContent = "Temps estimé";
         elQueueDetails.style.display = "block";
-        elStatus.textContent = `Équipe en attente`;
+        elStatus.textContent = `Préparez-vous à libérer la place`;
         elStatus.style.background = "#fbbf24";
         elTimer.style.animation = "none";
         elResult.style.display = "none";
@@ -719,7 +719,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         elElapsedWrap.style.display = "block";
         const hasQueuedTeam = Number(queueTotal) > 1;
         const nextTeamName = hasQueuedTeam
-          ? ((data.file?.next_team_name || data.file?.equipe_precedente || "").trim() || "L’équipe suivante")
+          ? ((data.file?.next_team_name || data.file?.equipe_precedente || "").trim() || "Prochaine équipe à interroger")
           : "";
 
         const configuredTimePerPlayer = Math.max(0, Number(activeReservedDuration) || 0);

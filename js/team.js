@@ -267,7 +267,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const endGameActive = isEndGameActive(latestState);
 
     if (endGameActive && currentCharacterId !== String(characterId)) {
-      setFeedback(characterFeedbackEl, "Fin de jeu active : impossible de rejoindre une nouvelle file.", "error");
+      setFeedback(characterFeedbackEl, "Fin de jeu active : impossible d’interroger un nouveau suspect.", "error");
       return;
     }
 
@@ -280,17 +280,17 @@ document.addEventListener("DOMContentLoaded", () => {
       } else {
         let joinResult = await runWithPollingPaused(async () => joinQueue(characterId, init.teamName, false));
         if (joinResult?.error === "end_game_active") {
-          setFeedback(characterFeedbackEl, "Fin de jeu active : impossible de rejoindre une nouvelle file.", "error");
+          setFeedback(characterFeedbackEl, "Fin de jeu active : impossible d’interroger un nouveau suspect.", "error");
           await loadHub();
           return;
         }
         if (joinResult?.state === "already_in_queue" && joinResult?.can_join_after_confirm) {
           const fromName = joinResult.current_engagement?.personnage_nom || "un autre personnage";
-          const confirmed = await runWithPollingPaused(async () => window.confirm(`Votre équipe est déjà en file pour « ${fromName} ». Confirmer le changement ?`));
+          const confirmed = await runWithPollingPaused(async () => window.confirm(`Votre équipe est déjà en cours d’interrogatoire avec « ${fromName} ». Confirmer le changement de suspect ?`));
           if (!confirmed) return;
           joinResult = await runWithPollingPaused(async () => joinQueue(characterId, init.teamName, true));
           if (joinResult?.error === "end_game_active") {
-            setFeedback(characterFeedbackEl, "Fin de jeu active : impossible de rejoindre une nouvelle file.", "error");
+            setFeedback(characterFeedbackEl, "Fin de jeu active : impossible d’interroger un nouveau suspect.", "error");
             await loadHub();
             return;
           }
@@ -361,9 +361,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const triggerQueueAction = () => {
         if (rowDisabled) return;
-        const action = isCurrent ? "quitter" : "rejoindre";
+        const action = isCurrent ? "quitter l’interrogatoire" : "interroger";
         const name = String(row.nom || "ce suspect");
-        const confirmed = window.confirm(`Confirmer : ${action} la file de « ${name} » ?`);
+        const confirmed = window.confirm(`Confirmer : ${action} « ${name} » ?`);
         if (!confirmed) return;
         void onQueueAction(String(row.id || ""));
       };
@@ -419,7 +419,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const leaveBtn = currentCharacterEl.querySelector(".team-current-leave");
     leaveBtn?.addEventListener("click", () => {
       if (disableLeave) return;
-      const confirmed = window.confirm(`Confirmer : quitter la file de « ${characterName} » ?`);
+      const confirmed = window.confirm(`Confirmer : quitter l’interrogatoire avec « ${characterName} » ?`);
       if (!confirmed) return;
       void onQueueAction(currentCharacterId);
     });
@@ -446,11 +446,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const isBlocked = missingName || tooFew || tooMany;
 
     if (isBlocked) {
-      setFeedback(lockMessageEl, "Complétez le nom d'équipe et ajoutez entre 2 et 10 participants pour accéder aux files.", "error");
-      setFeedback(characterFeedbackEl, "Actions sur les files bloquées tant que les informations de l'équipe ne sont pas complètes.", "error");
+      setFeedback(lockMessageEl, "Complétez le nom d'équipe et ajoutez entre 2 et 10 participants pour interroger les suspects.", "error");
+      setFeedback(characterFeedbackEl, "Interrogatoires bloqués tant que les informations de l'équipe ne sont pas complètes.", "error");
     } else {
       setFeedback(lockMessageEl, "", "neutral");
-      setFeedback(characterFeedbackEl, "Cliquez sur une tuile de suspect pour rejoindre une file.", "success");
+      setFeedback(characterFeedbackEl, "Cliquez sur une tuile de suspect pour interroger ce suspect.", "success");
     }
 
     return isBlocked;
@@ -482,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
     renderCurrentCharacterPanel(state, isBlocked);
     renderCharactersList(state, isBlocked);
     if (isEndGameActive(state) && state.team?.state?.state === "free") {
-      setFeedback(characterFeedbackEl, "Fin de jeu active : vous ne pouvez plus rejoindre de file.", "error");
+      setFeedback(characterFeedbackEl, "Fin de jeu active : vous ne pouvez plus interroger de suspect.", "error");
     }
 
     const messagePayload = state.team?.message || {};
