@@ -116,3 +116,36 @@ Ce projet privilégie :
 - une logique serveur forte et un client simple
 
 Tout ajout doit respecter ces principes.
+
+---
+
+### 11. Nouvelle fonctionnalité : Nom d’équipe persistant
+
+Cette évolution améliore l’expérience joueur en évitant de ressaisir le nom d’équipe à chaque action.
+
+#### 11.1 Principe général
+- Le joueur saisit son **nom d’équipe une seule fois**.
+- Ce nom est **stocké localement côté client** (navigateur) pour être réutilisé automatiquement.
+- Tant que le stockage local est conservé, le joueur retrouve le même nom d’équipe lors des prochains accès.
+
+#### 11.2 Données envoyées à l’API
+- Les appels API liés à l’entrée en file incluent désormais le paramètre :
+  - `team` : nom d’équipe saisi (ou relu depuis le stockage local)
+- Le backend utilise ce champ pour associer clairement une entrée de file à une équipe lisible, et pas uniquement à un token technique.
+
+#### 11.3 Structure de file d’attente enrichie
+- Chaque entrée de file contient désormais les informations minimales suivantes :
+  - `token` : identifiant de session du joueur
+  - `team` : nom d’équipe persistant
+  - `joined_at` : horodatage d’entrée dans la file
+- Cette structure facilite à la fois le suivi métier (qui attend) et les calculs temporels (depuis quand).
+
+#### 11.4 Champs ajoutés à la réponse JSON
+- Les réponses API incluent un nouveau champ :
+  - `previous_team`
+- Usage : permettre au client de préremplir ou confirmer le nom déjà connu pour ce token/session, afin d’assurer une continuité utilisateur.
+
+#### 11.5 Comportement côté joueur
+- En **attente**, le joueur conserve son identité d’équipe sans ressaisie.
+- La **priorité** reste pilotée par l’ordre serveur de la file (FIFO), enrichi par les métadonnées `team` et `joined_at`.
+- L’**accès** au personnage reste décidé côté serveur ; le nom d’équipe persistant améliore la lisibilité, sans changer la règle d’autorisation.
