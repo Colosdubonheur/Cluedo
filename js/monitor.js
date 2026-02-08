@@ -170,9 +170,12 @@
 
   function renderPlayers(team) {
     const players = Array.isArray(team.players) ? team.players.filter((name) => String(name || "").trim() !== "") : [];
-    return players.length
-      ? `<p class="monitor-players">${players.map((name) => escapeHtml(name)).join(" · ")}</p>`
-      : '<p class="monitor-muted">Membres non renseignés.</p>';
+    return {
+      count: players.length,
+      content: players.length
+        ? `<p class="monitor-players">${players.map((name) => escapeHtml(name)).join(" · ")}</p>`
+        : '<p class="monitor-muted">Membres non renseignés.</p>',
+    };
   }
 
   function renderLastSeenCharacter(team) {
@@ -201,6 +204,7 @@
   function renderCard(team) {
     const status = statusInfo(team);
     const teamName = team.team_name || "Équipe sans nom";
+    const players = renderPlayers(team);
     const photoHtml = team.photo
       ? `<img src="${escapeHtml(team.photo)}" alt="Photo ${escapeHtml(teamName || "équipe")}" class="monitor-team-photo"/>`
       : '<div class="monitor-team-photo monitor-team-photo-placeholder" aria-hidden="true"></div>';
@@ -226,8 +230,8 @@
             ${renderLastSeenCharacter(team)}
           </section>
           <section>
-            <h4>Membres de l'équipe</h4>
-            ${renderPlayers(team)}
+            <h4>Membres de l'équipe (${players.count})</h4>
+            ${players.content}
           </section>
         </div>
         <aside class="monitor-team-actions" aria-label="Actions équipe">

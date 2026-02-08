@@ -1204,9 +1204,9 @@ body {
 
 .character-active-team-players {
   margin: 0;
-  padding-left: 18px;
-  display: grid;
-  gap: 2px;
+  color: #e2e8f0;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
 }
 
 .character-active-team-actions {
@@ -1217,9 +1217,25 @@ body {
 }
 
 .character-active-team-actions .admin-button {
+  flex: 1 1 170px;
   font-size: 1rem;
   padding: 12px 14px;
   font-weight: 800;
+}
+
+.character-action-plus {
+  background: #22c55e;
+  color: #052e16;
+}
+
+.character-action-minus {
+  background: #f59e0b;
+  color: #3b2300;
+}
+
+.character-action-eject {
+  background: #ef4444;
+  color: #fff1f2;
 }
 
 .character-waiting-queue {

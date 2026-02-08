@@ -263,7 +263,7 @@
     const players = Array.isArray(activeTeam.players)
       ? activeTeam.players.map((name) => String(name || "").trim()).filter((name) => name.length > 0)
       : [];
-    const penaltyApplied = !!activeTeam.incomplete_team_penalty;
+    const participantsCount = players.length;
 
     currentEl.innerHTML = `
       <h3>Équipe active</h3>
@@ -276,27 +276,23 @@
           <div>
             <p class="character-active-team-state">État : <strong>${escapeHtml(activeState)}</strong></p>
             <p class="character-active-team-remaining">Temps restant : ${fmt(activeTeam.remaining_seconds)}</p>
-            <p class="character-active-team-players-title">Participants</p>
+            <p class="character-active-team-players-title">Participants (${participantsCount})</p>
             ${players.length
-              ? `<ul class="character-active-team-players">${players.map((name) => `<li>${escapeHtml(name)}</li>`).join("")}</ul>`
+              ? `<p class="character-active-team-players">${players.map((name) => escapeHtml(name)).join(", ")}</p>`
               : '<p class="character-active-team-players-empty">Aucun participant renseigné.</p>'}
           </div>
         </div>
       </div>
       <div class="character-active-team-actions">
-        <button id="plus30" type="button" class="admin-button">+30 secondes</button>
-        <button id="minus30" type="button" class="admin-button">−30 secondes</button>
-        <button id="eject" type="button" class="admin-button">Éjecter l’équipe</button>
-        <button id="incompletePenalty" type="button" class="admin-button ${penaltyApplied ? "is-enabled" : "is-disabled"}">
-          ${penaltyApplied ? "Pénalité équipe incomplète appliquée" : "Appliquer pénalité équipe incomplète"}
-        </button>
+        <button id="plus30" type="button" class="admin-button character-action-plus">+30 S</button>
+        <button id="minus30" type="button" class="admin-button character-action-minus">-30 S</button>
+        <button id="eject" type="button" class="admin-button character-action-eject">Éjecter l’équipe</button>
       </div>
     `;
 
     document.getElementById("plus30").onclick = () => control("plus_30");
     document.getElementById("minus30").onclick = () => control("minus_30");
     document.getElementById("eject").onclick = () => control("eject");
-    document.getElementById("incompletePenalty").onclick = () => control("set_incomplete_team_penalty", { value: !penaltyApplied });
   }
 
   async function refresh() {
