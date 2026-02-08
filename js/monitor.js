@@ -95,21 +95,21 @@
     </article>`;
   }
 
-  function fillTeamTargets(teams) {
+  function fillMessageTargets(teams, characters) {
     const previousValue = messageTargetEl.value;
+    const teamOptions = teams.map((team) => `<option value="team:${escapeHtml(team.token)}">👥 ${escapeHtml(team.team_name || "Équipe sans nom")}</option>`);
+    const characterOptions = characters.map((character) => `<option value="character:${escapeHtml(character.id)}">🎭 ${escapeHtml(character.id)} - ${escapeHtml(character.nom || "Personnage")}</option>`);
+
     const options = [
-      '<option value="all">Toutes les équipes (global)</option>',
-      ...teams.map((team) => `<option value="${escapeHtml(team.token)}">${escapeHtml(team.team_name || "Équipe sans nom")}</option>`),
+      '<option value="all">🌐 Toutes les équipes (global)</option>',
+      ...teamOptions,
+      ...characterOptions,
     ];
 
     messageTargetEl.innerHTML = options.join("");
 
-    if (teams.some((team) => team.token === previousValue)) {
-      messageTargetEl.value = previousValue;
-      return;
-    }
-
-    messageTargetEl.value = "all";
+    const stillExists = options.some((option) => option.includes(`value="${escapeHtml(previousValue)}"`));
+    messageTargetEl.value = stillExists ? previousValue : "all";
   }
 
   async function refresh() {
@@ -123,11 +123,11 @@
 
     if (!payload.teams.length) {
       listEl.textContent = "Aucune équipe connue.";
-      fillTeamTargets([]);
+      fillMessageTargets([], []);
       return;
     }
 
-    fillTeamTargets(payload.teams);
+    fillMessageTargets(payload.teams, Array.isArray(payload.characters) ? payload.characters : []);
     listEl.innerHTML = payload.teams.map(renderCard).join("");
   }
 
@@ -187,7 +187,7 @@
     }
 
     messageInputEl.value = "";
-    messageFeedbackEl.textContent = target === "all" ? "Message global envoyé." : "Message individuel envoyé.";
+    messageFeedbackEl.textContent = target === "all" ? "Message global envoyé aux équipes." : "Message ciblé envoyé.";
     await refresh();
   });
 

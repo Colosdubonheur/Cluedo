@@ -11,6 +11,7 @@
   const characterLocationInputEl = document.getElementById("characterLocationInput");
   const characterLocationButtonEl = document.getElementById("characterLocationButton");
   const characterLocationFeedbackEl = document.getElementById("characterLocationFeedback");
+  const characterMessageEl = document.getElementById("characterSupervisionMessage");
 
   let currentPhoto = "";
 
@@ -79,6 +80,20 @@
     });
   }
 
+
+  function setCharacterMessage(message) {
+    if (!characterMessageEl) return;
+    const text = (message?.text || "").trim();
+    if (!text) {
+      characterMessageEl.textContent = "Aucun message pour le moment.";
+      characterMessageEl.classList.remove("is-active");
+      return;
+    }
+
+    characterMessageEl.textContent = text;
+    characterMessageEl.classList.add("is-active");
+  }
+
   function setLocationFeedback(message, status = "neutral") {
     if (!characterLocationFeedbackEl) return;
     characterLocationFeedbackEl.textContent = String(message || "");
@@ -112,6 +127,7 @@
     }
 
     const character = payload.character;
+    setCharacterMessage(payload.message || null);
     characterNameEl.innerHTML = `Personnage : <strong>${character.nom || "(sans nom)"}</strong> (#${character.id})`;
 
     currentPhoto = character.photo || "";

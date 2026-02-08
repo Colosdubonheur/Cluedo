@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_queue_runtime.php';
 require_once __DIR__ . '/_character_visibility.php';
+require_once __DIR__ . '/_supervision_messages_store.php';
 
 $id = $_GET['id'] ?? null;
 if (!$id) {
@@ -65,6 +66,9 @@ for ($i = 1; $i < count($queue); $i++) {
   ];
 }
 
+$messagesStore = cluedo_load_supervision_messages();
+$characterMessage = cluedo_resolve_character_message($messagesStore, (string) $id);
+
 $data[$id]['queue'] = $queue;
 file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
@@ -80,4 +84,5 @@ echo json_encode([
   ],
   'current' => $current,
   'queue' => $waiting,
+  'message' => $characterMessage,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
