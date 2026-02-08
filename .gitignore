@@ -3,3 +3,5 @@
 # Runtime uploads (never version uploaded files)
 /uploads/*
 !/uploads/.gitkeep
+
+/data/config.json

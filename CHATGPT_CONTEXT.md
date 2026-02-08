@@ -270,3 +270,40 @@ Règles d’identité :
 - Toute sauvegarde depuis l’admin (`POST /api/save.php`) écrit **uniquement** dans `data/personnages.json`.
 
 Objectif : conserver un dépôt propre tout en laissant les animateurs modifier les données en direct sans conflit Git.
+
+---
+
+## 11. Hub + supervision + interfaces personnages
+
+### Nouvelles pages
+- `index.html` : hub de navigation uniquement
+  - 🔐 Administration (`admin.html`)
+  - 🎭 Personnage 1 à 5 (`character.html?id=X`)
+  - 📊 Supervision (`monitor.html`)
+- `monitor.html` : vue lecture seule de toutes les équipes actives/en attente
+- `character.html?id=X` : interface terrain par personnage
+
+### Sécurité administration
+- Seule l'interface admin est protégée par PIN.
+- Vérification **front** : `js/admin.js` demande le PIN puis vérifie via `api/admin_auth.php`.
+- Vérification **API** : endpoints admin valident `X-Admin-Pin` (ou `admin_pin` en query).
+- PIN stocké dans `data/config.json` (initialisé depuis `data/config.sample.json`).
+
+### Endpoints ajoutés
+- `GET /api/admin_auth.php` : vérifie le PIN admin.
+- `GET /api/supervision.php` : expose la liste globale des équipes en jeu (lecture seule).
+- `GET /api/character_status.php?id=X` : état courant d’un personnage (équipe active + file).
+- `POST /api/character_control.php` : actions terrain personnage (`plus_30`, `minus_30`, `eject`).
+
+### Endpoints admin sécurisés (PIN requis)
+- `GET /api/get.php`
+- `POST /api/save.php`
+- `POST /api/upload.php`
+- `POST /api/grant.php`
+- `POST /api/reset.php`
+
+### Contraintes d'architecture conservées
+- Aucun framework frontend.
+- Pas de base de données.
+- Polling simple côté supervision/personnage.
+- Changements incrémentaux sans refonte lourde.
