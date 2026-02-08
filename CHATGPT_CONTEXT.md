@@ -4,12 +4,10 @@
 
 - L'**Espace Équipe** (`team.html`) est désormais l'**entrée unique** pour gérer l'engagement dans les files des personnages.
 - Le **token équipe** reste la seule identité technique côté front.
-- Le mécanisme par **QR Code est abandonné volontairement** :
-  - aucun scan,
-  - aucune génération,
-  - aucun téléchargement,
-  - aucune logique caméra,
-  - aucune dépendance de permissions navigateur liée à la caméra.
+- Le mécanisme de récupération par QR Code est **réservé à la supervision** (`monitor.html`) :
+  - génération d'un QR code par équipe existante,
+  - lien vers `team.html` avec le token existant,
+  - aucun changement de règle métier ni d'identité.
 
 ## Parcours joueur / équipe
 
@@ -1034,3 +1032,24 @@ Les règles d'unicité de file restent inchangées :
   - la zone est recentrée automatiquement en haut (`scrollTop = 0`),
   - les **4 derniers messages** redeviennent immédiatement visibles, même si l'utilisateur consultait l'historique.
 - Ce recentrage est systématique et prioritaire (aucune exception liée à une interaction utilisateur en cours).
+
+
+
+### Supervision — suppression manuelle d'une équipe
+- `monitor.html` expose l'action **« Supprimer l'équipe »** dans chaque carte équipe.
+- Une confirmation explicite est requise avant suppression.
+- La suppression est ciblée par token et supprime toutes les traces associées :
+  - engagement actif / attente dans les files personnages,
+  - historique d'équipe,
+  - profil équipe (nom, participants, photo),
+  - présence (heartbeat),
+  - message supervision individuel.
+- Cette action est réservée à la supervision et n'affecte jamais les autres équipes.
+- La récupération d'une équipe supprimée nécessite une nouvelle connexion (nouveau token).
+
+### Supervision — QR Code de récupération de token équipe
+- `monitor.html` expose l'action **« QR Code de l'équipe »** dans chaque carte équipe.
+- Le QR code contient une URL `team.html?token=<token_existant>`.
+- Scanner ce QR code sur un autre appareil reconnecte la même équipe (même token, même historique) sans créer d'entrée supplémentaire.
+- L'UI de supervision affiche le QR code dans une modale et permet son téléchargement.
+- Cette fonctionnalité est strictement réservée à la supervision.

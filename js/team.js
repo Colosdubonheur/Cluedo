@@ -4,7 +4,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const AUDIO_ENABLED_KEY = "cluedo_team_audio_enabled";
   const MESSAGE_HISTORY_VERSION = "v1";
 
-  let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
+  const params = new URLSearchParams(window.location.search);
+  const tokenFromUrl = String(params.get("token") || "").trim();
+
+  let token = tokenFromUrl || localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
   if (!token) token = crypto.randomUUID();
   localStorage.setItem(TOKEN_KEY, token);
   sessionStorage.setItem(TOKEN_KEY, token);

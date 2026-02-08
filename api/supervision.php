@@ -162,6 +162,70 @@ if ($method === 'POST' && $action === 'set_end_game') {
   exit;
 }
 
+if ($method === 'POST' && $action === 'delete_team') {
+  $token = trim((string) ($_POST['token'] ?? ''));
+  if ($token === '') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'token équipe manquant'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
+
+  $path = cluedo_data_path();
+  $data = json_decode((string) file_get_contents($path), true);
+  if (!is_array($data)) {
+    $data = [];
+  }
+
+  $removedQueueEntries = 0;
+  foreach ($data as $characterId => $character) {
+    if (!isset($character['queue']) || !is_array($character['queue'])) {
+      continue;
+    }
+
+    $queue = $character['queue'];
+    $initialCount = count($queue);
+    $queue = array_values(array_filter($queue, function ($entry) use ($token) {
+      return (string) ($entry['token'] ?? '') !== $token;
+    }));
+
+    $removedQueueEntries += max(0, $initialCount - count($queue));
+    $data[$characterId]['queue'] = $queue;
+  }
+
+  file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+
+  $historyStore = cluedo_load_history();
+  if (isset($historyStore['teams'][$token])) {
+    unset($historyStore['teams'][$token]);
+    cluedo_save_history($historyStore);
+  }
+
+  $profilesStore = cluedo_load_team_profiles();
+  if (isset($profilesStore['teams'][$token])) {
+    unset($profilesStore['teams'][$token]);
+    cluedo_save_team_profiles($profilesStore);
+  }
+
+  $presenceStore = cluedo_load_team_presence();
+  if (isset($presenceStore['teams'][$token])) {
+    unset($presenceStore['teams'][$token]);
+    cluedo_save_team_presence($presenceStore);
+  }
+
+  $messagesStore = cluedo_load_supervision_messages();
+  if (isset($messagesStore['teams'][$token])) {
+    unset($messagesStore['teams'][$token]);
+    cluedo_save_supervision_messages($messagesStore);
+  }
+
+  echo json_encode([
+    'ok' => true,
+    'deleted_token' => $token,
+    'removed_queue_entries' => $removedQueueEntries,
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  exit;
+}
+
 $path = cluedo_data_path();
 $data = json_decode(file_get_contents($path), true);
 if (!is_array($data)) {

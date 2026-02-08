@@ -969,6 +969,76 @@ body {
   margin: 6px 0 0;
 }
 
+
+.monitor-team-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.monitor-team-actions .admin-button {
+  flex: 1 1 180px;
+}
+
+.monitor-team-delete-btn {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.monitor-team-delete-btn:hover,
+.monitor-team-delete-btn:focus-visible {
+  background: #991b1b;
+  border-color: #991b1b;
+}
+
+.monitor-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(2, 6, 23, 0.78);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 14px;
+}
+
+.monitor-modal-dialog {
+  width: min(94vw, 460px);
+  border-radius: 14px;
+  border: 1px solid #334155;
+  background: #0f1726;
+  padding: 14px;
+}
+
+.monitor-modal-dialog h3 {
+  margin: 0 0 8px;
+}
+
+.monitor-team-qr-image {
+  display: block;
+  width: min(100%, 320px);
+  margin: 10px auto;
+  border-radius: 10px;
+  border: 1px solid #334155;
+  background: #fff;
+}
+
+.monitor-modal-link-wrap {
+  margin: 10px 0;
+}
+
+.monitor-modal-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.monitor-modal-actions .admin-button {
+  flex: 1 1 180px;
+  text-align: center;
+  text-decoration: none;
+}
+
 .team-supervision-message {
   margin-bottom: 14px;
   border: 1px solid #2a3142;
