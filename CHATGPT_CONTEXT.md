@@ -232,6 +232,16 @@ Le serveur est l’unique source de vérité pour :
 - Comportement sonore associé :
   - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son (`cluedo_team_audio_enabled`) ; son de notification : `assets/message.wav`,
   - côté personnage, notification sonore sur nouveau message ciblé avec `assets/message.wav`.
+- Suppression globale de l’historique des messages (supervision uniquement) :
+  - `monitor.html` expose un bouton dédié **« Effacer l’historique des messages »** distinct de `Remettre l'historique à zéro`,
+  - l’action est protégée par une confirmation explicite et ne s’exécute jamais sans validation,
+  - la suppression efface **uniquement** les structures runtime de messagerie supervision (`teams`, `characters`, `team_broadcast`, `character_broadcast`),
+  - l’effacement est persistant côté serveur et ne doit pas réapparaître après rafraîchissement,
+  - l’effacement est propagé immédiatement :
+    - `team.html` vide l’historique des messages,
+    - `character.html` vide l’historique des messages,
+    - `monitor.html` n’affiche plus de « dernier message reçu »,
+  - cette action ne supprime jamais les équipes/personnages/files/états, et ne remplace pas un reset global.
 
 ### Supervision — état global de la partie (indicateur)
 - La barre d'actions de `monitor.html` affiche sur une seule ligne :

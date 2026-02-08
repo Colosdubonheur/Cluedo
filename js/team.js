@@ -50,6 +50,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let players = [];
   let lastMessageKey = "";
   let lastPlayedMessageKey = "";
+  let lastMessagesClearedAt = 0;
   let isProfileEditing = false;
   let hubRequestSequence = 0;
   let lastAppliedHubSequence = 0;
@@ -121,6 +122,21 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem(TEAM_KEY);
     renderMessageHistory();
     renderPlayers();
+  }
+
+  function clearMessageHistoryFromSupervision(clearedAt) {
+    const clearedTimestamp = Number(clearedAt || 0);
+    if (!Number.isFinite(clearedTimestamp) || clearedTimestamp <= 0 || clearedTimestamp <= lastMessagesClearedAt) {
+      return;
+    }
+
+    lastMessagesClearedAt = clearedTimestamp;
+    messageHistory.length = 0;
+    messageHistoryKeys.clear();
+    lastMessageKey = "";
+    lastPlayedMessageKey = "";
+    clearPersistedMessageHistoryForCurrentToken();
+    renderMessageHistory();
   }
 
 
@@ -682,6 +698,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const messagePayload = state.team?.message || {};
+    clearMessageHistoryFromSupervision(messagePayload.cleared_at || 0);
     const messageText = String(messagePayload.text || "").trim();
     pushMessageToHistory(messageText, messagePayload.created_at || 0);
     void maybePlayMessageSound(messageText, messagePayload.created_at || 0);

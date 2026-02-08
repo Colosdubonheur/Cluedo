@@ -143,6 +143,18 @@ if ($method === 'POST' && $action === 'send_message') {
   exit;
 }
 
+if ($method === 'POST' && $action === 'clear_messages_history') {
+  $cleared = cluedo_clear_supervision_messages_history();
+  if (!$cleared) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'suppression des messages impossible'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
+
+  echo json_encode(['ok' => true, 'messages_cleared' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  exit;
+}
+
 if ($method === 'POST' && $action === 'reset_history') {
   cluedo_save_history(['teams' => []]);
   echo json_encode(['ok' => true, 'reset' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
