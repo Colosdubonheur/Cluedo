@@ -2,6 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_auth.php';
+require_once __DIR__ . '/_character_visibility.php';
 
 cluedo_require_admin_pin();
 
@@ -35,8 +36,12 @@ foreach ($mergedData as $id => &$character) {
   if ((!is_string($incomingPhoto) || trim($incomingPhoto) === '') && is_string($currentPhoto) && trim($currentPhoto) !== '') {
     $character['photo'] = $currentPhoto;
   }
+
+  $character['active'] = ($character['active'] ?? true) !== false;
 }
 unset($character);
+
+cluedo_enforce_character_visibility($mergedData);
 
 $encoded = json_encode($mergedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
 if ($encoded === false || file_put_contents($dataPath, $encoded) === false) {

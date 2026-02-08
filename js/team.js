@@ -196,7 +196,10 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!response.ok || payload.error) {
-      qrFeedback.textContent = "Impossible de rejoindre cette file.";
+      const isUnavailable = String(payload.error || "").toLowerCase().includes("character unavailable");
+      qrFeedback.textContent = isUnavailable
+        ? "Personnage indisponible."
+        : "Impossible de rejoindre cette file.";
       return;
     }
 

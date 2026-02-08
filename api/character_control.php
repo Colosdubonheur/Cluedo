@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
+require_once __DIR__ . '/_character_visibility.php';
 
 $payload = json_decode((string) file_get_contents('php://input'), true);
 $id = $payload['id'] ?? null;
@@ -17,6 +18,18 @@ $data = json_decode(file_get_contents($path), true);
 if (!isset($data[$id])) {
   http_response_code(404);
   echo json_encode(['ok' => false, 'error' => 'unknown id']);
+  exit;
+}
+
+$changed = cluedo_enforce_character_visibility($data);
+
+if (!cluedo_character_is_active($data[$id])) {
+  if ($changed) {
+    file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+  }
+
+  http_response_code(403);
+  echo json_encode(['ok' => false, 'error' => 'character unavailable']);
   exit;
 }
 

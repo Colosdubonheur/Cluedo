@@ -61,9 +61,13 @@ Le serveur est l’unique source de vérité pour :
 
 ## 4. Modèle conceptuel
 
+
 ### Personnage
 - id
 - nom (défini dans admin.html)
+- **statut métier `active` (`true`/`false`)**
+  - `true` : personnage visible et exploitable dans toutes les interfaces non-admin
+  - `false` : personnage masqué hors admin et indisponible côté serveur
 - paramètres de durée
 - file d’attente FIFO
 
@@ -143,6 +147,8 @@ Toute évolution doit respecter ces principes.
 
 ### `GET /api/status.php`
 
+- Si le personnage est inactif, l'API doit répondre en refus explicite (`character unavailable`).
+
 **Entrée**
 - `id` (personnage)
 - `token` (identifiant stable d’équipe)
@@ -215,11 +221,46 @@ Toute évolution doit respecter ces principes.
 
 ---
 
+
+---
+
+## 10 bis. Règle métier transversale : statut actif / inactif
+
+- Chaque personnage possède un attribut métier explicite `active` persistant dans `data/personnages.json`.
+- Ce statut est piloté depuis `admin.html` (toggle/checkbox), modifiable à chaud.
+- Le serveur reste la source de vérité : aucune logique front seule n'est suffisante.
+
+### Personnage actif (`active = true`)
+- Visible dans :
+  - Hub (`index.html`)
+  - Team (`team.html` : scan + statistiques)
+  - Supervision (`monitor.html`)
+  - QR codes générés
+  - Player (`play.html`)
+  - Interface personnage (`character.html`)
+- Autorisé à :
+  - recevoir des équipes
+  - maintenir une file
+  - être scanné/rejoint
+
+### Personnage inactif (`active = false`)
+- Visible **uniquement** dans l’admin (`admin.html`) pour rester configurable.
+- Hors admin, le personnage :
+  - n’apparaît jamais dans les listes/UI,
+  - ne peut plus être rejoint,
+  - ne maintient pas de file active.
+- En cas d’accès direct (URL/scan ancien), le serveur refuse proprement avec un message explicite (`character unavailable` / "Personnage indisponible").
+
+Contraintes :
+- ne jamais supprimer automatiquement la configuration d’un personnage inactif,
+- ne pas purger automatiquement l’historique,
+- ne pas déduire implicitement ce statut depuis d’autres données.
+
 ## 10. UI rendering rules
 
 
 ### Hub (`index.html`)
-- Le Hub liste les personnages **1 à 15**.
+- Le Hub liste uniquement les personnages **actifs** (les inactifs restent visibles seulement en admin).
 - Chaque personnage affiche son **ID** et son **nom courant** issu de `data/personnages.json`.
 - Chaque personnage expose deux accès explicites :
   - joueur : `play.html?id=X`

@@ -2,6 +2,7 @@
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_queue_runtime.php';
+require_once __DIR__ . '/_character_visibility.php';
 
 $id = $_GET['id'] ?? null;
 if (!$id) {
@@ -18,7 +19,18 @@ if (!isset($data[$id])) {
   exit;
 }
 
+$changed = cluedo_enforce_character_visibility($data);
 $p = $data[$id];
+
+if (!cluedo_character_is_active($p)) {
+  if ($changed) {
+    file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+  }
+
+  http_response_code(403);
+  echo json_encode(['ok' => false, 'error' => 'character unavailable']);
+  exit;
+}
 $now = time();
 $maxWait = 600;
 $queue = isset($p['queue']) && is_array($p['queue']) ? $p['queue'] : [];
