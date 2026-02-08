@@ -14,6 +14,8 @@
   const characterMessageEl = document.getElementById("characterSupervisionMessage");
 
   let currentPhoto = "";
+  let lastKnownServerLocation = "";
+  let hasUnsavedLocationChanges = false;
 
   if (!id) {
     characterNameEl.textContent = "Paramètre id manquant.";
@@ -132,8 +134,12 @@
 
     currentPhoto = character.photo || "";
     setPhotoPreview(currentPhoto);
+
+    lastKnownServerLocation = character.location || "";
     if (characterLocationInputEl) {
-      characterLocationInputEl.value = character.location || "";
+      if (!hasUnsavedLocationChanges) {
+        characterLocationInputEl.value = lastKnownServerLocation;
+      }
     }
 
     const activeTeam = payload.current || payload.active || payload.active_team || null;
@@ -184,6 +190,10 @@
   characterPhotoInputEl.addEventListener("change", uploadCharacterPhoto);
 
   if (characterLocationButtonEl) {
+    characterLocationInputEl?.addEventListener("input", () => {
+      hasUnsavedLocationChanges = true;
+    });
+
     characterLocationButtonEl.addEventListener("click", async () => {
       const location = (characterLocationInputEl?.value || "").trim();
       const confirmed = window.confirm("Confirmer la mise à jour de l'emplacement du personnage ?");
@@ -204,6 +214,8 @@
         return;
       }
 
+      hasUnsavedLocationChanges = false;
+      lastKnownServerLocation = location;
       setLocationFeedback("Emplacement mis à jour.", "success");
       refresh();
     });
