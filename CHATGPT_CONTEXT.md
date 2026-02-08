@@ -203,6 +203,8 @@ Sur `play` :
   - `need_name` : nom d’équipe absent
   - `waiting` : équipe dans la file en attente
   - `done` : interaction autorisée
+- Une équipe sans nom utilisateur valide est traitée comme `need_name`
+  et ne doit jamais afficher un nom par défaut à l’écran
 
 Règles d’identité :
 - utiliser `equipe.id` (token) comme identifiant technique
