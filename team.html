@@ -34,13 +34,13 @@ cluedo_send_html_no_cache_headers();
 
     <section class="card team-block" aria-label="Files suspects">
       <h2>Suspects</h2>
-      <p id="team-lock-message" class="team-feedback"></p>
+      <div id="team-current-character" class="team-current-character" hidden></div>
       <div class="team-character-toolbar">
         <div class="team-character-sort-wrap">
           <label for="team-character-sort" class="team-character-sort-label">Trier par</label>
           <select id="team-character-sort" class="admin-input team-character-sort-select">
             <option value="name">Nom</option>
-            <option value="wait">Attente</option>
+            <option value="time">Temps</option>
           </select>
         </div>
         <label for="team-character-filter-unseen">
@@ -48,6 +48,7 @@ cluedo_send_html_no_cache_headers();
           Suspects jamais vus
         </label>
       </div>
+      <p id="team-lock-message" class="team-feedback"></p>
       <p id="team-character-feedback" class="team-feedback"></p>
       <div id="team-characters" class="team-characters">Chargement…</div>
     </section>
