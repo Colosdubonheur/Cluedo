@@ -68,13 +68,19 @@ cluedo_send_html_no_cache_headers();
         const photoPath = personnages[String(id)]?.photo;
         const name = rawName && rawName.trim() ? rawName.trim() : fallbackName(id);
 
-        const card = document.createElement("article");
+        const card = document.createElement("a");
         card.className = "hub-character-card";
         card.id = `hub-character-${id}`;
+        card.href = `./character.html?id=${id}`;
+        card.setAttribute("aria-label", `Ouvrir la fiche de ${name}`);
 
         const title = document.createElement("h3");
         title.className = "hub-character-title";
-        title.textContent = `${id} - ${name}`;
+        title.textContent = name;
+
+        const characterId = document.createElement("p");
+        characterId.className = "hub-character-id";
+        characterId.textContent = `ID ${id}`;
 
         const identity = document.createElement("div");
         identity.className = "hub-character-identity";
@@ -91,23 +97,9 @@ cluedo_send_html_no_cache_headers();
           photo.classList.add("hub-character-photo-placeholder");
         }
 
-        identity.append(photo, title);
+        identity.append(photo, title, characterId);
 
-        const actions = document.createElement("div");
-        actions.className = "hub-character-actions";
-
-        const playLink = document.createElement("a");
-        playLink.className = "hub-button";
-        playLink.href = `./play.html?id=${id}`;
-        playLink.textContent = "Joueur";
-
-        const characterLink = document.createElement("a");
-        characterLink.className = "hub-button hub-button-secondary";
-        characterLink.href = `./character.html?id=${id}`;
-        characterLink.textContent = "Personnage";
-
-        actions.append(playLink, characterLink);
-        card.append(identity, actions);
+        card.append(identity);
         fragment.appendChild(card);
       }
 
