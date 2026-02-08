@@ -79,13 +79,15 @@ if ($index > 0) {
 $canAccess = ($index === 0);
 $myRemaining = $canAccess ? $remainingFirst : 0;
 $previousTeam = $index > 0 ? (string) ($p['queue'][$index - 1]['team'] ?? '') : '';
-$state = $canAccess && $myRemaining <= 0 ? 'done' : 'waiting';
+$legacyState = $canAccess && $myRemaining <= 0 ? 'done' : 'waiting';
+$state = $canAccess ? 'active' : 'waiting';
 
 $data[$id] = $p;
 file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
 $response = [
   "state" => $state,
+  "legacy_state" => $legacyState,
   "personnage" => [
     "id" => (string) $id,
     "nom" => $p['nom'] ?? '',
