@@ -92,6 +92,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   let pollTimeoutId = null;
   let hasFatalError = false;
 
+  function scheduleNextPoll() {
+    if (hasFatalError) {
+      return;
+    }
+
+    pollTimeoutId = setTimeout(loop, 1000);
+  }
+
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
     const m = String(Math.floor(sec / 60)).padStart(2, "0");
@@ -134,6 +142,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     elResult.style.display = "none";
   }
 
+  /**
+   * Affiche une erreur temporaire tout en laissant le polling se relancer.
+   */
+  function showTransientError(message) {
+    elStatus.textContent = message;
+    elStatus.style.background = "#fb923c";
+  }
+
   async function loop() {
     if (hasFatalError) {
       return;
@@ -141,21 +157,33 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     try {
       const r = await fetch(`./api/status.php?id=${id}&token=${playerToken}&t=${Date.now()}`);
-      const data = await r.json();
+
+      let data = null;
+      try {
+        data = await r.json();
+      } catch (parseError) {
+        if (!r.ok) {
+          showTransientError("Service momentanément indisponible.");
+          return;
+        }
+
+        showTransientError("Réponse serveur temporairement invalide.");
+        return;
+      }
+
+      if (data && typeof data === "object" && data.error) {
+        const readableError = getReadableErrorMessage(data.error);
+        showFatalError(readableError);
+        return;
+      }
 
       if (!r.ok) {
-        showFatalError("Service momentanément indisponible.");
+        showTransientError("Service momentanément indisponible.");
         return;
       }
 
       if (!data || typeof data !== "object") {
-        showFatalError("Réponse serveur invalide.");
-        return;
-      }
-
-      if (data.error) {
-        const readableError = getReadableErrorMessage(data.error);
-        showFatalError(readableError);
+        showTransientError("Réponse serveur temporairement invalide.");
         return;
       }
 
@@ -203,11 +231,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
     } catch (e) {
-      showFatalError("Impossible de récupérer le statut.");
-      return;
+      showTransientError("Connexion temporairement indisponible.");
+    } finally {
+      scheduleNextPoll();
     }
-
-    pollTimeoutId = setTimeout(loop, 1000);
   }
 
   loop();
