@@ -219,7 +219,10 @@ Le serveur est l’unique source de vérité pour :
 - Recherche intégrée (vanilla JS) :
   - un champ de recherche filtre en temps réel les options de la liste,
   - le filtrage se fait au clavier sans framework,
-  - l'ordre logique des catégories reste inchangé dans les résultats affichés.
+  - l'ordre logique des catégories reste inchangé dans les résultats affichés,
+  - dès qu’un destinataire est sélectionné dans la liste, le champ « Rechercher une cible » est vidé automatiquement,
+  - la sélection du destinataire reste active après vidage du champ,
+  - le filtrage ne reste pas appliqué après la sélection (liste revenue à l’état non filtré).
 - Les canaux restent strictement isolés au moment de la diffusion :
   - cibles équipes (`teams:all`, `team:<token>`) → canal **team** (visible dans `team.html`),
   - cibles personnages (`characters:all`, `character:<id>`) → canal **character** (visible dans `character.html`),
