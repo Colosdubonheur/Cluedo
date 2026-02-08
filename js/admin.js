@@ -90,9 +90,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   list.innerHTML = "";
   quickNavList.innerHTML = "";
 
-  const ids = Object.keys(data)
-    .filter((id) => data[id] && typeof data[id] === "object" && !Array.isArray(data[id]))
-    .sort((a, b) => Number(a) - Number(b));
+  const ids = Array.from({ length: 15 }, (_, index) => String(index + 1));
+
+  for (const id of ids) {
+    if (!data[id] || typeof data[id] !== "object" || Array.isArray(data[id])) {
+      data[id] = {
+        nom: `Personnage ${id}`,
+        photo: "",
+        location: "",
+        time_per_player: 120,
+        active: true,
+      };
+    }
+  }
 
   const setPhotoPreview = (id, src) => {
     const card = document.getElementById(`player-${id}`);
@@ -109,6 +119,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     preview.src = src;
     preview.classList.remove("is-hidden");
   };
+
+  const initialGlobalTime = Number(data["1"]?.time_per_player || 120);
+  const globalTimeInput = document.getElementById("global-time");
+  if (globalTimeInput && Number.isFinite(initialGlobalTime) && initialGlobalTime > 0) {
+    globalTimeInput.value = String(initialGlobalTime);
+  }
 
   for (const id of ids) {
     const p = data[id];
