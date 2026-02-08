@@ -1,0 +1,20 @@
+<IfModule mod_mime.c>
+  AddType application/x-httpd-php .html
+</IfModule>
+
+<IfModule mod_headers.c>
+  SetEnvIf Request_URI "/api/" CLUEDO_API_REQUEST
+
+  # API runtime responses must never be cached (browser + intermediary/CDN).
+  Header always set Cache-Control "no-store, no-cache, must-revalidate, max-age=0" env=CLUEDO_API_REQUEST
+  Header always set Pragma "no-cache" env=CLUEDO_API_REQUEST
+  Header always set Expires "0" env=CLUEDO_API_REQUEST
+
+  # Versioned static assets can be cached aggressively.
+  Header always set Cache-Control "public, max-age=31536000, immutable" "expr=%{REQUEST_URI} =~ m#/(css|js|assets|uploads)/# && %{QUERY_STRING} =~ /(^|&)v=#"
+
+  # Non-versioned static assets keep a short cache to reduce stale-risk.
+  Header always set Cache-Control "public, max-age=300, must-revalidate" "expr=%{REQUEST_URI} =~ m#/(css|js|assets|uploads)/# && %{QUERY_STRING} !~ /(^|&)v=#"
+</IfModule>
+
+FileETag MTime Size
