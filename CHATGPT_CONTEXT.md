@@ -77,7 +77,7 @@ Le serveur est l’unique source de vérité pour :
 - conserve :
   - position
   - heure d’entrée
-  - état (waiting / active / done)
+  - état (waiting / done)
 
 ⚠️ L’identité d’une équipe repose sur son **id / token**, jamais sur son nom.
 
@@ -136,5 +136,74 @@ Priorités :
 - Aucun comportement implicite
 
 Toute évolution doit respecter ces principes.
-<!-- updated -->
-<!-- updated 2026-02-08 Julien -->
+
+---
+
+## 9. API contract
+
+### `GET /api/status.php`
+
+**Entrée**
+- `id` (personnage)
+- `token` (identifiant stable d’équipe)
+- `team_name` (optionnel, utilisé uniquement pour initialiser le nom à la première entrée)
+
+**Sortie contractuelle à consommer côté front**
+- `state`: `waiting` | `done`
+- `personnage`: `{ id, nom }`
+- `equipe`: `{ id, nom }`
+- `file`: `{ position, total, equipe_precedente, temps_attente_estime_seconds }`
+
+**Exemple JSON réel**
+```json
+{
+  "state": "waiting",
+  "personnage": { "id": "1", "nom": "Juju" },
+  "equipe": { "id": "7b81a767-2304-42d3-9763-6c00304ae83c", "nom": "Les Defifou" },
+  "file": {
+    "position": 1,
+    "total": 2,
+    "equipe_precedente": "Equipe sans nom",
+    "temps_attente_estime_seconds": 97
+  }
+}
+```
+
+### `POST /api/rename_team.php`
+
+**Entrée**
+- `id` (personnage)
+- `team_id` (ou `token`) : identifiant stable de l’équipe
+- `nouveau_nom`
+
+**Sortie**
+- `ok`
+- `equipe`: `{ id, nom }`
+- `file`: `{ position, total }`
+
+**Contraintes métier**
+- aucune recréation d’entrée de file
+- aucune duplication d’équipe
+- position inchangée
+
+---
+
+## 10. UI rendering rules
+
+Sur `play` :
+- Afficher strictement :
+  - `Vous allez voir : {personnage.nom}`
+  - `Votre équipe : {equipe.nom}` + bouton `Modifier`
+- Ne jamais demander/saisir le nom du personnage côté play
+- Afficher les informations de file depuis `file` :
+  - `position`
+  - `temps_attente_estime_seconds`
+  - `equipe_precedente`
+- États UI :
+  - `need_name` : nom d’équipe absent
+  - `waiting` : équipe dans la file en attente
+  - `done` : interaction autorisée
+
+Règles d’identité :
+- utiliser `equipe.id` (token) comme identifiant technique
+- ne jamais utiliser `equipe.nom` comme identifiant
