@@ -59,7 +59,7 @@ body {
 .hub-section h2 { margin: 0 0 10px; font-size: 1.2rem; }
 .hub-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
 
-.hub-character-list { display: grid; grid-template-columns: 1fr; gap: 12px; }
+.hub-character-list { display: grid; grid-template-columns: 1fr; gap: 14px; }
 
 .hub-quick-access h3 { margin: 0 0 8px; font-size: 1rem; }
 .hub-quick-access-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-bottom: 10px; }
@@ -81,11 +81,38 @@ body {
 .hub-character-card {
   background: #10151f;
   border: 1px solid #263247;
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 12px;
+  padding: 14px;
 }
-.hub-character-title { margin: 0 0 10px; font-size: 1rem; color: #dbe7ff; }
-.hub-character-actions { display: grid; gap: 6px; }
+.hub-character-identity {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.hub-character-photo {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #2d3c55;
+  background: #162131;
+  flex-shrink: 0;
+}
+
+.hub-character-photo-placeholder {
+  background: radial-gradient(circle at 30% 30%, #425a7a, #223247 60%, #1a2535 100%);
+}
+
+.hub-character-title {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #dbe7ff;
+  line-height: 1.2;
+}
+
+.hub-character-actions { display: grid; gap: 8px; }
 
 .hub-bulk-actions {
   display: grid;
@@ -120,6 +147,40 @@ body {
 .hub-button-qr:hover { background: #15803d; }
 
 .hub-desktop-only { display: none; }
+
+.hub-qr-preview-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.hub-qr-preview-modal.is-open { display: flex; }
+
+.hub-qr-preview-dialog {
+  width: min(420px, 100%);
+  background: #0f131d;
+  border: 1px solid #2a3142;
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.hub-qr-preview-dialog h3 {
+  margin: 0 0 10px;
+  text-align: center;
+}
+
+.hub-qr-preview-image {
+  width: min(320px, 100%);
+  display: block;
+  margin: 0 auto 10px;
+  border-radius: 10px;
+  background: #ffffff;
+}
 
 /* ===================== ADMIN ===================== */
 
@@ -321,6 +382,10 @@ body {
   .hub-character-list { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .hub-desktop-only { display: flex; }
   .hub-bulk-actions { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .hub-character-photo {
+    width: 64px;
+    height: 64px;
+  }
 }
 
 @media (min-width: 900px) {

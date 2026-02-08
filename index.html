@@ -17,9 +17,9 @@
       <section class="hub-section">
         <h2>Accès principal</h2>
         <div class="hub-grid">
-          <a class="hub-button hub-button-qr" href="./team.html">👥 Page équipe</a>
           <a class="hub-button" href="./admin.html">🔐 Administration</a>
           <a class="hub-button" href="./monitor.html">📊 Supervision</a>
+          <a class="hub-button hub-button-qr" href="./team.html">👥 Page équipe</a>
         </div>
       </section>
 
@@ -47,6 +47,7 @@
       const downloadPdfButton = document.getElementById("hub-download-pdf-qr");
       const fallbackName = (id) => `Personnage ${id}`;
       const characterEntries = [];
+      let qrPreviewObjectUrl = null;
 
       const loadAppVersion = async () => {
         try {
@@ -98,6 +99,53 @@
         downloadLink.remove();
         URL.revokeObjectURL(blobUrl);
       };
+
+      const isDesktopForQr = () => window.matchMedia("(min-width: 768px) and (hover: hover) and (pointer: fine)").matches;
+
+      const getPhotoUrl = (photoPath) => {
+        if (!photoPath || !photoPath.trim()) {
+          return "";
+        }
+
+        if (/^(https?:)?\/\//.test(photoPath) || photoPath.startsWith("data:")) {
+          return photoPath;
+        }
+
+        return photoPath.startsWith(".") || photoPath.startsWith("/") ? photoPath : `./${photoPath}`;
+      };
+
+      const qrPreviewModal = document.createElement("div");
+      qrPreviewModal.className = "hub-qr-preview-modal";
+      qrPreviewModal.setAttribute("aria-hidden", "true");
+      qrPreviewModal.innerHTML = `
+        <div class="hub-qr-preview-dialog" role="dialog" aria-modal="true" aria-label="QR code personnage">
+          <h3 id="hub-qr-preview-title">QR code</h3>
+          <img id="hub-qr-preview-image" class="hub-qr-preview-image" alt="QR code d'accès joueur"/>
+          <button id="hub-qr-preview-close" type="button" class="hub-button hub-button-secondary">Fermer</button>
+        </div>
+      `;
+      document.body.appendChild(qrPreviewModal);
+
+      const qrPreviewTitle = qrPreviewModal.querySelector("#hub-qr-preview-title");
+      const qrPreviewImage = qrPreviewModal.querySelector("#hub-qr-preview-image");
+      const qrPreviewCloseButton = qrPreviewModal.querySelector("#hub-qr-preview-close");
+
+      const closeQrPreview = () => {
+        qrPreviewModal.classList.remove("is-open");
+        qrPreviewModal.setAttribute("aria-hidden", "true");
+        if (qrPreviewObjectUrl) {
+          URL.revokeObjectURL(qrPreviewObjectUrl);
+          qrPreviewObjectUrl = null;
+        }
+        qrPreviewImage.removeAttribute("src");
+      };
+
+      qrPreviewCloseButton.addEventListener("click", closeQrPreview);
+      qrPreviewModal.addEventListener("click", (event) => {
+        if (event.target === qrPreviewModal) {
+          closeQrPreview();
+        }
+      });
 
       const buildQrCanvas = async (id, name) => {
         const playUrl = new URL(`./play.html?id=${id}`, window.location.href).href;
@@ -163,6 +211,7 @@
 
       for (const id of idsToRender) {
         const rawName = personnages[String(id)]?.nom;
+        const photoPath = personnages[String(id)]?.photo;
         const name = rawName && rawName.trim() ? rawName.trim() : fallbackName(id);
         characterEntries.push({ id, name });
 
@@ -181,29 +230,59 @@
         title.className = "hub-character-title";
         title.textContent = `${id} - ${name}`;
 
+        const identity = document.createElement("div");
+        identity.className = "hub-character-identity";
+
+        const photo = document.createElement("img");
+        photo.className = "hub-character-photo";
+        photo.alt = `Photo de ${name}`;
+        photo.loading = "lazy";
+
+        const resolvedPhotoUrl = getPhotoUrl(photoPath);
+        if (resolvedPhotoUrl) {
+          photo.src = resolvedPhotoUrl;
+        } else {
+          photo.classList.add("hub-character-photo-placeholder");
+        }
+
+        identity.append(photo, title);
+
         const actions = document.createElement("div");
         actions.className = "hub-character-actions";
 
         const playLink = document.createElement("a");
         playLink.className = "hub-button";
         playLink.href = `./play.html?id=${id}`;
-        playLink.textContent = `Jouer – ${id} - ${name}`;
+        playLink.textContent = "Joueur";
 
         const characterLink = document.createElement("a");
         characterLink.className = "hub-button hub-button-secondary";
         characterLink.href = `./character.html?id=${id}`;
-        characterLink.textContent = `Personnage – ${id} - ${name}`;
+        characterLink.textContent = "Personnage";
 
         const qrButton = document.createElement("button");
         qrButton.type = "button";
-        qrButton.className = "hub-button hub-button-qr hub-desktop-only";
-        qrButton.textContent = "Télécharger le QR code";
+        qrButton.className = "hub-button hub-button-qr";
+        qrButton.textContent = "QR Code";
         qrButton.addEventListener("click", async () => {
-          await downloadQr(id, name);
+          if (isDesktopForQr()) {
+            await downloadQr(id, name);
+            return;
+          }
+
+          const qrBlob = await buildQrImage(id, name);
+          if (qrPreviewObjectUrl) {
+            URL.revokeObjectURL(qrPreviewObjectUrl);
+          }
+          qrPreviewObjectUrl = URL.createObjectURL(qrBlob);
+          qrPreviewTitle.textContent = `${id} - ${name}`;
+          qrPreviewImage.src = qrPreviewObjectUrl;
+          qrPreviewModal.classList.add("is-open");
+          qrPreviewModal.setAttribute("aria-hidden", "false");
         });
 
         actions.append(playLink, characterLink, qrButton);
-        card.append(title, actions);
+        card.append(identity, actions);
         fragment.appendChild(card);
       }
 
