@@ -676,21 +676,15 @@ Contraintes non négociables :
 ## 12. Versionnement
 
 - Toutes les pages principales (`index.html`, `admin.html`, `play.html`, `team.html`, `character.html`) affichent la même version applicative visible (zone en haut à droite), purement informative.
+- La version affichée sur le hub est rendue dans `index.html` via l’élément `[data-app-version]`, alimenté par `js/app-version.js`.
 - Format officiel : `MAJEUR.MINEUR.PATCH`.
-- Source de vérité unique : `data/version.json` avec un compteur entier global `n` (ex: `{ "n": 5 }`).
-- `n` est incrémenté **manuellement de +1** à chaque évolution validée.
-- Le calcul de version est dérivé uniquement de `n` (aucune date/heure, aucun Git, aucun navigateur) :
-  - `MAJEUR = floor(n / 100) + 1`
-  - `MINEUR = floor((n % 100) / 10)`
-  - `PATCH = n % 10`
-- Exemples :
-  - `n = 4` → `1.0.4`
-  - `n = 10` → `1.1.0`
-  - `n = 58` → `1.5.8`
-  - `n = 100` → `2.0.0`
-  - `n = 158` → `2.5.8`
+- Règle de génération verrouillée : la version applicative est dérivée du **numéro de Pull Request GitHub** ayant déclenché le déploiement.
+  - Exemple : PR `#83` → version `1.0.83`
+  - Exemple : PR `#84` → version `1.0.84`
+- Source de vérité unique : `data/version.json` avec la clé chaîne `version` (ex: `{ "version": "1.0.83" }`).
+- Le workflow GitHub Actions `.github/workflows/deploy.yml` écrit ce fichier automatiquement avant l’upload FTP.
+- Interdiction verrouillée : aucune dépendance à la date/heure locale, et aucune version codée en dur côté front/back.
 - Source front unique : `js/app-version.js` consomme `./api/version.php` et alimente tous les emplacements `[data-app-version]`.
-- Interdiction verrouillée : ne jamais coder la version en dur côté front ou côté back.
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
 
 ## 11. Team UX technique (stabilité terrain)
