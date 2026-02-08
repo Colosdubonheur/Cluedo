@@ -204,6 +204,35 @@ document.addEventListener("DOMContentLoaded", async () => {
     localStorage.setItem(TEAM_KEY, teamName);
   }
 
+  async function initializeTeamNameOnServer(initialName) {
+    if (!initialName) {
+      return false;
+    }
+
+    const query = new URLSearchParams({
+      id,
+      token: playerToken,
+      team_name: initialName,
+      t: String(Date.now()),
+    });
+
+    const response = await fetch(`./api/status.php?${query.toString()}`);
+    const payload = await response.json();
+
+    if (!response.ok || payload?.error) {
+      return false;
+    }
+
+    const resolvedTeamName = (payload.equipe?.nom || initialName).trim();
+    if (!hasValidUserTeamName(resolvedTeamName)) {
+      return false;
+    }
+
+    teamName = resolvedTeamName;
+    localStorage.setItem(TEAM_KEY, teamName);
+    return true;
+  }
+
   async function renameTeam() {
     const newName = askTeamName(teamName);
     if (!newName || newName === teamName) {
@@ -218,7 +247,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!name) {
       return;
     }
-    await updateTeamNameOnServer(name);
+
+    if (hasValidUserTeamName(teamName)) {
+      await updateTeamNameOnServer(name);
+      return;
+    }
+
+    const initialized = await initializeTeamNameOnServer(name);
+    if (initialized) {
+      elNeedName.style.display = "none";
+      await loop();
+    }
   };
 
   elRenameBtn.onclick = async () => {

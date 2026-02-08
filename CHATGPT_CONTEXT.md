@@ -148,6 +148,14 @@ Toute évolution doit respecter ces principes.
 - `token` (identifiant stable d’équipe)
 - `team_name` (optionnel, utilisé uniquement pour initialiser le nom à la première entrée)
 
+**Distinction métier obligatoire (initialisation vs modification)**
+- **Initialisation** : lors de la première saisie (état UI `need_name`), le front doit appeler
+  `status.php` avec `team_name` pour créer/initialiser l’entrée de file avec ce nom.
+- **Modification** : `rename_team.php` ne doit être utilisé que pour corriger le nom d’une
+  équipe déjà présente dans la file (action utilisateur `Modifier`).
+- La première saisie ne doit jamais passer par `rename_team.php`, sinon l’API peut refuser
+  légitimement (équipe non encore initialisée) et afficher une erreur inutile.
+
 **Sortie contractuelle à consommer côté front**
 - `state`: `waiting` | `active`
 - `legacy_state`: `waiting` | `done` (compatibilité rétroactive)
@@ -183,6 +191,7 @@ Toute évolution doit respecter ces principes.
 - `file`: `{ position, total }`
 
 **Contraintes métier**
+- réservé à la **modification** d’une équipe déjà initialisée dans la file
 - aucune recréation d’entrée de file
 - aucune duplication d’équipe
 - position inchangée
@@ -213,6 +222,8 @@ Transition attendue :
   - `done` : interaction autorisée
 - Une équipe sans nom utilisateur valide est traitée comme `need_name`
   et ne doit jamais afficher un nom par défaut à l’écran
+- En `need_name` initial, la saisie du nom réalise une **initialisation** via `status.php?team_name=...`
+  (pas un renommage). Le bouton `Modifier` utilise `rename_team.php` uniquement après initialisation.
 
 Règles d’identité :
 - utiliser `equipe.id` (token) comme identifiant technique
