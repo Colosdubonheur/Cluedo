@@ -2,11 +2,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   const TOKEN_KEY = "cluedo_player_token";
   const TEAM_KEY = "cluedo_team_name";
 
-  let playerToken = sessionStorage.getItem(TOKEN_KEY);
+  let playerToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
   if (!playerToken) {
     playerToken = crypto.randomUUID();
-    sessionStorage.setItem(TOKEN_KEY, playerToken);
   }
+  localStorage.setItem(TOKEN_KEY, playerToken);
+  sessionStorage.setItem(TOKEN_KEY, playerToken);
 
   let teamName = (localStorage.getItem(TEAM_KEY) || "").trim();
 
@@ -68,6 +69,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           <button id="setNameBtn" style="padding:10px 14px;border-radius:10px">Saisir le nom d’équipe</button>
         </div>
 
+        <div id="leaveQueue" style="display:none;margin-top:12px;text-align:center;">
+          <button id="leaveQueueBtn" style="padding:10px 14px;border-radius:10px">Quitter la file d’attente</button>
+        </div>
+
         <div id="result" style="display:none;margin-top:16px">
           <div id="message" style="font-size:18px;font-weight:bold;margin-bottom:10px"></div>
           <img id="photo" style="width:100%;max-height:260px;object-fit:contain;border-radius:14px">
@@ -112,6 +117,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const elEstimatedWait = document.getElementById("estimatedWait");
   const elPreviousTeam = document.getElementById("previousTeam");
   const elQueueDetails = document.getElementById("queueDetails");
+  const elLeaveQueue = document.getElementById("leaveQueue");
+  const elLeaveQueueBtn = document.getElementById("leaveQueueBtn");
 
   let pollTimeoutId = null;
   let hasFatalError = false;
@@ -253,6 +260,25 @@ document.addEventListener("DOMContentLoaded", async () => {
     await updateTeamNameOnServer(newName);
   }
 
+  async function leaveQueue() {
+    const response = await fetch("./api/leave_queue.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id, token: playerToken }),
+    });
+
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      window.alert("Impossible de quitter la file d’attente.");
+      return;
+    }
+
+    teamNameInitializationLocked = false;
+    teamName = "";
+    localStorage.removeItem(TEAM_KEY);
+    hasAutoPromptedNeedName = false;
+  }
+
   function stopLocalTimer() {
     localTimerMode = "none";
     localTimerRemaining = 0;
@@ -336,38 +362,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     await renameTeam();
   };
 
+  elLeaveQueueBtn.onclick = async () => {
+    await leaveQueue();
+  };
+
   async function loop() {
     if (hasFatalError) {
       return;
     }
-
-    if (!hasValidUserTeamName(teamName)) {
-      teamNameInitializationLocked = false;
-      teamName = "";
-      localStorage.removeItem(TEAM_KEY);
-      stopLocalTimer();
-      elNeedName.style.display = "block";
-      elStatus.textContent = "Merci de saisir le nom de votre équipe";
-      elStatus.style.background = "#fbbf24";
-      elTimer.textContent = "--:--";
-      elTimer.style.color = "white";
-      elTimerLabel.textContent = "Temps estimé";
-      elQueueDetails.style.display = "block";
-      elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
-      document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
-
-      if (!hasAutoPromptedNeedName) {
-        hasAutoPromptedNeedName = true;
-        setTimeout(() => {
-          elSetNameBtn.click();
-        }, 50);
-      }
-
-      pollTimeoutId = setTimeout(loop, 1000);
-      return;
-    }
-
-    elNeedName.style.display = "none";
 
     try {
       const query = new URLSearchParams({
@@ -415,6 +417,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         localStorage.removeItem(TEAM_KEY);
         stopLocalTimer();
         elNeedName.style.display = "block";
+        elLeaveQueue.style.display = "none";
         elStatus.textContent = "Merci de saisir le nom de votre équipe";
         elStatus.style.background = "#fbbf24";
         elTimer.textContent = "--:--";
@@ -440,7 +443,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       hasAutoPromptedNeedName = false;
       localStorage.setItem(TEAM_KEY, teamName);
 
-      elCharacterLine.textContent = `Vous allez voir : ${personnageNom}`;
+      elCharacterLine.textContent = state === "active"
+        ? `Vous êtes avec : ${personnageNom}`
+        : `Vous allez voir : ${personnageNom}`;
       elTeamLine.innerHTML = `Votre équipe : <strong>${teamName}</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
       document.getElementById("renameBtnDynamic").onclick = async () => {
         await renameTeam();
@@ -451,6 +456,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       elPreviousTeam.textContent = previousTeam || "Aucune";
 
       if (state === "waiting") {
+        elNeedName.style.display = "none";
+        elLeaveQueue.style.display = "block";
         syncLocalTimer("waiting", waitRemaining);
         const waitingText = fmt(localTimerRemaining);
         elTimer.textContent = waitingText;
@@ -462,6 +469,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         elResult.style.display = "none";
         notified = false;
       } else {
+        elNeedName.style.display = "none";
+        elLeaveQueue.style.display = "none";
         const hasQueuedTeam = Number(queueTotal) > 1;
         const nextTeamName = hasQueuedTeam ? (data.file?.next_team_name || "L’équipe suivante") : "";
 
@@ -483,19 +492,18 @@ document.addEventListener("DOMContentLoaded", async () => {
           ? `⚠️ L’équipe « ${nextTeamName} » attend et pourra prendre la place à la fin du temps.`
           : "";
 
-        if (data.photo) {
-          elPhoto.src = data.photo;
-          elPhoto.style.display = "block";
-        } else {
-          elPhoto.style.display = "none";
-        }
-
-
         if (!notified && unlocked) {
           audio.currentTime = 0;
           audio.play().catch(() => {});
           notified = true;
         }
+      }
+
+      if (data.photo) {
+        elPhoto.src = data.photo;
+        elPhoto.style.display = "block";
+      } else {
+        elPhoto.style.display = "none";
       }
     } catch (e) {
       showFatalError("Impossible de récupérer le statut.");
