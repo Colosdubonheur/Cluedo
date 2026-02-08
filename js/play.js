@@ -556,7 +556,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (!hasDeclinedQueueSwitch) {
           const confirmed = window.confirm(
             `Vous êtes déjà dans la file de ${currentCharacter} (état : ${currentState}).\n\n` +
-            "Souhaitez-vous quitter cette file et perdre votre place pour rejoindre la nouvelle ?"
+            "Vous allez perdre votre place actuelle. Continuer ?"
           );
 
           if (confirmed) {

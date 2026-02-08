@@ -329,7 +329,35 @@ body {
 
 /* ===================== TEAM HUB ===================== */
 
+
 .team-page { padding-bottom: 40px; }
+.team-hero {
+  margin-bottom: 14px;
+  text-align: center;
+}
+.team-kicker {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 14px;
+}
+.team-hero-main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.team-display-name {
+  margin: 0;
+  font-size: clamp(1.8rem, 8vw, 2.6rem);
+  line-height: 1.1;
+}
+.team-edit-name-btn {
+  padding: 10px 12px;
+}
+.team-qr-block h2 {
+  margin: 0 0 8px;
+}
 .team-accordion { display: grid; gap: 14px; }
 .team-block { margin-bottom: 0; }
 .team-accordion-heading { margin: 0; }
@@ -394,6 +422,20 @@ body {
   background: #0f131d;
   border-radius: 10px;
   overflow: hidden;
+  border: 2px solid transparent;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+#team-qr-reader.is-success {
+  border-color: var(--ok);
+  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.25);
+}
+#team-qr-reader.is-error {
+  border-color: #ef4444;
+}
+.team-photo-square {
+  aspect-ratio: 1 / 1;
+  width: min(100%, 320px);
+  object-fit: cover;
 }
 
 @media (min-width: 720px) {
