@@ -497,9 +497,9 @@ body {
 .team-message-text {
   margin: 0;
   color: #fde047;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .team-block h2 {
@@ -1104,6 +1104,24 @@ body {
 
 .team-current-character-card h3 {
   margin: 0 0 6px;
+}
+
+.team-current-character-layout {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.team-current-character-photo-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.team-current-character-meta {
+  min-width: 0;
 }
 
 .team-current-state {
