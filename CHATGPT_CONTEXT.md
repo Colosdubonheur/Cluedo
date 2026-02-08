@@ -585,11 +585,13 @@ Contraintes non négociables :
 ### QR intégré
 
 - La page équipe embarque un lecteur QR interne.
-- Scanner un QR `play.html?id=X` déclenche une tentative d’entrée dans la file correspondante via les **API serveur existantes** (`status.php`).
+- Le résultat décodé est **consommé explicitement** : l’URL lue (`play.html?id=X`) est parsée côté `team.html` pour extraire l’`id` personnage.
+- Dès détection valide, `team.html` déclenche une **action interne immédiate** (appel `status.php` avec `join=1`, token d’équipe existant) sans navigation.
 - Le comportement est strictement équivalent au scan classique :
   - contrôles serveur,
   - gestion du cas « équipe déjà dans une autre file »,
   - confirmation explicite en cas de perte de place.
+- Un verrou anti-doublon empêche le traitement en boucle d’un même QR pendant le retour serveur.
 - Aucun scan QR depuis `team.html` ne redirige vers `play.html`.
 
 ### Garantie métier

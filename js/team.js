@@ -150,15 +150,21 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function parseCharacterIdFromQr(text) {
+    const raw = String(text || "").trim();
+    if (!raw) {
+      return null;
+    }
+
     try {
-      const parsed = new URL(text, window.location.href);
+      const parsed = new URL(raw, window.location.href);
       const id = parsed.searchParams.get("id");
       if (!id) {
         return null;
       }
-      return String(id).replace(/[^0-9]/g, "");
+      const normalizedId = String(id).replace(/[^0-9]/g, "");
+      return normalizedId || null;
     } catch (error) {
-      const match = String(text).match(/[?&]id=(\d+)/i);
+      const match = raw.match(/[?&]id=(\d+)/i);
       return match ? match[1] : null;
     }
   }
@@ -249,22 +255,31 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const scanner = new window.Html5QrcodeScanner("team-qr-reader", { fps: 10, qrbox: 220 }, false);
     let lastValue = "";
+    let isProcessingScan = false;
 
     scanner.render(async (decodedText) => {
-      if (!decodedText || decodedText === lastValue) {
-        return;
-      }
-      lastValue = decodedText;
-      const id = parseCharacterIdFromQr(decodedText);
-      if (!id) {
-        qrFeedback.textContent = "QR invalide : id de personnage introuvable.";
+      if (!decodedText || decodedText === lastValue || isProcessingScan) {
         return;
       }
 
-      await tryJoinCharacter(id);
-      setTimeout(() => {
-        lastValue = "";
-      }, 2500);
+      isProcessingScan = true;
+      lastValue = decodedText;
+
+      try {
+        const id = parseCharacterIdFromQr(decodedText);
+        if (!id) {
+          qrFeedback.textContent = "QR invalide : URL attendue play.html?id=X introuvable.";
+          return;
+        }
+
+        qrFeedback.textContent = `QR détecté (${id})… tentative d'entrée dans la file en cours.`;
+        await tryJoinCharacter(id);
+      } finally {
+        setTimeout(() => {
+          lastValue = "";
+          isProcessingScan = false;
+        }, 1500);
+      }
     }, () => {});
   }
 
