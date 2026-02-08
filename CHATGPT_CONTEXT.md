@@ -105,7 +105,13 @@ Le serveur est l’unique source de vérité pour :
 ### Complément UX team.html (scan QR PC / mobile)
 - `team.html` propose un scan QR adapté au mobile, à la tablette et au PC.
 - Les libellés et actions de scan sont localisés en français pour un usage terrain clair.
-- Un fallback par import d'image est disponible si la caméra est indisponible ou ne démarre pas.
+- Conditions de démarrage attendues du scanner caméra :
+  - page en contexte sécurisé (HTTPS),
+  - autorisation caméra accordée,
+  - démarrage vidéo immédiat avec attachement stable du flux dans `#team-qr-reader`,
+  - compatibilité mobile Safari assurée via vidéo inline (`playsinline` / `webkit-playsinline`) et lecture `autoplay`/`muted`.
+- Si la caméra est autorisée mais indisponible (timeout de source, device occupé/incompatible), afficher un message explicite d'échec de démarrage caméra sans crash JS.
+- Le fallback par import d'image reste disponible comme solution secondaire uniquement (pas comme comportement principal masquant un bug caméra).
 - Le bouton crayon sur `team.html` ouvre bien l'édition du nom d'équipe (section Participants), permet la saisie/validation sans rechargement et affiche un retour explicite en cas d'échec.
 
 ---

@@ -32,6 +32,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let previousTeamState = "free";
   let qrScanner = null;
   let qrIsRunning = false;
+  let qrCurrentStartToken = 0;
   let qrLastValue = "";
   let qrIsProcessingScan = false;
   let userEditingLockUntil = 0;
@@ -310,7 +311,11 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    qrScanner = new window.Html5Qrcode("team-qr-reader", false);
+    function ensureScannerInstance() {
+      if (qrScanner) return qrScanner;
+      qrScanner = new window.Html5Qrcode("team-qr-reader", false);
+      return qrScanner;
+    }
 
     const preferredCamera = () => {
       const saved = localStorage.getItem("cluedo_qr_camera_id");
@@ -352,23 +357,65 @@ document.addEventListener("DOMContentLoaded", () => {
       }
     };
 
-    async function stopScannerIfNeeded() {
-      if (!qrIsRunning || !qrScanner) return;
-      await qrScanner.stop().catch(() => {});
-      await qrScanner.clear().catch(() => {});
+    async function stopScannerIfNeeded(options = {}) {
+      const resetDom = options.resetDom !== false;
+      const scanner = qrScanner;
+
+      if (scanner && qrIsRunning) {
+        await scanner.stop().catch(() => {});
+      }
+      if (scanner) {
+        await scanner.clear().catch(() => {});
+      }
+
       qrIsRunning = false;
+      qrScanner = null;
+
+      if (resetDom) {
+        qrReader.replaceChildren();
+      }
     }
 
-    async function startWithTimeout(cameraConfig, timeoutMs = 7000) {
+    async function applyMobileVideoAttributes() {
+      const video = qrReader.querySelector("video");
+      if (!video) return;
+
+      video.setAttribute("playsinline", "true");
+      video.setAttribute("webkit-playsinline", "true");
+      video.setAttribute("autoplay", "true");
+      video.setAttribute("muted", "true");
+      video.playsInline = true;
+      video.autoplay = true;
+      video.muted = true;
+      await video.play().catch(() => {});
+    }
+
+    async function startWithTimeout(cameraConfig, timeoutMs = 12000) {
+      const scanner = ensureScannerInstance();
       return Promise.race([
-        qrScanner.start(cameraConfig, { fps: 10, qrbox: { width: 240, height: 240 } }, onScanSuccess, () => {}),
+        scanner.start(cameraConfig, { fps: 10, qrbox: { width: 240, height: 240 } }, onScanSuccess, () => {}),
         new Promise((_, reject) => {
           setTimeout(() => reject(new Error("CAMERA_START_TIMEOUT")), timeoutMs);
         }),
       ]);
     }
 
+    async function warmupCameraPermissions() {
+      if (!navigator.mediaDevices?.getUserMedia) return;
+
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: "environment" } },
+        audio: false,
+      });
+
+      for (const track of stream.getTracks()) {
+        track.stop();
+      }
+    }
+
     async function startCameraScan() {
+      const startToken = Date.now();
+      qrCurrentStartToken = startToken;
       setQrFeedback("Activation de la caméra… Autorisez l'accès si votre navigateur le demande.", "processing");
 
       if (!window.isSecureContext) {
@@ -378,36 +425,51 @@ document.addEventListener("DOMContentLoaded", () => {
 
       await stopScannerIfNeeded();
 
+      await warmupCameraPermissions().catch(() => {});
+
       let cameras = [];
       try {
         cameras = await window.Html5Qrcode.getCameras();
       } catch (_error) {
-        setQrFeedback("Impossible d'utiliser la caméra sur cet appareil. Utilisez « Importer une image ».", "error");
-        return;
-      }
-
-      if (!Array.isArray(cameras) || cameras.length === 0) {
-        setQrFeedback("Aucune caméra détectée. Utilisez « Importer une image ».", "error");
-        return;
+        cameras = [];
       }
 
       const savedCameraId = preferredCamera();
-      const preferredByLabel = cameras.find((camera) => /back|rear|environment|arrière/i.test(camera.label || ""));
-      const preferred = cameras.find((camera) => camera.id === savedCameraId) || preferredByLabel || cameras[0];
+      const preferredByLabel = cameras.find((camera) => /back|rear|environment|arrière/i.test(camera.label || "")) || null;
+      const preferred = cameras.find((camera) => camera.id === savedCameraId) || preferredByLabel || cameras[0] || null;
       const attempts = [
         { cameraConfig: { facingMode: { ideal: "environment" } } },
-        { cameraConfig: { deviceId: { exact: preferred.id } } },
-        { cameraConfig: preferred.id },
+        { cameraConfig: { facingMode: "environment" } },
       ];
+
+      if (preferred?.id) {
+        attempts.push({ cameraConfig: { deviceId: { exact: preferred.id } } });
+        attempts.push({ cameraConfig: preferred.id });
+      }
+
+      if (Array.isArray(cameras)) {
+        for (const camera of cameras) {
+          if (!camera?.id || camera.id === preferred?.id) continue;
+          attempts.push({ cameraConfig: { deviceId: { exact: camera.id } } });
+        }
+      }
 
       let started = false;
       let timeoutDetected = false;
       for (const attempt of attempts) {
+        if (qrCurrentStartToken !== startToken) {
+          await stopScannerIfNeeded();
+          return;
+        }
+
         try {
           await startWithTimeout(attempt.cameraConfig);
+          await applyMobileVideoAttributes();
           started = true;
           qrIsRunning = true;
-          localStorage.setItem("cluedo_qr_camera_id", preferred.id);
+          if (preferred?.id) {
+            localStorage.setItem("cluedo_qr_camera_id", preferred.id);
+          }
           setQrFeedback("Caméra activée. Présentez le QR code devant l'objectif.", "neutral");
           break;
         } catch (error) {
