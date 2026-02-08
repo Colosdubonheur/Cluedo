@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
+require_once __DIR__ . '/_queue_runtime.php';
 
 function cluedo_history_path(): string
 {
@@ -57,14 +58,10 @@ $currentStates = [];
 
 foreach ($data as $characterId => $character) {
   $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
+  $queue = cluedo_clean_character_queue($queue, $now, $maxWait);
 
-  $queue = array_values(array_filter($queue, function ($q) use ($now, $maxWait) {
-    return isset($q['joined_at']) && ($now - (int) $q['joined_at']) < $maxWait;
-  }));
-
-  $queue = array_values(array_filter($queue, function ($entry) {
-    return trim((string) ($entry['team'] ?? '')) !== '';
-  }));
+  $timePerPlayer = max(1, (int) ($character['time_per_player'] ?? 120));
+  $queue = cluedo_apply_runtime_handover($queue, $now, $timePerPlayer);
 
   foreach ($queue as $index => $entry) {
     $token = (string) ($entry['token'] ?? '');

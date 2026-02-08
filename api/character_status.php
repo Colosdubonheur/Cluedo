@@ -1,6 +1,7 @@
 <?php
 header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
+require_once __DIR__ . '/_queue_runtime.php';
 
 $id = $_GET['id'] ?? null;
 if (!$id) {
@@ -21,15 +22,10 @@ $p = $data[$id];
 $now = time();
 $maxWait = 600;
 $queue = isset($p['queue']) && is_array($p['queue']) ? $p['queue'] : [];
-$queue = array_values(array_filter($queue, function ($q) use ($now, $maxWait) {
-  return isset($q['joined_at']) && ($now - $q['joined_at']) < $maxWait;
-}));
-
-$queue = array_values(array_filter($queue, function ($entry) {
-  return trim((string) ($entry['team'] ?? '')) !== '';
-}));
+$queue = cluedo_clean_character_queue($queue, $now, $maxWait);
 
 $timePerPlayer = max(1, (int) ($p['time_per_player'] ?? 120));
+$queue = cluedo_apply_runtime_handover($queue, $now, $timePerPlayer);
 $buffer = max(0, (int) ($p['buffer_before_next'] ?? 15));
 
 $current = null;
