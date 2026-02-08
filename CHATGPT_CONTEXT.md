@@ -211,6 +211,16 @@ Toute évolution doit respecter ces principes.
 
 ## 10. UI rendering rules
 
+
+### Hub (`index.html`)
+- Le Hub liste les personnages **1 à 15**.
+- Chaque personnage affiche son **ID** et son **nom courant** issu de `data/personnages.json`.
+- Chaque personnage expose deux accès explicites :
+  - joueur : `play.html?id=X`
+  - personnage : `character.html?id=X`
+- Sur desktop, chaque personnage propose un bouton **Télécharger le QR code** pour l’accès joueur (`play.html?id=X`).
+
+
 Sur `play` :
 - Afficher strictement :
   - `Vous allez voir : {personnage.nom}`

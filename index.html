@@ -20,27 +20,78 @@
       </section>
 
       <section class="hub-section">
-        <h2>Accès joueur</h2>
-        <div class="hub-grid">
-          <a class="hub-button" href="./play.html?id=1">Jouer - Juju</a>
-          <a class="hub-button" href="./play.html?id=2">Jouer - Personnage 2</a>
-          <a class="hub-button" href="./play.html?id=3">Jouer - Personnage 3</a>
-          <a class="hub-button" href="./play.html?id=4">Jouer - Personnage 4</a>
-          <a class="hub-button" href="./play.html?id=5">Jouer - Personnage 5</a>
-        </div>
-      </section>
-
-      <section class="hub-section">
-        <h2>Accès personnage</h2>
-        <div class="hub-grid">
-          <a class="hub-button" href="./character.html?id=1">Interface - 1 - Juju</a>
-          <a class="hub-button" href="./character.html?id=2">Interface - 2 - Personnage 2</a>
-          <a class="hub-button" href="./character.html?id=3">Interface - 3 - Personnage 3</a>
-          <a class="hub-button" href="./character.html?id=4">Interface - 4 - Personnage 4</a>
-          <a class="hub-button" href="./character.html?id=5">Interface - 5 - Personnage 5</a>
-        </div>
+        <h2>Accès personnages (1 à 15)</h2>
+        <div id="hub-character-list" class="hub-character-list">Chargement…</div>
       </section>
     </div>
   </div>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const container = document.getElementById("hub-character-list");
+      const fallbackName = (id) => `Personnage ${id}`;
+
+      let personnages = {};
+      try {
+        const response = await fetch(`./data/personnages.json?ts=${Date.now()}`);
+        if (response.ok) {
+          personnages = await response.json();
+        }
+      } catch (error) {
+        // Fallback below intentionally keeps Hub usable if JSON is temporarily unavailable.
+      }
+
+      const fragment = document.createDocumentFragment();
+
+      for (let id = 1; id <= 15; id += 1) {
+        const rawName = personnages[String(id)]?.nom;
+        const name = rawName && rawName.trim() ? rawName.trim() : fallbackName(id);
+
+        const card = document.createElement("article");
+        card.className = "hub-character-card";
+
+        const title = document.createElement("h3");
+        title.className = "hub-character-title";
+        title.textContent = `${id} - ${name}`;
+
+        const actions = document.createElement("div");
+        actions.className = "hub-character-actions";
+
+        const playLink = document.createElement("a");
+        playLink.className = "hub-button";
+        playLink.href = `./play.html?id=${id}`;
+        playLink.textContent = `Jouer – ${id} - ${name}`;
+
+        const characterLink = document.createElement("a");
+        characterLink.className = "hub-button hub-button-secondary";
+        characterLink.href = `./character.html?id=${id}`;
+        characterLink.textContent = `Personnage – ${id} - ${name}`;
+
+        const qrButton = document.createElement("button");
+        qrButton.type = "button";
+        qrButton.className = "hub-button hub-button-qr hub-desktop-only";
+        qrButton.textContent = "Télécharger le QR code";
+        qrButton.addEventListener("click", () => {
+          const playUrl = new URL(`./play.html?id=${id}`, window.location.href).href;
+          const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1024x1024&data=${encodeURIComponent(playUrl)}`;
+
+          const downloadLink = document.createElement("a");
+          downloadLink.href = qrApiUrl;
+          downloadLink.download = `cluedo-play-id-${id}.png`;
+          downloadLink.rel = "noopener";
+          document.body.appendChild(downloadLink);
+          downloadLink.click();
+          downloadLink.remove();
+        });
+
+        actions.append(playLink, characterLink, qrButton);
+        card.append(title, actions);
+        fragment.appendChild(card);
+      }
+
+      container.innerHTML = "";
+      container.appendChild(fragment);
+    });
+  </script>
 </body>
 </html>
