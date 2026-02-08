@@ -46,6 +46,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div id="characterLine" style="font-size:18px;color:#ddd;margin-bottom:6px">Vous allez voir : …</div>
         <div id="teamLine" style="font-size:16px;color:#bbb;margin-bottom:12px">Votre équipe : … <button id="renameBtn" style="margin-left:8px">Modifier</button></div>
 
+        <div id="timerLabel" style="font-size:16px;color:#cbd5e1;text-align:center;margin-top:8px">Temps estimé</div>
         <div id="timer" style="font-size:64px;font-weight:bold;margin:10px 0;text-align:center">00:00</div>
         <div id="status" style="
           background:#fbbf24;
@@ -98,6 +99,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const elCharacterLine = document.getElementById("characterLine");
   const elTeamLine = document.getElementById("teamLine");
+  const elTimerLabel = document.getElementById("timerLabel");
   const elTimer = document.getElementById("timer");
   const elStatus = document.getElementById("status");
   const elResult = document.getElementById("result");
@@ -109,6 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const elPosition = document.getElementById("position");
   const elEstimatedWait = document.getElementById("estimatedWait");
   const elPreviousTeam = document.getElementById("previousTeam");
+  const elQueueDetails = document.getElementById("queueDetails");
 
   let pollTimeoutId = null;
   let hasFatalError = false;
@@ -117,6 +120,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let localTimerIntervalId = null;
   let localTimerMode = "none";
   let localTimerRemaining = 0;
+  let localTimerElapsed = 0;
+  let activeTimeLimitSeconds = 0;
   let localTimerLastTickAt = 0;
 
   function fmt(sec) {
@@ -253,6 +258,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function stopLocalTimer() {
     localTimerMode = "none";
     localTimerRemaining = 0;
+    localTimerElapsed = 0;
     localTimerLastTickAt = 0;
   }
 
@@ -262,18 +268,26 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (localTimerMode !== mode) {
       localTimerMode = mode;
       localTimerRemaining = nextSeconds;
+      localTimerElapsed = nextSeconds;
       localTimerLastTickAt = Date.now();
       return;
     }
 
     if (localTimerLastTickAt === 0) {
       localTimerRemaining = nextSeconds;
+      localTimerElapsed = nextSeconds;
       localTimerLastTickAt = Date.now();
       return;
     }
 
-    if (nextSeconds < localTimerRemaining - 1) {
+    if (mode === "waiting" && nextSeconds < localTimerRemaining - 1) {
       localTimerRemaining = nextSeconds;
+      localTimerLastTickAt = Date.now();
+      return;
+    }
+
+    if (mode === "active" && Math.abs(nextSeconds - localTimerElapsed) > 1) {
+      localTimerElapsed = nextSeconds;
       localTimerLastTickAt = Date.now();
     }
   }
@@ -301,6 +315,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         const current = fmt(localTimerRemaining);
         elTimer.textContent = current;
         elEstimatedWait.textContent = current;
+      } else if (localTimerMode === "active") {
+        localTimerElapsed = Math.max(0, localTimerElapsed + deltaSec);
+        elTimer.textContent = fmt(localTimerElapsed);
+        elTimer.style.color = activeTimeLimitSeconds > 0 && localTimerElapsed >= activeTimeLimitSeconds
+          ? "#ef4444"
+          : "white";
       }
     }, 250);
   }
@@ -346,6 +366,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       elStatus.textContent = "Merci de saisir le nom de votre équipe";
       elStatus.style.background = "#fbbf24";
       elTimer.textContent = "--:--";
+      elTimer.style.color = "white";
+      elTimerLabel.textContent = "Temps estimé";
+      elQueueDetails.style.display = "block";
       elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
       document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
 
@@ -393,6 +416,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : null);
       const queueTotal = data.file?.total ?? data.queue_length ?? 0;
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
+      const myRemaining = data.my_remaining ?? 0;
+      const timePerPlayer = Math.max(0, Number(data.time_per_player) || 0);
       const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
       // Règle de sécurité métier : ne jamais inférer l'état "active" à partir du temps restant.
       // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
@@ -409,6 +434,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         elStatus.textContent = "Merci de saisir le nom de votre équipe";
         elStatus.style.background = "#fbbf24";
         elTimer.textContent = "--:--";
+        elTimer.style.color = "white";
+        elTimerLabel.textContent = "Temps estimé";
+        elQueueDetails.style.display = "block";
         elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
         document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
 
@@ -442,21 +470,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         syncLocalTimer("waiting", waitRemaining);
         const waitingText = fmt(localTimerRemaining);
         elTimer.textContent = waitingText;
+        elTimer.style.color = "white";
+        elTimerLabel.textContent = "Temps estimé";
+        elQueueDetails.style.display = "block";
         elStatus.textContent = `Équipe en attente`;
         elStatus.style.background = "#fbbf24";
         elResult.style.display = "none";
         notified = false;
       } else {
-        stopLocalTimer();
-        elTimer.textContent = "--:--";
-        elStatus.textContent = "C’est votre tour, vous pouvez accéder au personnage";
-        elStatus.style.background = "#4ade80";
+        activeTimeLimitSeconds = timePerPlayer;
+        const elapsedFromServer = Math.max(0, timePerPlayer - Math.max(0, Number(myRemaining) || 0));
+        syncLocalTimer("active", elapsedFromServer);
 
+        elQueueDetails.style.display = "none";
+        elTimerLabel.textContent = `⏱️ Temps passé avec ${personnageNom}`;
+        elTimer.textContent = fmt(localTimerElapsed);
+        elTimer.style.color = activeTimeLimitSeconds > 0 && localTimerElapsed >= activeTimeLimitSeconds
+          ? "#ef4444"
+          : "white";
+        elStatus.textContent = `Vous pouvez continuer à échanger avec ${personnageNom}, mais à tout instant une équipe peut vous prendre la place.`;
+        elStatus.style.background = "#4ade80";
         elResult.style.display = "block";
         elMessage.textContent =
           queueTotal > 1
-            ? "⚠️ Une autre équipe arrive dans quelques secondes"
-            : `Vous pouvez parler à ${personnageNom} tant qu'aucune autre équipe n'arrive.`;
+            ? "⚠️ Une autre équipe peut arriver à tout moment"
+            : `Vous pouvez continuer avec ${personnageNom} tant qu'aucune autre équipe n'arrive.`;
 
         if (data.photo) {
           elPhoto.src = data.photo;
