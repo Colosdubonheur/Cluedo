@@ -77,12 +77,6 @@ echo json_encode([
   'ok' => true,
   'path' => $relativePath,
 ]);
-$name = "perso_{$id}_" . time() . "." . $ext;
-$dest = $dir . "/" . $name;
-
-if (!move_uploaded_file($file['tmp_name'], $dest)) {
-  echo json_encode(["ok"=>false,"error"=>"move failed"]);
-  exit;
 }
 
 echo json_encode([
