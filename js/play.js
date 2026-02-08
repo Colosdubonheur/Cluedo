@@ -273,10 +273,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    teamNameInitializationLocked = false;
-    teamName = "";
-    localStorage.removeItem(TEAM_KEY);
-    hasAutoPromptedNeedName = false;
+    // Conserver l'identité de l'équipe après sortie volontaire de file.
+    // Le nom ne doit jamais être redemandé tant qu'un nom valide existe.
+    if (hasValidUserTeamName(teamName)) {
+      teamNameInitializationLocked = true;
+      hasAutoPromptedNeedName = false;
+      localStorage.setItem(TEAM_KEY, teamName);
+    }
   }
 
   function stopLocalTimer() {
@@ -377,6 +380,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         token: playerToken,
         t: String(Date.now())
       });
+      if (hasValidUserTeamName(teamName)) {
+        query.set("team_name", teamName);
+      }
       const r = await fetch(`./api/status.php?${query.toString()}`);
       const data = await r.json();
 
@@ -499,10 +505,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
 
-      if (data.photo) {
-        elPhoto.src = data.photo;
+      const configuredPhoto = String(data.photo || data.personnage?.photo || "").trim();
+      if (configuredPhoto) {
+        elPhoto.src = configuredPhoto;
         elPhoto.style.display = "block";
       } else {
+        elPhoto.removeAttribute("src");
         elPhoto.style.display = "none";
       }
     } catch (e) {
