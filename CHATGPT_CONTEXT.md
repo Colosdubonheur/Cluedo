@@ -299,6 +299,12 @@ Transition attendue :
   (sans attendre une action supplémentaire) et rester bloqué hors file tant que le nom n’est pas valide.
 - En `need_name` initial, la saisie du nom réalise une **initialisation** via `status.php?team_name=...`
   (pas un renommage). Le bouton `Modifier` utilise `rename_team.php` uniquement après initialisation.
+- En `active`, le bouton doit afficher `Je ne suis plus avec {personnage.nom}` (jamais le mot générique `personnage`).
+- Sur sortie volontaire validée, `play.html` déclenche l’action serveur existante puis tente la fermeture automatique de la fenêtre (UX uniquement), sans perte de session équipe.
+- Sur sortie automatique (transition `active` -> non-`active` reçue du serveur), `play.html` tente la fermeture automatique de la fenêtre sans déclencher d’action serveur.
+- Le token équipe stable est persistant entre scans (`play.html?id=X` puis `play.html?id=Y`) et ne doit jamais être recréé tant qu’un token valide existe localement.
+- Le nom d’équipe déjà initialisé est conservé entre scans via ce token ; il ne doit pas être redemandé inutilement.
+- L’autorisation sonore est demandée une seule fois côté utilisateur puis mémorisée pour toutes les pages `play.html` (pas de redemande systématique à chaque ouverture).
 - **Verrou front requis sur la saisie auto** : la demande automatique du nom d'équipe ne doit se déclencher
   qu'une seule fois par phase `need_name`, puis rester verrouillée dès qu'un nom valide existe.
   Le polling ne doit jamais réouvrir ce prompt tant que le nom valide est conservé.
