@@ -25,13 +25,24 @@ document.addEventListener("DOMContentLoaded", () => {
   const qrFileInput = document.getElementById("team-qr-file-input");
   const historyEl = document.getElementById("team-history");
   const globalEl = document.getElementById("team-global");
+  const participantsGuidanceEl = document.getElementById("team-guidance-participants");
+  const photoGuidanceEl = document.getElementById("team-guidance-photo");
 
   let latestState = null;
   let previousTeamState = "free";
   let qrScanner = null;
+  let qrIsRunning = false;
   let qrLastValue = "";
   let qrIsProcessingScan = false;
-  let qrIsRunning = false;
+  let userEditingLockUntil = 0;
+
+  function markUserEditing(durationMs = 5000) {
+    userEditingLockUntil = Math.max(userEditingLockUntil, Date.now() + durationMs);
+  }
+
+  function isUserEditing() {
+    return Date.now() < userEditingLockUntil || profileForm.contains(document.activeElement);
+  }
 
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
@@ -53,10 +64,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return (teamNameInput.value || "").trim() || (localStorage.getItem(TEAM_KEY) || "").trim();
   }
 
-  function refreshTeamNameUi(name) {
+  function refreshTeamNameUi(name, options = {}) {
     const resolved = String(name || "").trim() || "Équipe sans nom";
+    const preserveInput = options.preserveInput === true;
+
     displayNameEl.textContent = resolved;
-    teamNameInput.value = String(name || "").trim();
+    if (!preserveInput) {
+      teamNameInput.value = String(name || "").trim();
+    }
   }
 
   function setQrFeedback(message, status = "neutral") {
@@ -94,6 +109,31 @@ document.addEventListener("DOMContentLoaded", () => {
     previousTeamState = nextState;
   }
 
+  function ensurePlayerInputs() {
+    const existing = playersWrap.querySelectorAll("input[data-player-index]");
+    if (existing.length === 10) {
+      return;
+    }
+
+    playersWrap.innerHTML = "";
+    for (let i = 0; i < 10; i += 1) {
+      const row = document.createElement("div");
+      row.className = "team-inline";
+      row.innerHTML = `<label class="admin-label" for="player-${i + 1}">Joueur ${i + 1}</label><input id="player-${i + 1}" data-player-index="${i}" class="admin-input" maxlength="80"/>`;
+      playersWrap.appendChild(row);
+    }
+  }
+
+  function applyPlayers(players, keepUserInput) {
+    ensurePlayerInputs();
+    for (let i = 0; i < 10; i += 1) {
+      const input = playersWrap.querySelector(`input[data-player-index="${i}"]`);
+      if (!input) continue;
+      if (keepUserInput) continue;
+      input.value = String(players[i] || "");
+    }
+  }
+
   async function loadHub() {
     const response = await fetch(`./api/team_hub.php?token=${encodeURIComponent(token)}&t=${Date.now()}`);
     const payload = await response.json();
@@ -107,22 +147,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const profileName = (profile.team_name || "").trim();
     const storedName = (localStorage.getItem(TEAM_KEY) || "").trim();
     const resolvedName = profileName || storedName;
+    const keepUserInput = isUserEditing();
 
     if (resolvedName) {
       localStorage.setItem(TEAM_KEY, resolvedName);
     }
 
-    refreshTeamNameUi(resolvedName);
+    refreshTeamNameUi(resolvedName, { preserveInput: keepUserInput });
 
-    playersWrap.innerHTML = "";
     const players = Array.isArray(profile.players) ? profile.players : [];
+    applyPlayers(players, keepUserInput);
+
     const filledPlayersCount = players.filter((name) => String(name || "").trim()).length;
-    for (let i = 0; i < 10; i += 1) {
-      const row = document.createElement("div");
-      row.className = "team-inline";
-      row.innerHTML = `<label class="admin-label" for="player-${i + 1}">Joueur ${i + 1}</label><input id="player-${i + 1}" class="admin-input" maxlength="80" value="${escapeHtml(players[i] || "")}"/>`;
-      playersWrap.appendChild(row);
-    }
 
     if (profile.photo) {
       photoEl.src = profile.photo;
@@ -156,13 +192,13 @@ document.addEventListener("DOMContentLoaded", () => {
       ? `<ul>${global
         .map((entry) => `<li><strong>${escapeHtml(entry.nom || `Personnage ${entry.id}`)}</strong> — état : ${escapeHtml(entry.active_team_name ? "actif" : "attente")}, attente moyenne : ${fmt(entry.estimated_wait_seconds)}, équipes en attente : ${Number(entry.waiting_count) || 0}</li>`)
         .join("")}</ul>`
-      : "Aucun personnage chargé.";
+      : "Aucune donnée globale disponible pour le moment.";
 
     maybePromptCloseOnFree(payload.team?.state?.state || "free");
   }
 
   async function saveProfile(extra = {}) {
-    const players = Array.from(playersWrap.querySelectorAll("input"))
+    const players = Array.from(playersWrap.querySelectorAll("input[data-player-index]"))
       .slice(0, 10)
       .map((input) => input.value.trim());
 
@@ -191,12 +227,13 @@ document.addEventListener("DOMContentLoaded", () => {
       throw new Error("Nom vide");
     }
 
+    markUserEditing();
     localStorage.setItem(TEAM_KEY, trimmed);
     await saveProfile({ team_name: trimmed });
 
     const state = latestState?.team?.state;
     if (!state?.character_id) {
-      feedbackName.textContent = "Nom sauvegardé.";
+      feedbackName.textContent = "Nom d'équipe mis à jour.";
       refreshTeamNameUi(trimmed);
       return;
     }
@@ -211,9 +248,9 @@ document.addEventListener("DOMContentLoaded", () => {
       }),
     });
 
-    const payload = await response.json();
+    const payload = await response.json().catch(() => ({ ok: false }));
     if (!response.ok || !payload.ok) {
-      feedbackName.textContent = "Nom local sauvegardé, mais renommage serveur non appliqué.";
+      feedbackName.textContent = "Nom d'équipe mis à jour localement.";
       refreshTeamNameUi(trimmed);
       return;
     }
@@ -221,65 +258,6 @@ document.addEventListener("DOMContentLoaded", () => {
     feedbackName.textContent = "Nom d'équipe mis à jour.";
     refreshTeamNameUi(trimmed);
   }
-
-  function parseCharacterIdFromQr(text) {
-    const raw = String(text || "").trim();
-    if (!raw) {
-      return null;
-    }
-
-    try {
-      const parsed = new URL(raw, window.location.href);
-      const id = parsed.searchParams.get("id");
-      if (!id) {
-        return null;
-      }
-      const normalizedId = String(id).replace(/[^0-9]/g, "");
-      return normalizedId || null;
-    } catch (error) {
-      const match = raw.match(/[?&]id=(\d+)/i);
-      return match ? match[1] : null;
-    }
-  }
-
-  async function tryJoinCharacter(id) {
-    const teamName = profileTeamName();
-    const query = new URLSearchParams({
-      id,
-      token,
-      team_name: teamName,
-      join: "1",
-      t: String(Date.now()),
-    });
-
-    let response = await fetch(`./api/status.php?${query.toString()}`);
-    let payload = await response.json();
-
-    if (payload.state === "already_in_queue" && payload.can_join_after_confirm) {
-      const current = payload.current_engagement || {};
-      const ok = window.confirm(`Votre équipe est déjà ${current.state === "active" ? "active" : "en attente"} chez ${current.personnage_nom || "un personnage"}.\nVoulez-vous perdre votre place et rejoindre la nouvelle file ?`);
-      if (!ok) {
-        qrFeedback.textContent = "Changement de file annulé.";
-        return;
-      }
-
-      query.set("force_switch", "1");
-      response = await fetch(`./api/status.php?${query.toString()}`);
-      payload = await response.json();
-    }
-
-    if (!response.ok || payload.error) {
-      const isUnavailable = String(payload.error || "").toLowerCase().includes("character unavailable");
-      qrFeedback.textContent = isUnavailable
-        ? "Personnage indisponible."
-        : "Impossible de rejoindre cette file.";
-      return;
-    }
-
-    qrFeedback.textContent = `Demande envoyée pour ${payload.personnage?.nom || `personnage ${id}`}.`;
-    await loadHub();
-  }
-
 
   function initAccordion() {
     const items = Array.from(document.querySelectorAll("[data-accordion-item]"));
@@ -318,15 +296,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
   async function initQrScanner() {
     if (!window.Html5Qrcode) {
-      setQrFeedback("Scanner QR indisponible sur cet appareil.", "error");
+      setQrFeedback("Scanner QR indisponible sur cet appareil. Utilisez « Importer une image ».", "error");
       return;
     }
 
-    const scanner = new window.Html5Qrcode("team-qr-reader", false);
-    let lastErrorMessage = "";
-    let isScannerRunning = false;
-    let lastValue = "";
-    let isProcessingScan = false;
+    qrScanner = new window.Html5Qrcode("team-qr-reader", false);
 
     const preferredCamera = () => {
       const saved = localStorage.getItem("cluedo_qr_camera_id");
@@ -334,17 +308,17 @@ document.addEventListener("DOMContentLoaded", () => {
     };
 
     const onScanSuccess = async (decodedText) => {
-      if (!decodedText || decodedText === lastValue || isProcessingScan) {
+      if (!decodedText || decodedText === qrLastValue || qrIsProcessingScan) {
         return;
       }
 
-      isProcessingScan = true;
-      lastValue = decodedText;
+      qrIsProcessingScan = true;
+      qrLastValue = decodedText;
 
       try {
         const target = parseQrTarget(decodedText);
         if (!target?.id || !target?.url) {
-          setQrFeedback("QR invalide : URL play.html?id=X introuvable.", "error");
+          setQrFeedback("QR invalide : lien de personnage introuvable.", "error");
           return;
         }
 
@@ -361,25 +335,34 @@ document.addEventListener("DOMContentLoaded", () => {
         }, 450);
       } finally {
         setTimeout(() => {
-          lastValue = "";
-          isProcessingScan = false;
+          qrLastValue = "";
+          qrIsProcessingScan = false;
           qrReader.classList.remove("is-processing");
         }, 1500);
       }
     };
 
     async function stopScannerIfNeeded() {
-      if (!isScannerRunning) return;
-      await scanner.stop().catch(() => {});
-      await scanner.clear().catch(() => {});
-      isScannerRunning = false;
+      if (!qrIsRunning || !qrScanner) return;
+      await qrScanner.stop().catch(() => {});
+      await qrScanner.clear().catch(() => {});
+      qrIsRunning = false;
+    }
+
+    async function startWithTimeout(cameraConfig, timeoutMs = 7000) {
+      return Promise.race([
+        qrScanner.start(cameraConfig, { fps: 10, qrbox: { width: 240, height: 240 } }, onScanSuccess, () => {}),
+        new Promise((_, reject) => {
+          setTimeout(() => reject(new Error("CAMERA_START_TIMEOUT")), timeoutMs);
+        }),
+      ]);
     }
 
     async function startCameraScan() {
       setQrFeedback("Activation de la caméra… Autorisez l'accès si votre navigateur le demande.", "processing");
 
       if (!window.isSecureContext) {
-        setQrFeedback("Caméra indisponible : ouvrez cette page en HTTPS puis réessayez, ou utilisez « Importer une image ».", "error");
+        setQrFeedback("Caméra indisponible : ouvrez cette page en HTTPS, sinon utilisez « Importer une image ».", "error");
         return;
       }
 
@@ -388,9 +371,8 @@ document.addEventListener("DOMContentLoaded", () => {
       let cameras = [];
       try {
         cameras = await window.Html5Qrcode.getCameras();
-      } catch (error) {
-        const reason = error?.message ? ` (${error.message})` : "";
-        setQrFeedback(`Impossible d'accéder à la caméra${reason}. Utilisez « Importer une image ».`, "error");
+      } catch (_error) {
+        setQrFeedback("Impossible d'utiliser la caméra sur cet appareil. Utilisez « Importer une image ».", "error");
         return;
       }
 
@@ -403,36 +385,31 @@ document.addEventListener("DOMContentLoaded", () => {
       const preferredByLabel = cameras.find((camera) => /back|rear|environment|arrière/i.test(camera.label || ""));
       const preferred = cameras.find((camera) => camera.id === savedCameraId) || preferredByLabel || cameras[0];
       const attempts = [
-        { label: "caméra arrière", cameraConfig: { facingMode: { ideal: "environment" } } },
-        { label: "caméra par identifiant", cameraConfig: { deviceId: { exact: preferred.id } } },
-        { label: "caméra par défaut", cameraConfig: preferred.id },
+        { cameraConfig: { facingMode: { ideal: "environment" } } },
+        { cameraConfig: { deviceId: { exact: preferred.id } } },
+        { cameraConfig: preferred.id },
       ];
 
       let started = false;
-      lastErrorMessage = "";
+      let timeoutDetected = false;
       for (const attempt of attempts) {
         try {
-          await scanner.start(
-            attempt.cameraConfig,
-            { fps: 10, qrbox: { width: 240, height: 240 } },
-            onScanSuccess,
-            () => {}
-          );
+          await startWithTimeout(attempt.cameraConfig);
           started = true;
-          isScannerRunning = true;
+          qrIsRunning = true;
           localStorage.setItem("cluedo_qr_camera_id", preferred.id);
           setQrFeedback("Caméra activée. Présentez le QR code devant l'objectif.", "neutral");
           break;
         } catch (error) {
-          lastErrorMessage = error?.message || String(error);
+          timeoutDetected = timeoutDetected || String(error?.message || "").includes("CAMERA_START_TIMEOUT") || /timeout starting video source/i.test(String(error?.message || ""));
+          await stopScannerIfNeeded();
         }
       }
 
       if (!started) {
-        const timeoutIssue = /timeout starting video source/i.test(lastErrorMessage);
-        const message = timeoutIssue
-          ? "La caméra a mis trop de temps à démarrer sur ce poste. Réessayez ou utilisez « Importer une image »."
-          : `Impossible de démarrer la caméra${lastErrorMessage ? ` (${lastErrorMessage})` : ""}. Utilisez « Importer une image ».`;
+        const message = timeoutDetected
+          ? "La caméra ne démarre pas correctement sur cet appareil. Utilisez « Importer une image » pour scanner le QR code."
+          : "Impossible de démarrer la caméra pour le moment. Utilisez « Importer une image ».";
         setQrFeedback(message, "error");
       }
     }
@@ -443,11 +420,10 @@ document.addEventListener("DOMContentLoaded", () => {
       setQrFeedback("Analyse de l'image en cours…", "processing");
 
       try {
-        const decodedText = await scanner.scanFile(file, true);
+        const decodedText = await qrScanner.scanFile(file, true);
         await onScanSuccess(decodedText);
-      } catch (error) {
-        const reason = error?.message ? ` (${error.message})` : "";
-        setQrFeedback(`Aucun QR valide détecté dans l'image${reason}.`, "error");
+      } catch (_error) {
+        setQrFeedback("Aucun QR valide détecté dans l'image. Vérifiez la netteté puis réessayez.", "error");
       } finally {
         qrFileInput.value = "";
       }
@@ -455,7 +431,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     qrStartCameraBtn.addEventListener("click", () => {
       startCameraScan().catch(() => {
-        setQrFeedback("Impossible de démarrer la caméra. Utilisez « Importer une image ».", "error");
+        setQrFeedback("Impossible d'utiliser la caméra. Utilisez « Importer une image ».", "error");
       });
     });
 
@@ -484,6 +460,14 @@ document.addEventListener("DOMContentLoaded", () => {
     return response.json().catch(() => ({ ok: false, error: "Réponse serveur invalide" }));
   }
 
+  profileForm.addEventListener("focusin", () => {
+    markUserEditing();
+  });
+
+  profileForm.addEventListener("input", () => {
+    markUserEditing();
+  });
+
   profileForm.addEventListener("submit", async (event) => {
     event.preventDefault();
     feedbackName.textContent = "";
@@ -491,19 +475,18 @@ document.addEventListener("DOMContentLoaded", () => {
       await renameTeam(teamNameInput.value);
       await loadHub();
     } catch (_error) {
-      feedbackName.textContent = "Impossible de sauvegarder le nom.";
+      feedbackName.textContent = "Impossible de sauvegarder le nom pour le moment.";
     }
   });
 
   editNameBtn.addEventListener("click", () => {
-    const current = profileTeamName();
-    const prompted = window.prompt("Nom de l'équipe", current);
-    if (prompted === null) return;
-    teamNameInput.value = prompted;
-    profileForm.requestSubmit();
+    teamNameInput.focus();
+    teamNameInput.select();
+    markUserEditing();
   });
 
   savePlayersBtn.addEventListener("click", async () => {
+    markUserEditing();
     try {
       await saveProfile();
       feedbackName.textContent = "Participants sauvegardés.";
@@ -538,13 +521,23 @@ document.addEventListener("DOMContentLoaded", () => {
     await loadHub();
   });
 
+  ensurePlayerInputs();
   loadHub().catch(() => {
-    historyEl.textContent = "Erreur de chargement.";
-    globalEl.textContent = "Erreur de chargement.";
+    participantsGuidanceEl.textContent = "Impossible de vérifier les participants pour le moment.";
+    photoGuidanceEl.textContent = "Impossible de vérifier la photo pour le moment.";
+    historyEl.textContent = "Les données de résumé sont temporairement indisponibles.";
+    globalEl.textContent = "L'état global est temporairement indisponible.";
   });
   initAccordion();
   initQrScanner();
   setInterval(() => {
-    loadHub().catch(() => {});
+    loadHub().catch(() => {
+      if (!historyEl.textContent.trim()) {
+        historyEl.textContent = "Les données de résumé sont temporairement indisponibles.";
+      }
+      if (!globalEl.textContent.trim()) {
+        globalEl.textContent = "L'état global est temporairement indisponible.";
+      }
+    });
   }, 2000);
 });
