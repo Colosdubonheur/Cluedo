@@ -1067,16 +1067,25 @@ De haut en bas :
   - chaque prénom validé apparaît sous le champ,
   - chaque entrée affiche une croix de suppression.
 - Contraintes participants :
-  - **minimum : 2**,
-  - **maximum : 10**.
+  - tous les participants de l'équipe doivent être renseignés,
+  - l'interrogation n'est autorisée que si au moins un participant est saisi,
+  - aucun message de blocage ne doit mentionner de plage numérique.
+
+### Règle métier officielle — validité du profil équipe (`team.html` uniquement)
+- Le nom d'équipe est **obligatoire** et est invalide s'il est vide **ou** vaut exactement `Équipe sans nom`.
+- Tant que le nom d'équipe n'est pas valide **ou** que les participants ne sont pas correctement renseignés :
+  - aucun interrogatoire n'est possible,
+  - les tuiles suspects/personnages restent inactives.
+- Le message de blocage affiché côté équipe doit être exactement :
+  - `Complétez le nom de l’équipe et renseignez l’ensemble des participants de votre équipe pour interroger les personnages.`
 
 ### Blocage strict tant que profil incomplet
-Tant que le nom d'équipe n'est pas valide **ou** qu'il y a moins de 2 participants :
+Tant que le nom d'équipe n'est pas valide **ou** qu'aucun participant n'est renseigné :
 - impossible de rejoindre/quitter une file,
 - les actions de file sont désactivées,
 - un message rouge explicite est affiché.
 
-Quand les prérequis sont remplis (nom valide + 2 à 10 participants), l'équipe peut agir sur les files.
+Quand les prérequis sont remplis (nom valide + participants renseignés), l'équipe peut agir sur les files.
 Le texte d'état « Espace équipe prêt : vous pouvez gérer les files des personnages » est supprimé.
 
 ### Section Suspects (affichage ligne unique)
