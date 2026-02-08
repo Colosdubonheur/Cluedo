@@ -58,9 +58,9 @@
 
           const payload = await response.json();
           const version = typeof payload.version === "string" ? payload.version.trim() : "";
-          appVersionContainer.textContent = version || "Version inconnue";
+          appVersionContainer.textContent = version || "";
         } catch (error) {
-          appVersionContainer.textContent = "Version inconnue";
+          appVersionContainer.textContent = "";
         }
       };
 
