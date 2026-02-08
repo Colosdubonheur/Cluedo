@@ -22,7 +22,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Resolve application version
+      - name: Resolve application build number
         shell: bash
         env:
           PR_NUMBER_EVENT: ${{ github.event.pull_request.number }}
@@ -39,10 +39,10 @@ jobs:
             exit 1
           fi
 
-          VERSION="1.0.${PR_NUMBER}"
+          BUILD="${PR_NUMBER}"
 
-          printf '{\n  "version": "%s"\n}\n' "${VERSION}" > data/version.json
-          echo "Resolved application version: ${VERSION} (event=${GITHUB_EVENT_NAME})"
+          printf '{\n  "build": %s\n}\n' "${BUILD}" > data/version.json
+          echo "Resolved application build: ${BUILD} (event=${GITHUB_EVENT_NAME})"
 
       - name: Upload to PlanetHoster via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4

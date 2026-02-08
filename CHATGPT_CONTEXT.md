@@ -783,16 +783,13 @@ Contraintes non négociables :
 
 ## 12. Versionnement
 
-- Toutes les pages principales (`index.html`, `admin.html`, `play.html`, `team.html`, `character.html`) affichent la même version applicative visible (zone en haut à droite), purement informative.
-- La version affichée sur le hub est rendue dans `index.html` via l’élément `[data-app-version]`, alimenté par `js/app-version.js`.
+- Toutes les pages principales (`index.html`, `admin.html`, `monitor.html`, `play.html`, `team.html`, `character.html`) affichent la même version applicative visible en haut à droite, de façon permanente et purement informative.
+- La version affichée est alimentée partout via l’attribut `[data-app-version]` et le script front unique `js/app-version.js`.
 - Format officiel : `MAJEUR.MINEUR.PATCH`.
-- Règle de génération verrouillée : la version applicative est dérivée du **numéro de Pull Request GitHub** ayant déclenché le déploiement.
-  - Exemple : PR `#83` → version `1.0.83`
-  - Exemple : PR `#84` → version `1.0.84`
-- Source de vérité unique : `data/version.json` avec la clé chaîne `version` (ex: `{ "version": "1.0.83" }`).
-- Le workflow GitHub Actions `.github/workflows/deploy.yml` écrit ce fichier automatiquement avant l’upload FTP.
+- Source de vérité verrouillée : `data/version.json` avec la clé entière `build` (ex: `{ "build": 84 }`).
+- Règle de génération verrouillée : `api/version.php` convertit ce build global en `MAJEUR.MINEUR.PATCH` (ex: build `84` → `1.0.84`).
+- Le workflow GitHub Actions `.github/workflows/deploy.yml` écrit ce build automatiquement avant l’upload FTP (build = numéro de PR de déploiement).
 - Interdiction verrouillée : aucune dépendance à la date/heure locale, et aucune version codée en dur côté front/back.
-- Source front unique : `js/app-version.js` consomme `./api/version.php` et alimente tous les emplacements `[data-app-version]`.
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
 
 ## 11. Team UX technique (stabilité terrain)
