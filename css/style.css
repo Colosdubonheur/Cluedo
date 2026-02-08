@@ -688,6 +688,7 @@ body {
 .monitor-message-input {
   min-height: 120px;
   resize: vertical;
+  font-size: 1rem;
 }
 
 .monitor-message-send-btn {
@@ -707,10 +708,15 @@ body {
 }
 
 .monitor-team-header {
-  display: flex;
-  gap: 10px;
+  display: grid;
+  grid-template-columns: 80px 1fr;
+  gap: 12px;
   align-items: center;
   margin-bottom: 10px;
+}
+
+.monitor-team-header-meta {
+  min-width: 0;
 }
 
 .monitor-team-name {
@@ -718,8 +724,8 @@ body {
 }
 
 .monitor-team-photo {
-  width: 72px;
-  height: 72px;
+  width: 80px;
+  height: 80px;
   border-radius: 12px;
   object-fit: cover;
   background: #1d2635;
@@ -737,9 +743,15 @@ body {
   font-size: 0.85rem;
 }
 
-.monitor-status.is-active { background: #22c55e; color: #062b14; }
-.monitor-status.is-waiting { background: #facc15; color: #3d2d03; }
-.monitor-status.is-free { background: #94a3b8; color: #102138; }
+.monitor-status.is-free { background: #22c55e; color: #062b14; }
+.monitor-status.is-with-character { background: #3b82f6; color: #eaf2ff; }
+.monitor-status.is-waiting { background: #f59e0b; color: #301e00; }
+
+.monitor-character-context {
+  margin: 6px 0 0;
+  color: #dbe7ff;
+  font-weight: 600;
+}
 
 .monitor-team-card h4 {
   margin: 8px 0 6px;
@@ -752,8 +764,19 @@ body {
 }
 
 .monitor-history-list {
+  list-style: none;
   margin: 0;
-  padding-left: 18px;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+
+.monitor-history-list li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 8px;
+  font-size: 0.95rem;
+  color: #d1ddf4;
 }
 
 .monitor-card-message {
