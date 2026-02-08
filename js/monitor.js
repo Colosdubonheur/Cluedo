@@ -257,7 +257,7 @@
 
   async function setEndGame(active) {
     const prompt = active
-      ? "Confirmer l'activation de la fin de jeu ? Les équipes en cours continuent, mais aucune nouvelle entrée en file ne sera autorisée."
+      ? "Confirmer l'activation de la fin de jeu ? Les équipes en cours continuent, mais aucun nouvel interrogatoire ne sera autorisé."
       : "Confirmer l'annulation de la fin de jeu ?";
 
     if (!window.confirm(prompt)) {
