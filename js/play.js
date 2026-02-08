@@ -162,6 +162,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let localElapsedSeconds = 0;
   let hasVoluntarilyLeft = false;
   let previousState = null;
+  let shouldAttemptJoin = true;
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -265,6 +266,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       id,
       token: playerToken,
       team_name: initialName,
+      join: "1",
       t: String(Date.now()),
     });
 
@@ -308,6 +310,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     hasVoluntarilyLeft = true;
+    shouldAttemptJoin = false;
     if (pollTimeoutId) {
       clearTimeout(pollTimeoutId);
       pollTimeoutId = null;
@@ -469,6 +472,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         token: playerToken,
         t: String(Date.now())
       });
+      if (shouldAttemptJoin) {
+        query.set("join", "1");
+      }
       if (hasValidUserTeamName(teamName)) {
         query.set("team_name", teamName);
       }
@@ -496,6 +502,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const hasValidNameFromServer = hasValidUserTeamName(equipeNom);
       const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : null);
       const queueTotal = data.file?.total ?? data.queue_length ?? 0;
+      const inQueue = data.in_queue === true;
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
       const activeRemainingBeforeTakeover = data.timers?.active_remaining_before_takeover_seconds;
       const activeReservedDuration = data.timers?.time_per_player_seconds ?? data.time_per_player ?? 0;
@@ -504,7 +511,31 @@ document.addEventListener("DOMContentLoaded", async () => {
       // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
       // (`state === "active"` ou `can_access === true`). Sans signal explicite => `waiting`.
       const hasExplicitAccess = data.state === "active" || data.can_access === true;
-      const state = data.state === "need_name" ? "need_name" : (hasExplicitAccess ? "active" : "waiting");
+      const state = data.state === "free"
+        ? "free"
+        : (data.state === "need_name" ? "need_name" : (hasExplicitAccess ? "active" : "waiting"));
+
+      if (inQueue) {
+        shouldAttemptJoin = false;
+      }
+
+      if (state === "free") {
+        shouldAttemptJoin = false;
+        stopLocalTimer();
+        elNeedName.style.display = "none";
+        elLeaveQueue.style.display = "none";
+        elLeaveActive.style.display = "none";
+        elElapsedWrap.style.display = "none";
+        elQueueDetails.style.display = "none";
+        elTimerLabel.textContent = "Session terminée";
+        elTimer.textContent = "--:--";
+        elTimer.style.color = "white";
+        elStatus.textContent = "Votre passage est terminé. Vous êtes désormais libre.";
+        elStatus.style.background = "#94a3b8";
+        elResult.style.display = "none";
+        pollTimeoutId = setTimeout(loop, 1000);
+        return;
+      }
 
       if (previousState === "active" && state !== "active") {
         closePlayWindow("Interaction terminée. Fermez cette fenêtre si elle ne s’est pas fermée automatiquement.");
@@ -581,6 +612,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         elQueueDetails.style.display = "block";
         elStatus.textContent = `Équipe en attente`;
         elStatus.style.background = "#fbbf24";
+        elTimer.style.animation = "none";
         elResult.style.display = "none";
         notified = false;
       } else {
@@ -606,13 +638,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         elQueueDetails.style.display = "none";
         elTimerLabel.textContent = "⏱️ Temps réservé";
         elTimer.style.color = "white";
+        elTimer.style.animation = "none";
         if (hasQueuedTeam) {
+          const isTakeoverSoon = localTimerRemaining <= 15;
           elStatus.textContent = `L’équipe ${nextTeamName} attend et prendra votre place à la fin du temps.`;
-          elStatus.style.background = "#fb923c";
+          elStatus.style.background = isTakeoverSoon ? "#ef4444" : "#fb923c";
+          elTimer.style.color = isTakeoverSoon ? "#ef4444" : "white";
+          elTimer.style.animation = isTakeoverSoon ? "cluedoCriticalBlink 1s steps(2, end) infinite" : "none";
           elMessage.textContent = "⚠️ Relève automatique à la fin du temps.";
         } else {
           elStatus.textContent = `Échangez avec ${personnageNom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`;
           elStatus.style.background = "#4ade80";
+          elTimer.style.animation = "none";
           elMessage.textContent = "";
         }
         elResult.style.display = "block";

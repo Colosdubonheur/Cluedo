@@ -30,7 +30,13 @@
     const stateLine = `état : <strong>${escapeHtml(state)}</strong>`;
 
     if (state === "active" && team.current_personnage) {
-      return `${stateLine}<br>personnage courant : ${escapeHtml(team.current_personnage.nom || "(sans nom)")} (#${escapeHtml(team.current_personnage.id)})`;
+      const remaining = Math.max(0, Number(team.active_remaining_seconds) || 0);
+      const hasWaitingQueue = team.has_waiting_queue === true;
+      const isTakeoverSoon = team.takeover_warning === true;
+      const warningLine = hasWaitingQueue
+        ? `<br><span style="font-weight:700;color:${isTakeoverSoon ? "#ef4444" : "#fb923c"}">Relève dans ${fmt(remaining)}${isTakeoverSoon ? " ⚠️" : ""}</span>`
+        : "";
+      return `${stateLine}<br>personnage courant : ${escapeHtml(team.current_personnage.nom || "(sans nom)")} (#${escapeHtml(team.current_personnage.id)})${warningLine}`;
     }
 
     if (state === "waiting" && team.waiting_queue) {

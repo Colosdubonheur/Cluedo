@@ -63,6 +63,14 @@ foreach ($data as $characterId => $character) {
   $timePerPlayer = max(1, (int) ($character['time_per_player'] ?? 120));
   $queue = cluedo_apply_runtime_handover($queue, $now, $timePerPlayer);
 
+  $activeRemainingSeconds = null;
+  if (isset($queue[0])) {
+    $activeStartedAt = (int) ($queue[0]['joined_at'] ?? $now);
+    $activeElapsed = max(0, $now - $activeStartedAt);
+    $activeRemainingSeconds = max(0, $timePerPlayer - $activeElapsed);
+  }
+  $hasWaitingQueue = count($queue) > 1;
+
   foreach ($queue as $index => $entry) {
     $token = (string) ($entry['token'] ?? '');
     if ($token === '' || isset($currentStates[$token])) {
@@ -78,6 +86,8 @@ foreach ($data as $characterId => $character) {
         'nom' => (string) ($character['nom'] ?? ''),
       ],
       'queue_position' => $index,
+      'active_remaining_seconds' => $index === 0 ? $activeRemainingSeconds : null,
+      'has_waiting_queue' => $index === 0 ? $hasWaitingQueue : null,
     ];
   }
 
@@ -195,6 +205,10 @@ foreach ($knownTokens as $token) {
     }
   }
 
+  $activeRemainingSeconds = $stateInfo['active_remaining_seconds'] ?? null;
+  $hasWaitingQueue = (bool) ($stateInfo['has_waiting_queue'] ?? false);
+  $takeoverWarning = $state === 'active' && $hasWaitingQueue && $activeRemainingSeconds !== null && (int) $activeRemainingSeconds <= 15;
+
   $teamsPayload[] = [
     'token' => (string) $token,
     'team_name' => (string) ($teamHistory[$token]['team_name'] ?? ''),
@@ -202,6 +216,9 @@ foreach ($knownTokens as $token) {
     'current_personnage' => $activeCharacter,
     'waiting_queue' => $waitingQueue,
     'queue_position' => $stateInfo['queue_position'] ?? null,
+    'active_remaining_seconds' => $activeRemainingSeconds,
+    'has_waiting_queue' => $hasWaitingQueue,
+    'takeover_warning' => $takeoverWarning,
     'history' => $historyRows,
     'time_per_personnage' => array_values($characterTotals),
   ];
