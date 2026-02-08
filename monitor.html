@@ -13,13 +13,15 @@ cluedo_send_html_no_cache_headers();
 </head>
 <body>
   <div class="hub-app-version" data-app-version aria-label="Version applicative"></div>
-  <a class="hub-return-link" href="./index.html">Retour au Hub</a>
   <div class="container monitor-page">
     <div class="monitor-header-row">
+      <a class="monitor-hub-btn" href="./index.html">Retour au Hub</a>
       <button id="reset-history" class="monitor-reset-btn">Remettre l'historique à zéro</button>
-      <button id="toggle-end-game" class="monitor-endgame-btn">Fin de jeu</button>
+      <div class="monitor-endgame-group">
+        <button id="toggle-end-game" class="monitor-endgame-btn">Fin de jeu</button>
+        <p id="monitor-end-game-status" class="monitor-endgame-status" aria-live="polite"></p>
+      </div>
     </div>
-    <p id="monitor-end-game-status" class="monitor-endgame-status" aria-live="polite"></p>
 
     <h1>📊 Supervision terrain</h1>
 

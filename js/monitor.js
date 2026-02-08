@@ -219,9 +219,9 @@
     const isActive = !!gameState?.end_game_active;
     toggleEndGameBtn.textContent = isActive ? "Annuler la fin de jeu" : "Fin de jeu";
     toggleEndGameBtn.classList.toggle("is-active", isActive);
-    endGameStatusEl.textContent = isActive
-      ? "🔴 Fin de jeu active : aucune nouvelle entrée en file."
-      : "🟢 Fin de jeu inactive : fonctionnement normal des files.";
+    endGameStatusEl.classList.toggle("is-active", isActive);
+    endGameStatusEl.classList.toggle("is-inactive", !isActive);
+    endGameStatusEl.textContent = isActive ? "Partie terminée" : "Partie active";
   }
 
   async function setEndGame(active) {

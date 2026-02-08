@@ -7,6 +7,7 @@ require_once __DIR__ . '/_character_visibility.php';
 require_once __DIR__ . '/_team_profiles_store.php';
 require_once __DIR__ . '/_supervision_messages_store.php';
 require_once __DIR__ . '/_game_state_store.php';
+require_once __DIR__ . '/_team_presence_store.php';
 
 function cluedo_history_path(): string
 {
@@ -217,10 +218,13 @@ foreach ($data as $characterId => $character) {
 $historyStore = cluedo_load_history();
 $teamHistory = $historyStore['teams'];
 
-$knownTokens = array_unique(array_merge(array_keys($teamHistory), array_keys($currentStates)));
 $teamsPayload = [];
 $profilesStore = cluedo_load_team_profiles();
 $messagesStore = cluedo_load_supervision_messages();
+$presenceStore = cluedo_load_team_presence();
+$profileTokens = isset($profilesStore['teams']) && is_array($profilesStore['teams']) ? array_keys($profilesStore['teams']) : [];
+$presenceTokens = isset($presenceStore['teams']) && is_array($presenceStore['teams']) ? array_keys($presenceStore['teams']) : [];
+$knownTokens = array_unique(array_merge(array_keys($teamHistory), array_keys($currentStates), $profileTokens, $presenceTokens));
 
 foreach ($knownTokens as $token) {
   if (!isset($teamHistory[$token]) || !is_array($teamHistory[$token])) {
@@ -232,8 +236,13 @@ foreach ($knownTokens as $token) {
   }
 
   $stateInfo = $currentStates[$token] ?? null;
+  $profile = cluedo_get_team_profile($profilesStore, (string) $token);
   if ($stateInfo !== null && trim((string) $stateInfo['team_name']) !== '') {
     $teamHistory[$token]['team_name'] = (string) $stateInfo['team_name'];
+  }
+
+  if (trim((string) ($teamHistory[$token]['team_name'] ?? '')) === '' && trim((string) ($profile['team_name'] ?? '')) !== '') {
+    $teamHistory[$token]['team_name'] = (string) $profile['team_name'];
   }
 
   $current = $teamHistory[$token]['current'] ?? null;
@@ -336,7 +345,6 @@ foreach ($knownTokens as $token) {
   $hasWaitingQueue = (bool) ($stateInfo['has_waiting_queue'] ?? false);
   $takeoverWarning = $state === 'active' && $hasWaitingQueue && $activeRemainingSeconds !== null && (int) $activeRemainingSeconds <= 15;
 
-  $profile = cluedo_get_team_profile($profilesStore, (string) $token);
   $encounteredByCharacter = [];
   foreach ($historyRows as $row) {
     $characterId = (string) ($row['personnage']['id'] ?? '');
