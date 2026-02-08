@@ -27,7 +27,7 @@ function cluedo_initialize_runtime_config(string $runtimePath, string $samplePat
     }
   }
 
-  file_put_contents($runtimePath, "{\n  \"admin_pin\": \"1234\"\n}\n");
+  file_put_contents($runtimePath, "{}\n");
 }
 
 function cluedo_get_config(): array
@@ -40,6 +40,11 @@ function cluedo_get_config(): array
 function cluedo_get_admin_pin(): string
 {
   $config = cluedo_get_config();
-  $pin = trim((string) ($config['admin_pin'] ?? ''));
-  return $pin === '' ? '1234' : $pin;
+  $rawPin = $config['admin_code'] ?? $config['admin_pin'] ?? '';
+  return trim((string) $rawPin);
+}
+
+function cluedo_is_admin_pin_enabled(): bool
+{
+  return cluedo_get_admin_pin() !== '';
 }

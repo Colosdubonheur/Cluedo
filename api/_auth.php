@@ -16,6 +16,10 @@ function cluedo_get_admin_pin_from_request(): string
 
 function cluedo_require_admin_pin(): void
 {
+  if (!cluedo_is_admin_pin_enabled()) {
+    return;
+  }
+
   $expected = cluedo_get_admin_pin();
   $provided = cluedo_get_admin_pin_from_request();
 

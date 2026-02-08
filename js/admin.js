@@ -1,18 +1,28 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const PIN_KEY = "cluedo_admin_pin";
   let adminPin = sessionStorage.getItem(PIN_KEY) || "";
+  let isPinEnabled = true;
 
   async function verifyPin(pin) {
-    const response = await fetch(`./api/admin_auth.php?admin_pin=${encodeURIComponent(pin)}&t=${Date.now()}`);
-    if (!response.ok) {
-      return false;
+    const query = new URLSearchParams({ t: Date.now().toString() });
+    if (pin) {
+      query.set("admin_pin", pin);
     }
 
-    const payload = await response.json();
-    return !!payload.ok;
+    const response = await fetch(`./api/admin_auth.php?${query.toString()}`);
+    const payload = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+      return { ok: false, pinEnabled: payload.pin_enabled !== false };
+    }
+
+    return { ok: !!payload.ok, pinEnabled: payload.pin_enabled !== false };
   }
 
-  while (!adminPin || !(await verifyPin(adminPin))) {
+  const authStatus = await verifyPin(adminPin);
+  isPinEnabled = authStatus.pinEnabled;
+
+  while (isPinEnabled && (!adminPin || !(await verifyPin(adminPin)).ok)) {
     adminPin = window.prompt("Code administration :", adminPin || "") || "";
     if (!adminPin) {
       document.body.innerHTML = "<p style='color:white;padding:20px'>Accès refusé.</p>";
@@ -20,10 +30,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  sessionStorage.setItem(PIN_KEY, adminPin);
+  if (isPinEnabled) {
+    sessionStorage.setItem(PIN_KEY, adminPin);
+  } else {
+    sessionStorage.removeItem(PIN_KEY);
+  }
 
   const adminFetch = (url, options = {}) => {
-    const headers = { ...(options.headers || {}), "X-Admin-Pin": adminPin };
+    const headers = { ...(options.headers || {}) };
+    if (isPinEnabled) {
+      headers["X-Admin-Pin"] = adminPin;
+    }
     return fetch(url, { ...options, headers });
   };
 
@@ -31,6 +48,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     <div style="max-width:600px;margin:20px auto;color:white;font-family:Arial">
       <h1>Admin Cluedo</h1>
       <p style="color:#aaa">Gestion des personnages</p>
+      ${isPinEnabled ? "" : '<p style="color:#6ee7b7;margin-top:-6px">Aucun code configuré, accès libre.</p>'}
       <div id="list">Chargement…</div>
       <button id="save" style="width:100%;padding:14px;font-size:18px;margin-top:20px">
         💾 Enregistrer
