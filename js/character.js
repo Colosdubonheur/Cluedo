@@ -13,9 +13,13 @@
   const characterLocationFeedbackEl = document.getElementById("characterLocationFeedback");
   const characterMessageEl = document.getElementById("characterSupervisionMessage");
 
+  const messageAudio = new Audio("./assets/message.wav");
+  messageAudio.preload = "auto";
+
   let currentPhoto = "";
   let lastKnownServerLocation = "";
   let hasUnsavedLocationChanges = false;
+  let lastPlayedMessageKey = "";
 
   if (!id) {
     characterNameEl.textContent = "Paramètre id manquant.";
@@ -38,6 +42,17 @@
 
     characterPhotoEl.src = src;
     characterPhotoEl.classList.remove("is-hidden");
+  }
+
+  async function playMessageSoundIfNeeded(message) {
+    const text = String(message?.text || "").trim();
+    if (!text) return;
+    const createdAt = Number(message?.created_at || 0);
+    const key = `${text}::${createdAt}`;
+    if (key === lastPlayedMessageKey) return;
+    lastPlayedMessageKey = key;
+    messageAudio.currentTime = 0;
+    try { await messageAudio.play(); } catch (_error) { /* noop */ }
   }
 
   async function uploadCharacterPhoto() {
@@ -94,6 +109,7 @@
 
     characterMessageEl.textContent = text;
     characterMessageEl.classList.add("is-active");
+    void playMessageSoundIfNeeded(message);
   }
 
   function setLocationFeedback(message, status = "neutral") {
@@ -148,19 +164,19 @@
       : (Array.isArray(payload.waiting_queue) ? payload.waiting_queue : []);
 
     if (!activeTeam) {
-      currentEl.innerHTML = "<h3>Équipe en cours</h3><p>Aucune équipe active.</p>";
+      currentEl.innerHTML = "<h3>Équipe active</h3><p>Aucune équipe active.</p>";
     } else {
       const activeTeamName = activeTeam.team || activeTeam.name || activeTeam.nom || "(sans nom)";
       const activeState = activeTeam.state || "active";
       currentEl.innerHTML = `
-        <h3>Équipe en cours</h3>
+        <h3>Équipe active</h3>
         <p><strong>${activeTeamName}</strong></p>
         <p>État : <strong>${activeState}</strong></p>
         <p>Temps restant : ${fmt(activeTeam.remaining_seconds)}</p>
-        <p>
+        <p class="character-active-team-actions">
           <button id="plus30">+30s</button>
           <button id="minus30">-30s</button>
-          <button id="eject">Éjecter</button>
+          <button id="eject">Fin de rencontre</button>
         </p>
       `;
       document.getElementById("plus30").onclick = () => control("plus_30");
@@ -169,18 +185,18 @@
     }
 
     if (!waitingQueue.length) {
-      queueEl.innerHTML = "<h3>File d'attente</h3><p>Personne en attente.</p>";
+      queueEl.innerHTML = "<h3>Équipes en attente</h3><p>Personne en attente.</p>";
       return;
     }
 
-    queueEl.innerHTML = `<h3>File d'attente</h3>${waitingQueue
+    queueEl.innerHTML = `<h3>Équipes en attente</h3><ol class="character-queue-list">${waitingQueue
       .map((team, index) => {
         const position = Number.isFinite(Number(team.position)) ? Number(team.position) : index + 1;
         const teamName = team.team || team.name || team.nom || "(sans nom)";
         const state = team.state || "waiting";
-        return `<div>${position}. ${teamName} — ${state} (${fmt(team.estimated_seconds)})</div>`;
+        return `<li><span class="character-queue-team">${position}. ${teamName}</span> <span class="character-queue-meta">${state} · ${fmt(team.estimated_seconds)}</span></li>`;
       })
-      .join("")}`;
+      .join("")}</ol>`;
   }
 
   characterPhotoButtonEl.addEventListener("click", () => {
