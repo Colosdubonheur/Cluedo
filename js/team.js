@@ -28,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const globalEl = document.getElementById("team-global");
   const participantsGuidanceEl = document.getElementById("team-guidance-participants");
   const photoGuidanceEl = document.getElementById("team-guidance-photo");
+  const supervisionMessageEl = document.getElementById("team-supervision-message");
 
   let latestState = null;
   let previousTeamState = "free";
@@ -204,6 +205,16 @@ document.addEventListener("DOMContentLoaded", () => {
         .map((entry) => `<li><strong>${escapeHtml(entry.nom || "Personnage")}</strong> : ${fmt(entry.duration_seconds)}</li>`)
         .join("")}</ul>`
       : "Aucun personnage vu pour l'instant.";
+
+    const teamMessage = payload.team?.message || { scope: "none", text: "" };
+    if (teamMessage.text) {
+      const prefix = teamMessage.scope === "team" ? "Message individuel : " : "Message global : ";
+      supervisionMessageEl.textContent = `${prefix}${teamMessage.text}`;
+      supervisionMessageEl.classList.add("is-active");
+    } else {
+      supervisionMessageEl.textContent = "Aucun message de la supervision.";
+      supervisionMessageEl.classList.remove("is-active");
+    }
 
     const global = Array.isArray(payload.global) ? payload.global : [];
     globalEl.innerHTML = global.length

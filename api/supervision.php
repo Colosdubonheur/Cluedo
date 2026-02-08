@@ -4,6 +4,8 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_queue_runtime.php';
 require_once __DIR__ . '/_character_visibility.php';
+require_once __DIR__ . '/_team_profiles_store.php';
+require_once __DIR__ . '/_supervision_messages_store.php';
 
 function cluedo_history_path(): string
 {
@@ -41,6 +43,35 @@ function cluedo_save_history(array $history): void
 
 $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $action = trim((string) ($_POST['action'] ?? $_GET['action'] ?? ''));
+
+
+if ($method === 'POST' && $action === 'send_message') {
+  $target = trim((string) ($_POST['target'] ?? 'all'));
+  $message = trim((string) ($_POST['message'] ?? ''));
+
+  if ($message === '') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'message vide'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
+
+  $messages = cluedo_load_supervision_messages();
+  $payload = [
+    'text' => substr($message, 0, 300),
+    'created_at' => time(),
+  ];
+
+  if ($target === 'all') {
+    $messages['global'] = $payload;
+  } else {
+    $messages['teams'][$target] = $payload;
+  }
+
+  cluedo_save_supervision_messages($messages);
+
+  echo json_encode(['ok' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  exit;
+}
 
 if ($method === 'POST' && $action === 'reset_history') {
   cluedo_save_history(['teams' => []]);
@@ -106,6 +137,8 @@ $teamHistory = $historyStore['teams'];
 
 $knownTokens = array_unique(array_merge(array_keys($teamHistory), array_keys($currentStates)));
 $teamsPayload = [];
+$profilesStore = cluedo_load_team_profiles();
+$messagesStore = cluedo_load_supervision_messages();
 
 foreach ($knownTokens as $token) {
   if (!isset($teamHistory[$token]) || !is_array($teamHistory[$token])) {
@@ -221,6 +254,19 @@ foreach ($knownTokens as $token) {
   $hasWaitingQueue = (bool) ($stateInfo['has_waiting_queue'] ?? false);
   $takeoverWarning = $state === 'active' && $hasWaitingQueue && $activeRemainingSeconds !== null && (int) $activeRemainingSeconds <= 15;
 
+  $profile = cluedo_get_team_profile($profilesStore, (string) $token);
+  $encounteredByCharacter = [];
+  foreach ($historyRows as $row) {
+    $characterId = (string) ($row['personnage']['id'] ?? '');
+    if ($characterId === '' || isset($encounteredByCharacter[$characterId])) {
+      continue;
+    }
+    $encounteredByCharacter[$characterId] = [
+      'id' => $characterId,
+      'nom' => (string) ($row['personnage']['nom'] ?? ''),
+    ];
+  }
+
   $teamsPayload[] = [
     'token' => (string) $token,
     'team_name' => (string) ($teamHistory[$token]['team_name'] ?? ''),
@@ -233,6 +279,10 @@ foreach ($knownTokens as $token) {
     'takeover_warning' => $takeoverWarning,
     'history' => $historyRows,
     'time_per_personnage' => array_values($characterTotals),
+    'players' => $profile['players'],
+    'photo' => $profile['photo'],
+    'encountered_personnages' => array_values($encounteredByCharacter),
+    'message' => cluedo_resolve_team_message($messagesStore, (string) $token),
   ];
 }
 
