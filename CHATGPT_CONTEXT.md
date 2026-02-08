@@ -565,6 +565,11 @@ Contraintes non négociables :
 - `team.html` est le **point d’entrée joueur unique** qui peut rester ouvert avant, pendant et après les passages.
 - La page conserve l’identité d’équipe avec le **token stable existant** (stockage local/session déjà utilisé), sans login, sans compte, sans session PHP et sans identifiant alternatif.
 - Cette page n’introduit **aucune redirection forcée** et ne remplace pas les règles serveur de file.
+- Organisation UI en **accordéon front-only** (sans impact métier), avec une section ouverte à la fois.
+- Ordre de priorité UX obligatoire des sections :
+  1. **Scanner de QR code** (ouverte par défaut, action principale),
+  2. **Statistiques et récapitulatif** (lecture seule),
+  3. **Informations d’équipe** (édition volontaire contrôlée).
 
 ### Contenu fonctionnel
 
