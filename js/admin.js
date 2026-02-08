@@ -93,6 +93,36 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const CROPPED_SIZE = 600;
   const CROPPED_QUALITY = 0.84;
+  const IOS_HEIC_MIME_TYPES = new Set([
+    "image/heic",
+    "image/heif",
+    "image/heic-sequence",
+    "image/heif-sequence",
+  ]);
+  const SUPPORTED_INPUT_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/webp"]);
+
+  const getFileExtension = (filename) => {
+    const name = typeof filename === "string" ? filename.trim().toLowerCase() : "";
+    const dotIndex = name.lastIndexOf(".");
+    if (dotIndex < 0) return "";
+    return name.slice(dotIndex + 1);
+  };
+
+  const isHeicLikeFile = (file) => {
+    const mime = String(file?.type || "").toLowerCase();
+    const ext = getFileExtension(file?.name || "");
+    return IOS_HEIC_MIME_TYPES.has(mime) || ext === "heic" || ext === "heif";
+  };
+
+  const isSupportedImageForCrop = (file) => {
+    const mime = String(file?.type || "").toLowerCase();
+    if (SUPPORTED_INPUT_MIME_TYPES.has(mime)) {
+      return true;
+    }
+
+    const ext = getFileExtension(file?.name || "");
+    return ext === "jpg" || ext === "jpeg" || ext === "png" || ext === "webp";
+  };
 
   const loadImageFromFile = (file) =>
     new Promise((resolve, reject) => {
@@ -153,7 +183,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       preview.src = image.src;
 
-      const STAGE_SIZE = 420;
+      const STAGE_SIZE = Math.max(240, Math.min(420, window.innerWidth - 72, window.innerHeight - 280));
       stage.style.width = `${STAGE_SIZE}px`;
       stage.style.height = `${STAGE_SIZE}px`;
 
@@ -179,10 +209,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       syncSelection();
 
       let drag = null;
-      const onMove = (event) => {
+      const onMove = (clientX, clientY) => {
         if (!drag) return;
-        const nextX = drag.startX + (event.clientX - drag.pointerX) / scale;
-        const nextY = drag.startY + (event.clientY - drag.pointerY) / scale;
+        const nextX = drag.startX + (clientX - drag.pointerX) / scale;
+        const nextY = drag.startY + (clientY - drag.pointerY) / scale;
         const maxX = image.naturalWidth - box;
         const maxY = image.naturalHeight - box;
         state.x = Math.max(0, Math.min(maxX, Math.round(nextX)));
@@ -190,26 +220,62 @@ document.addEventListener("DOMContentLoaded", async () => {
         syncSelection();
       };
 
-      selection.addEventListener("pointerdown", (event) => {
-        event.preventDefault();
+      const startDrag = (clientX, clientY) => {
         drag = {
-          pointerX: event.clientX,
-          pointerY: event.clientY,
+          pointerX: clientX,
+          pointerY: clientY,
           startX: state.x,
           startY: state.y,
         };
-        selection.setPointerCapture(event.pointerId);
+      };
+
+      const stopDrag = () => {
+        drag = null;
+      };
+
+      selection.addEventListener("pointerdown", (event) => {
+        event.preventDefault();
+        startDrag(event.clientX, event.clientY);
+        if (typeof selection.setPointerCapture === "function") {
+          selection.setPointerCapture(event.pointerId);
+        }
       });
 
-      selection.addEventListener("pointermove", onMove);
-      selection.addEventListener("pointerup", () => {
-        drag = null;
+      selection.addEventListener("pointermove", (event) => {
+        onMove(event.clientX, event.clientY);
       });
-      selection.addEventListener("pointercancel", () => {
-        drag = null;
+      selection.addEventListener("pointerup", stopDrag);
+      selection.addEventListener("pointercancel", stopDrag);
+
+      selection.addEventListener("touchstart", (event) => {
+        if (!event.touches[0]) return;
+        event.preventDefault();
+        startDrag(event.touches[0].clientX, event.touches[0].clientY);
       });
+      selection.addEventListener("touchmove", (event) => {
+        if (!event.touches[0]) return;
+        event.preventDefault();
+        onMove(event.touches[0].clientX, event.touches[0].clientY);
+      });
+      selection.addEventListener("touchend", stopDrag);
+      selection.addEventListener("touchcancel", stopDrag);
+
+      const onMouseDown = (event) => {
+        event.preventDefault();
+        startDrag(event.clientX, event.clientY);
+      };
+      const onMouseMove = (event) => {
+        onMove(event.clientX, event.clientY);
+      };
+
+      selection.addEventListener("mousedown", onMouseDown);
+      document.addEventListener("mousemove", onMouseMove);
+      document.addEventListener("mouseup", stopDrag);
 
       const close = () => {
+        document.removeEventListener("mousemove", onMouseMove);
+        document.removeEventListener("mouseup", stopDrag);
+        selection.removeEventListener("mousedown", onMouseDown);
         modal.remove();
       };
 
@@ -322,11 +388,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
+      if (isHeicLikeFile(file)) {
+        alert("Format d'image non supporté sur iPhone (HEIC/HEIF). Merci d'utiliser une photo JPEG ou PNG.");
+        input.value = "";
+        return;
+      }
+
+      if (!isSupportedImageForCrop(file)) {
+        alert("Format d'image non supporté. Merci d'utiliser une photo JPEG, PNG ou WEBP.");
+        input.value = "";
+        return;
+      }
+
       let croppedFile;
       try {
         croppedFile = await openCropModal(file);
       } catch (error) {
-        alert("Le recadrage a échoué.");
+        alert(error instanceof Error ? error.message : "Le recadrage a échoué.");
         input.value = "";
         return;
       }
@@ -351,11 +429,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         body: fd,
       });
 
-      const j = await r.json();
+      const j = await r.json().catch(() => ({}));
       if (!j.ok) {
         URL.revokeObjectURL(previewUrl);
         setPhotoPreview(id, previousPhoto);
-        alert("Erreur upload");
+        const reason = typeof j.error === "string" && j.error.trim() !== "" ? j.error : "Erreur upload";
+        alert(`Upload impossible : ${reason}`);
         return;
       }
 
