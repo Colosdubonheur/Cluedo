@@ -122,6 +122,15 @@ Le serveur est l’unique source de vérité pour :
   - compatibilité mobile Safari assurée via vidéo inline (`playsinline` / `webkit-playsinline`) et lecture `autoplay`/`muted`.
 - Si la caméra est autorisée mais indisponible (timeout de source, device occupé/incompatible), afficher un message explicite d'échec de démarrage caméra sans crash JS.
 - Le fallback par import d'image reste disponible comme solution secondaire uniquement (pas comme comportement principal masquant un bug caméra).
+- Comportement officiel attendu du scan caméra (`team.html`) :
+  - bouton principal libellé **« Scanner un QR code (caméra) »**,
+  - l'UI ne déclare la caméra « activée » que si un flux vidéo actif est réellement attaché et lisible,
+  - la zone vidéo (`#team-qr-reader`) est visible uniquement quand ce flux est actif.
+- Gestion d'erreurs caméra officielle :
+  - timeout réel de démarrage (`getUserMedia` / `start` / `Timeout starting video source`) ⇒ message explicite d'échec caméra,
+  - autorisation refusée par l'utilisateur ⇒ message explicite distinct,
+  - aucune relance silencieuse infinie ; tentatives bornées puis arrêt propre.
+- Fallback officiel : en cas d'échec caméra réel, proposer explicitement **« Importer une image »** comme parcours secondaire.
 - Le bouton crayon sur `team.html` ouvre bien l'édition du nom d'équipe (section Participants), permet la saisie/validation sans rechargement et affiche un retour explicite en cas d'échec.
 
 ### Complément UX team.html (notification sonore supervision)
