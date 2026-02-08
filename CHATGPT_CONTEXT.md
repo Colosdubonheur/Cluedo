@@ -154,9 +154,12 @@ Le serveur est l’unique source de vérité pour :
 
 ### Complément UX team.html (notification sonore supervision)
 - Les navigateurs (Chrome, Safari, iOS inclus) imposent une interaction utilisateur explicite avant toute lecture audio fiable.
-- `team.html` doit exposer un bouton visible **« Activer le son »** permettant de valider cette autorisation audio une fois pour la session.
-- Après validation réussie, l'état **son autorisé** doit être persisté côté client (`localStorage` ou équivalent) pour éviter de redemander inutilement l'action.
-- À chaque nouveau message supervision reçu automatiquement (polling), un son de notification doit être joué immédiatement si l'audio est autorisé.
+- `team.html` expose un bouton visible **« Son activé »** : au clic utilisateur, `assets/soundon.wav` est joué immédiatement pour valider explicitement l'autorisation audio navigateur.
+- Les fichiers audio de référence sont :
+  - `assets/soundon.wav` (validation/activation audio),
+  - `assets/message.wav` (notification de nouveau message supervision).
+- Après validation réussie, l'état **son activé** est persisté côté client via `localStorage` (`cluedo_team_audio_enabled`), pour permettre les lectures automatiques ultérieures sans nouveau clic.
+- À chaque nouveau message supervision reçu automatiquement (polling), `assets/message.wav` doit être joué immédiatement si l'audio est activé.
 - En cas de blocage navigateur, l'UI doit afficher un retour clair pour relancer explicitement l'activation, sans erreurs console ni comportement aléatoire.
 
 ---
