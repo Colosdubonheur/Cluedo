@@ -27,14 +27,45 @@
     return date.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
   }
 
+  function formatDuration(seconds) {
+    const total = Math.max(0, Math.floor(Number(seconds) || 0));
+    const minutes = String(Math.floor(total / 60)).padStart(2, "0");
+    const secs = String(total % 60).padStart(2, "0");
+    return `${minutes}:${secs}`;
+  }
+
+  function statusTimeInfo(team) {
+    if (team.state !== "active" && team.state !== "waiting") {
+      return "";
+    }
+
+    const since = Number(team.state_since || 0);
+    if (!Number.isFinite(since) || since <= 0) {
+      return "";
+    }
+
+    const elapsed = Math.max(0, Math.floor(Date.now() / 1000) - since);
+    return team.state === "active"
+      ? `Temps écoulé : ${formatDuration(elapsed)}`
+      : `Temps d'attente : ${formatDuration(elapsed)}`;
+  }
+
   function statusInfo(team) {
     if (team.state === "active") {
-      return { css: "is-with-character", text: "Avec personnage", characterName: team.current_personnage?.nom || "" };
+      return {
+        css: "is-with-character",
+        text: team.current_personnage?.nom || "Personnage",
+        timeInfo: statusTimeInfo(team),
+      };
     }
     if (team.state === "waiting") {
-      return { css: "is-waiting", text: "En attente", characterName: team.waiting_queue?.nom || "" };
+      return {
+        css: "is-waiting",
+        text: team.waiting_queue?.nom || "Personnage",
+        timeInfo: statusTimeInfo(team),
+      };
     }
-    return { css: "is-free", text: "Équipe libre", characterName: "" };
+    return { css: "is-free", text: "Équipe libre", timeInfo: "" };
   }
 
   function renderPlayers(team) {
@@ -81,7 +112,7 @@
         <div class="monitor-team-header-meta">
           <h3 class="monitor-team-name">${escapeHtml(team.team_name || "Équipe sans nom")}</h3>
           <span class="monitor-status ${status.css}">${escapeHtml(status.text)}</span>
-          ${status.characterName ? `<p class="monitor-character-context">${escapeHtml(status.characterName)}</p>` : ""}
+          ${status.timeInfo ? `<p class="monitor-character-context">${escapeHtml(status.timeInfo)}</p>` : ""}
         </div>
       </header>
       <section>

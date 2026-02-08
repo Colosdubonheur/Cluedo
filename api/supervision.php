@@ -202,6 +202,7 @@ foreach ($data as $characterId => $character) {
       'token' => $token,
       'team_name' => (string) ($entry['team'] ?? ''),
       'state' => $index === 0 ? 'active' : 'waiting',
+      'state_since' => (int) ($entry['joined_at'] ?? $now),
       'personnage' => [
         'id' => (string) $characterId,
         'nom' => (string) ($character['nom'] ?? ''),
@@ -364,6 +365,7 @@ foreach ($knownTokens as $token) {
     'current_personnage' => $activeCharacter,
     'waiting_queue' => $waitingQueue,
     'queue_position' => $stateInfo['queue_position'] ?? null,
+    'state_since' => $stateInfo['state_since'] ?? null,
     'active_remaining_seconds' => $activeRemainingSeconds,
     'has_waiting_queue' => $hasWaitingQueue,
     'takeover_warning' => $takeoverWarning,
