@@ -196,6 +196,7 @@ Toute évolution doit respecter ces principes.
 - aucune recréation d’entrée de file
 - aucune duplication d’équipe
 - position inchangée
+- en front, l’appel du bouton `Modifier` doit transmettre l’identité stable existante (`team_id` ou `token` = token d’équipe), jamais le nom d’équipe
 
 ### Règles métier verrouillées (need_name / timer / visibilité)
 
@@ -250,6 +251,7 @@ Sur `play` :
   - afficher un compteur `Temps passé` strictement informatif, cumulatif pendant tout l’état `active` (y compris après `00:00`)
   - ce countdown représente le **temps minimum réservé** à l’équipe active (`time_per_player`), indépendamment de la file derrière
   - ce countdown démarre dès l’accès au personnage et peut atteindre `00:00` sans action serveur tant qu’aucune autre équipe n’attend
+  - le polling `status.php` est **non destructif** : il ne doit jamais recréer/stopper la boucle du timer local à chaque tick, seulement resynchroniser la valeur en cas de dérive significative
   - ne jamais afficher littéralement le mot `personnage` dans les messages UI : utiliser systématiquement `{personnage.nom}`
   - message principal en `active` (UX uniquement, sans impact logique serveur) :
     - **vert** s’il n’y a aucune équipe derrière (`queueTotal <= 1`) :
