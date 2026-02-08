@@ -110,11 +110,6 @@ $response = [
   "previous_team" => $previousTeam,
 ];
 
+header("Content-Type: application/json; charset=utf-8");
 echo json_encode($response, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
 exit;
-  "position" => $index,
-  "queue_length" => count($p['queue']),
-  "wait_remaining" => max(0, $wait),
-  "time_per_player" => $timePerPlayer,
-  "buffer_before_next" => $buffer
-], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
