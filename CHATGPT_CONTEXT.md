@@ -204,6 +204,8 @@ Sur `play` :
   - `need_name` : nom d’équipe absent
   - `waiting` : équipe dans la file en attente
   - `active` : interaction autorisée (signal explicite serveur)
+  - Le front ne doit jamais déduire l’état `active` à partir du temps restant.
+  - En absence de signal explicite, l’état par défaut est `waiting`.
 
 Transition attendue :
 - `waiting` → `active` lorsque l’équipe est première dans la file et peut accéder au personnage.

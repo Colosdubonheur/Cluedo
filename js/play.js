@@ -282,7 +282,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
       const myRemaining = data.my_remaining ?? 0;
       const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
-      const state = data.state || (data.can_access ? "active" : (myRemaining <= 0 ? "done" : "waiting"));
+      // Règle de sécurité métier : ne jamais inférer l'état "active" à partir du temps restant.
+      // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
+      // (`state === "active"` ou `can_access === true`). Sans signal explicite => `waiting`.
+      const hasExplicitAccess = data.state === "active" || data.can_access === true;
+      const state = hasExplicitAccess ? "active" : "waiting";
 
       if (!hasValidNameFromServer) {
         teamName = "";
