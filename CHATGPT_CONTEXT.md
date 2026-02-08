@@ -674,14 +674,14 @@ Contraintes non négociables :
 
 ## 12. Versionnement
 
-- La page Hub (`index.html`) affiche une version applicative visible (zone dédiée en haut à droite), purement informative.
+- Toutes les pages principales (`index.html`, `admin.html`, `play.html`, `team.html`, `character.html`) affichent la même version applicative visible (zone en haut à droite), purement informative.
 - Le format officiel est strictement `V AAMM.X` (affichage sans espace : ex. `V2602.4`).
 - `AA` = année sur 2 chiffres ; `MM` = mois sur 2 chiffres ; `X` = compteur incrémental.
 - Règle d’incrémentation verrouillée :
   - `X` démarre à `1` au début de chaque nouveau mois (`AAMM`),
   - puis augmente de `+1` à chaque évolution livrée (correctif, UX, ajout, correction).
 - Source de vérité unique : version définie côté dépôt/serveur dans `data/app_version.txt`, lue et exposée par `api/version.php`.
-- Le front (`index.html`) consomme `./api/version.php` sans paramètre temporel ; aucun timestamp client ne doit être injecté dans la récupération de version.
+- Source front unique : `js/app-version.js` consomme `./api/version.php` sans paramètre temporel et alimente tous les emplacements `[data-app-version]` sur `index.html`, `admin.html`, `play.html`, `team.html`, `character.html`.
 - La valeur est **manuelle et volontaire** : modification explicite de `data/app_version.txt` lors d’une évolution fonctionnelle (incrément de `X`), jamais via calcul automatique.
 - Interdiction verrouillée : la version est indépendante du poste utilisateur (pas d’horloge client, pas de génération via `Date.now()` ou équivalent).
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
