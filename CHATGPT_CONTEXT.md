@@ -129,17 +129,23 @@ Le serveur est l’unique source de vérité pour :
   - l'équipe rejoint la nouvelle file demandée.
 - Aucune sortie de file ne doit être déclenchée par des événements navigateur (`close`, `blur`, `sleep`, `visibilitychange`).
 
-### Messagerie supervision (équipes + personnages)
-- Le point d'émission unique est **Supervision** (`monitor.html`) avec deux canaux explicites et séparés :
-  - **Canal équipes** : cibles possibles = `teams:all` (toutes les équipes) + `team:<token>` (équipe individuelle).
-  - **Canal personnages** : cibles possibles = `characters:all` (tous les personnages) + `character:<id>` (personnage individuel).
-- Le ciblage multi-destinataires est explicite :
-  - « Tout le monde » correspond à la combinaison explicite des deux diffusions `teams:all` + `characters:all`.
-  - « Fin du jeu » n'est jamais implicite : chaque cible doit être sélectionnée explicitement.
-- Les canaux sont strictement isolés :
-  - un message équipe n'est jamais visible côté personnage,
-  - un message personnage n'est jamais visible côté équipe,
-  - aucun double envoi implicite n'est autorisé.
+### Messagerie supervision (outil unifié équipes + personnages)
+- Le point d'émission unique est **Supervision** (`monitor.html`) avec **un seul outil de messagerie** (une seule liste, un seul champ message, un seul bouton d'envoi).
+- La liste de ciblage est unique et ordonnée strictement ainsi :
+  1. `teams_and_characters:all` → **Tout le monde (équipes + personnages)**
+  2. `teams:all` → **Toutes les équipes**
+  3. `characters:all` → **Tous les personnages**
+  4. `team:<token>` → **Équipes individuelles**
+  5. `character:<id>` → **Personnages individuels**
+- La sélection d'un destinataire est **explicite et obligatoire** avant envoi (aucun envoi implicite, aucun multi-envoi par défaut).
+- Recherche intégrée (vanilla JS) :
+  - un champ de recherche filtre en temps réel les options de la liste,
+  - le filtrage se fait au clavier sans framework,
+  - l'ordre logique des catégories reste inchangé dans les résultats affichés.
+- Les canaux restent strictement isolés au moment de la diffusion :
+  - cibles équipes (`teams:all`, `team:<token>`) → canal **team** (visible dans `team.html`),
+  - cibles personnages (`characters:all`, `character:<id>`) → canal **character** (visible dans `character.html`),
+  - cible globale `teams_and_characters:all` → double diffusion explicite `teams:all` + `characters:all`.
 - Résolution côté lecture :
   - `team.html` lit d'abord le message individuel équipe, puis le message de diffusion équipes,
   - `character.html?id=X` lit d'abord le message individuel personnage, puis le message de diffusion personnages.
