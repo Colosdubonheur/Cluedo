@@ -1,6 +1,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
   const TOKEN_KEY = "cluedo_player_token";
   const TEAM_KEY = "cluedo_team_name";
+  const SOUND_PERMISSION_KEY = "cluedo_sound_permission";
 
   let playerToken = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
   if (!playerToken) {
@@ -14,7 +15,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const audio = new Audio("./assets/ding.mp3");
   audio.preload = "auto";
 
-  let unlocked = false;
+  let unlocked = localStorage.getItem(SOUND_PERMISSION_KEY) === "granted";
   let notified = false;
 
   const params = new URLSearchParams(window.location.search);
@@ -74,7 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
 
         <div id="leaveActive" style="display:none;margin-top:12px;text-align:center;">
-          <button id="leaveActiveBtn" style="padding:10px 14px;border-radius:10px">Je ne suis plus avec ce personnage</button>
+          <button id="leaveActiveBtn" style="padding:10px 14px;border-radius:10px">Je ne suis plus avec …</button>
         </div>
 
         <div id="elapsedWrap" style="display:none;margin-top:12px;text-align:center;">
@@ -93,26 +94,39 @@ document.addEventListener("DOMContentLoaded", async () => {
     </div>
   `;
 
-  const unlock = document.createElement("div");
-  unlock.textContent = "🔊 Tapotez l’écran pour activer le son";
-  unlock.style.position = "fixed";
-  unlock.style.bottom = "20px";
-  unlock.style.left = "50%";
-  unlock.style.transform = "translateX(-50%)";
-  unlock.style.background = "#000";
-  unlock.style.color = "#fff";
-  unlock.style.padding = "10px 14px";
-  unlock.style.borderRadius = "999px";
-  unlock.style.fontSize = "14px";
-  unlock.style.opacity = "0.85";
-  unlock.style.zIndex = "999";
-  unlock.onclick = () => {
-    unlocked = true;
-    audio.currentTime = 0;
-    audio.play().catch(() => {});
-    unlock.remove();
-  };
-  document.body.appendChild(unlock);
+  if (!unlocked) {
+    const unlock = document.createElement("button");
+    unlock.textContent = "🔊 Activer les notifications sonores";
+    unlock.style.position = "fixed";
+    unlock.style.bottom = "20px";
+    unlock.style.left = "50%";
+    unlock.style.transform = "translateX(-50%)";
+    unlock.style.background = "#000";
+    unlock.style.color = "#fff";
+    unlock.style.padding = "10px 14px";
+    unlock.style.borderRadius = "999px";
+    unlock.style.border = "1px solid #334155";
+    unlock.style.fontSize = "14px";
+    unlock.style.opacity = "0.9";
+    unlock.style.zIndex = "999";
+    unlock.onclick = () => {
+      audio.currentTime = 0;
+      audio.play()
+        .then(() => {
+          audio.pause();
+          audio.currentTime = 0;
+          unlocked = true;
+          localStorage.setItem(SOUND_PERMISSION_KEY, "granted");
+          unlock.remove();
+        })
+        .catch(() => {
+          unlocked = false;
+          localStorage.setItem(SOUND_PERMISSION_KEY, "denied");
+          window.alert("Impossible d’activer le son sur cet appareil.");
+        });
+    };
+    document.body.appendChild(unlock);
+  }
 
   const elCharacterLine = document.getElementById("characterLine");
   const elTeamLine = document.getElementById("teamLine");
@@ -147,6 +161,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let localTimerLastTickAt = 0;
   let localElapsedSeconds = 0;
   let hasVoluntarilyLeft = false;
+  let previousState = null;
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -318,6 +333,31 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  function closePlayWindow(reason) {
+    if (pollTimeoutId) {
+      clearTimeout(pollTimeoutId);
+      pollTimeoutId = null;
+    }
+    hasVoluntarilyLeft = true;
+
+    // Tentative standard : fonctionne surtout si l'onglet a été ouvert par script.
+    window.close();
+
+    // Fallback explicite (pas de contournement silencieux) pour navigateurs qui bloquent `window.close()`.
+    setTimeout(() => {
+      if (!document.hidden) {
+        elStatus.textContent = reason;
+        elStatus.style.background = "#94a3b8";
+        elResult.style.display = "none";
+        elLeaveQueue.style.display = "none";
+        elLeaveActive.style.display = "none";
+        elElapsedWrap.style.display = "none";
+        elQueueDetails.style.display = "none";
+        elTimer.textContent = "--:--";
+      }
+    }, 250);
+  }
+
   function stopLocalTimer() {
     localTimerMode = "none";
     localTimerRemaining = 0;
@@ -415,6 +455,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   elLeaveActiveBtn.onclick = async () => {
     await leaveQueue();
+    closePlayWindow("Sortie effectuée. Fermez cette fenêtre si elle ne s’est pas fermée automatiquement.");
   };
 
   async function loop() {
@@ -465,10 +506,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       const hasExplicitAccess = data.state === "active" || data.can_access === true;
       const state = data.state === "need_name" ? "need_name" : (hasExplicitAccess ? "active" : "waiting");
 
+      if (previousState === "active" && state !== "active") {
+        closePlayWindow("Interaction terminée. Fermez cette fenêtre si elle ne s’est pas fermée automatiquement.");
+        return;
+      }
+
+      if (state === "need_name" && hasValidUserTeamName(teamName)) {
+        await initializeTeamNameOnServer(teamName);
+        pollTimeoutId = setTimeout(loop, 1000);
+        previousState = state;
+        return;
+      }
+
       if (state === "need_name" || !hasValidNameFromServer) {
         teamNameInitializationLocked = false;
-        teamName = "";
-        localStorage.removeItem(TEAM_KEY);
+        if (!hasValidUserTeamName(teamName)) {
+          teamName = "";
+          localStorage.removeItem(TEAM_KEY);
+        }
         stopLocalTimer();
         elNeedName.style.display = "block";
         elLeaveQueue.style.display = "none";
@@ -491,6 +546,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         pollTimeoutId = setTimeout(loop, 1000);
+        previousState = state;
         return;
       }
 
@@ -502,6 +558,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       elCharacterLine.textContent = state === "active"
         ? `Vous êtes avec : ${personnageNom}`
         : `Vous allez voir : ${personnageNom}`;
+      elLeaveActiveBtn.textContent = `Je ne suis plus avec ${personnageNom}`;
       elTeamLine.innerHTML = `Votre équipe : <strong>${teamName}</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
       document.getElementById("renameBtnDynamic").onclick = async () => {
         await renameTeam();
@@ -566,6 +623,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           notified = true;
         }
       }
+
+      previousState = state;
 
       const configuredPhoto = String(data.photo || data.personnage?.photo || "").trim();
       if (configuredPhoto) {
