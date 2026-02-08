@@ -1,1 +1,5 @@
 /data/personnages.json
+
+# Runtime uploads (never version uploaded files)
+/uploads/*
+!/uploads/.gitkeep
