@@ -720,6 +720,45 @@ body {
   font-weight: 700;
 }
 
+.character-supervision-message {
+  border: 2px solid #fef08a;
+}
+
+.character-active-team {
+  border: 1px solid #22c55e;
+}
+
+.character-active-team-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.character-waiting-queue {
+  border: 1px solid #2a3142;
+}
+
+.character-queue-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.character-queue-list li {
+  display: grid;
+  gap: 2px;
+}
+
+.character-queue-team {
+  font-weight: 700;
+}
+
+.character-queue-meta {
+  color: #cfe0ff;
+  font-size: 0.95rem;
+}
+
 
 @media (min-width: 900px) {
   .monitor-grid {
