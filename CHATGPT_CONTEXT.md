@@ -235,6 +235,8 @@ Sur `play` :
 - En état `active` :
   - ne pas afficher la notion de file (`position`, `1/1`, etc.)
   - afficher **systématiquement** un countdown `⏱️ Temps réservé`
+  - afficher un bouton `Je ne suis plus avec ce personnage` pour quitter volontairement l’interaction (retour à l’état supervision `free` via les règles existantes)
+  - afficher un compteur `Temps passé` strictement informatif, cumulatif pendant tout l’état `active` (y compris après `00:00`)
   - ce countdown représente le **temps minimum réservé** à l’équipe active (`time_per_player`), indépendamment de la file derrière
   - ce countdown démarre dès l’accès au personnage et peut atteindre `00:00` sans action serveur tant qu’aucune autre équipe n’attend
   - ne jamais afficher littéralement le mot `personnage` dans les messages UI : utiliser systématiquement `{personnage.nom}`
@@ -242,6 +244,11 @@ Sur `play` :
     `Échangez avec {personnage.nom} en toute tranquillité jusqu’à la fin du temps. Si aucune équipe n’arrive, vous pouvez continuer autant de temps que vous le souhaitez.`
   - message d’alerte (⚠️) **uniquement** s’il existe une équipe derrière (`queueTotal > 1`) :
     `⚠️ L’équipe « {équipe_suivante} » attend et pourra prendre la place à la fin du temps.`
+- Affichage photo côté play :
+  - si une photo est configurée dans l’admin (upload runtime), `play.html` l’affiche
+  - si aucune photo n’est configurée, aucun bloc photo n’est affiché
+  - aucun fallback visuel ou changement de contrat JSON
+
 - États UI :
   - `need_name` : nom d’équipe absent
   - `waiting` : équipe dans la file en attente

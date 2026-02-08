@@ -73,9 +73,21 @@ document.addEventListener("DOMContentLoaded", async () => {
           <button id="leaveQueueBtn" style="padding:10px 14px;border-radius:10px">Quitter la file d’attente</button>
         </div>
 
+        <div id="leaveActive" style="display:none;margin-top:12px;text-align:center;">
+          <button id="leaveActiveBtn" style="padding:10px 14px;border-radius:10px">Je ne suis plus avec ce personnage</button>
+        </div>
+
+        <div id="elapsedWrap" style="display:none;margin-top:12px;text-align:center;">
+          <div style="font-size:15px;color:#cbd5e1;">Temps passé</div>
+          <div id="elapsedTimer" style="font-size:32px;font-weight:bold;margin-top:4px;">00:00</div>
+        </div>
+
+        <div id="photoWrap" style="display:none;margin-top:12px;">
+          <img id="photo" alt="Photo" style="width:100%;max-height:260px;object-fit:contain;border-radius:14px">
+        </div>
+
         <div id="result" style="display:none;margin-top:16px">
           <div id="message" style="font-size:18px;font-weight:bold;margin-bottom:10px"></div>
-          <img id="photo" style="width:100%;max-height:260px;object-fit:contain;border-radius:14px">
         </div>
       </div>
     </div>
@@ -119,6 +131,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const elQueueDetails = document.getElementById("queueDetails");
   const elLeaveQueue = document.getElementById("leaveQueue");
   const elLeaveQueueBtn = document.getElementById("leaveQueueBtn");
+  const elLeaveActive = document.getElementById("leaveActive");
+  const elLeaveActiveBtn = document.getElementById("leaveActiveBtn");
+  const elElapsedWrap = document.getElementById("elapsedWrap");
+  const elElapsedTimer = document.getElementById("elapsedTimer");
+  const elPhotoWrap = document.getElementById("photoWrap");
 
   let pollTimeoutId = null;
   let hasFatalError = false;
@@ -128,6 +145,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   let localTimerMode = "none";
   let localTimerRemaining = 0;
   let localTimerLastTickAt = 0;
+  let localElapsedSeconds = 0;
+  let hasVoluntarilyLeft = false;
 
   function fmt(sec) {
     sec = Math.max(0, Math.floor(sec));
@@ -273,6 +292,23 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
+    hasVoluntarilyLeft = true;
+    if (pollTimeoutId) {
+      clearTimeout(pollTimeoutId);
+      pollTimeoutId = null;
+    }
+
+    stopLocalTimer();
+    elLeaveQueue.style.display = "none";
+    elLeaveActive.style.display = "none";
+    elElapsedWrap.style.display = "none";
+    elStatus.textContent = "Vous avez quitté l’interaction.";
+    elStatus.style.background = "#94a3b8";
+    elTimerLabel.textContent = "Temps estimé";
+    elTimer.textContent = "--:--";
+    elResult.style.display = "none";
+    elQueueDetails.style.display = "none";
+
     // Conserver l'identité de l'équipe après sortie volontaire de file.
     // Le nom ne doit jamais être redemandé tant qu'un nom valide existe.
     if (hasValidUserTeamName(teamName)) {
@@ -286,6 +322,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     localTimerMode = "none";
     localTimerRemaining = 0;
     localTimerLastTickAt = 0;
+    localElapsedSeconds = 0;
+    elElapsedTimer.textContent = fmt(localElapsedSeconds);
   }
 
   function syncLocalTimer(mode, serverSeconds) {
@@ -334,6 +372,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (localTimerMode === "waiting") {
         elEstimatedWait.textContent = current;
+        return;
+      }
+
+      if (localTimerMode === "active") {
+        localElapsedSeconds += deltaSec;
+        elElapsedTimer.textContent = fmt(localElapsedSeconds);
       }
     }, 250);
   }
@@ -369,8 +413,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     await leaveQueue();
   };
 
+  elLeaveActiveBtn.onclick = async () => {
+    await leaveQueue();
+  };
+
   async function loop() {
-    if (hasFatalError) {
+    if (hasFatalError || hasVoluntarilyLeft) {
       return;
     }
 
@@ -402,7 +450,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      const personnageNom = data.personnage?.nom || data.nom || `Personnage #${id}`;
+      const personnageNom = data.personnage?.nom || data.nom || `Interlocuteur #${id}`;
       const equipeNom = data.equipe?.nom || teamName;
       const hasValidNameFromServer = hasValidUserTeamName(equipeNom);
       const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : null);
@@ -424,6 +472,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         stopLocalTimer();
         elNeedName.style.display = "block";
         elLeaveQueue.style.display = "none";
+        elLeaveActive.style.display = "none";
+        elElapsedWrap.style.display = "none";
         elStatus.textContent = "Merci de saisir le nom de votre équipe";
         elStatus.style.background = "#fbbf24";
         elTimer.textContent = "--:--";
@@ -464,6 +514,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (state === "waiting") {
         elNeedName.style.display = "none";
         elLeaveQueue.style.display = "block";
+        elLeaveActive.style.display = "none";
+        elElapsedWrap.style.display = "none";
         syncLocalTimer("waiting", waitRemaining);
         const waitingText = fmt(localTimerRemaining);
         elTimer.textContent = waitingText;
@@ -477,6 +529,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       } else {
         elNeedName.style.display = "none";
         elLeaveQueue.style.display = "none";
+        elLeaveActive.style.display = "block";
+        elElapsedWrap.style.display = "block";
         const hasQueuedTeam = Number(queueTotal) > 1;
         const nextTeamName = hasQueuedTeam ? (data.file?.next_team_name || "L’équipe suivante") : "";
 
@@ -486,7 +540,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         const localActiveRemaining = Math.max(0, configuredTimePerPlayer - elapsedOnReservedWindow);
 
         syncLocalTimer("active", localActiveRemaining);
+        localElapsedSeconds = Math.max(localElapsedSeconds, elapsedOnReservedWindow);
         elTimer.textContent = fmt(localTimerRemaining);
+        elElapsedTimer.textContent = fmt(localElapsedSeconds);
 
         elQueueDetails.style.display = "none";
         elTimerLabel.textContent = "⏱️ Temps réservé";
@@ -508,9 +564,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const configuredPhoto = String(data.photo || data.personnage?.photo || "").trim();
       if (configuredPhoto) {
         elPhoto.src = configuredPhoto;
+        elPhotoWrap.style.display = "block";
         elPhoto.style.display = "block";
       } else {
         elPhoto.removeAttribute("src");
+        elPhotoWrap.style.display = "none";
         elPhoto.style.display = "none";
       }
     } catch (e) {
