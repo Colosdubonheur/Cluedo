@@ -8,23 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     sessionStorage.setItem(TOKEN_KEY, playerToken);
   }
 
-  /**
-   * Demande le nom d'équipe une seule fois puis le conserve localement.
-   * Si l'utilisateur annule ou vide la saisie, on applique une valeur stable.
-   */
-  function getOrCreateTeamName() {
-    const stored = localStorage.getItem(TEAM_KEY);
-    if (stored && stored.trim()) {
-      return stored.trim();
-    }
-
-    const prompted = window.prompt("Nom de votre équipe :", "");
-    const teamName = (prompted || "Équipe sans nom").trim() || "Équipe sans nom";
-    localStorage.setItem(TEAM_KEY, teamName);
-    return teamName;
-  }
-
-  const teamName = getOrCreateTeamName();
+  let teamName = (localStorage.getItem(TEAM_KEY) || "").trim();
 
   const audio = new Audio("./assets/ding.mp3");
   audio.preload = "auto";
@@ -56,12 +40,13 @@ document.addEventListener("DOMContentLoaded", async () => {
         background:#171a21;
         border-radius:18px;
         padding:20px;
-        max-width:420px;
+        max-width:520px;
         width:100%;
-        text-align:center;
       ">
-        <div id="name" style="font-size:18px;color:#aaa">Chargement…</div>
-        <div id="timer" style="font-size:64px;font-weight:bold;margin:10px 0">00:00</div>
+        <div id="characterLine" style="font-size:18px;color:#ddd;margin-bottom:6px">Vous allez voir : …</div>
+        <div id="teamLine" style="font-size:16px;color:#bbb;margin-bottom:12px">Votre équipe : … <button id="renameBtn" style="margin-left:8px">Modifier</button></div>
+
+        <div id="timer" style="font-size:64px;font-weight:bold;margin:10px 0;text-align:center">00:00</div>
         <div id="status" style="
           background:#fbbf24;
           color:black;
@@ -69,8 +54,17 @@ document.addEventListener("DOMContentLoaded", async () => {
           border-radius:999px;
           font-weight:bold;
           line-height:1.35;
-        ">
-          Patientez
+          text-align:center;
+        ">Patientez</div>
+
+        <div id="queueDetails" style="margin-top:12px;color:#cbd5e1;font-size:14px;line-height:1.5">
+          <div>Position : <span id="position">-</span></div>
+          <div>Temps estimé : <span id="estimatedWait">-</span></div>
+          <div>Équipe précédente : <span id="previousTeam">-</span></div>
+        </div>
+
+        <div id="needName" style="display:none;margin-top:16px;text-align:center;">
+          <button id="setNameBtn" style="padding:10px 14px;border-radius:10px">Saisir le nom d’équipe</button>
         </div>
 
         <div id="result" style="display:none;margin-top:16px">
@@ -102,12 +96,19 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
   document.body.appendChild(unlock);
 
-  const elName = document.getElementById("name");
+  const elCharacterLine = document.getElementById("characterLine");
+  const elTeamLine = document.getElementById("teamLine");
   const elTimer = document.getElementById("timer");
   const elStatus = document.getElementById("status");
   const elResult = document.getElementById("result");
   const elMessage = document.getElementById("message");
   const elPhoto = document.getElementById("photo");
+  const elNeedName = document.getElementById("needName");
+  const elSetNameBtn = document.getElementById("setNameBtn");
+  const elRenameBtn = document.getElementById("renameBtn");
+  const elPosition = document.getElementById("position");
+  const elEstimatedWait = document.getElementById("estimatedWait");
+  const elPreviousTeam = document.getElementById("previousTeam");
 
   let pollTimeoutId = null;
   let hasFatalError = false;
@@ -119,9 +120,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return `${m}:${s}`;
   }
 
-  /**
-   * Transforme les erreurs API techniques en message lisible côté joueur.
-   */
   function getReadableErrorMessage(rawError) {
     const normalizedError = String(rawError || "").toLowerCase();
 
@@ -136,9 +134,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "Une erreur est survenue. Merci de réessayer.";
   }
 
-  /**
-   * Affiche une erreur bloquante et stoppe toute transition vers les états actifs.
-   */
   function showFatalError(message) {
     hasFatalError = true;
 
@@ -147,23 +142,100 @@ document.addEventListener("DOMContentLoaded", async () => {
       pollTimeoutId = null;
     }
 
-    elName.textContent = "Erreur";
+    elCharacterLine.textContent = "Erreur";
+    elTeamLine.textContent = "";
     elTimer.textContent = "--:--";
     elStatus.textContent = message;
     elStatus.style.background = "#ef4444";
     elResult.style.display = "none";
   }
 
+  function askTeamName(defaultValue = "") {
+    const prompted = window.prompt("Nom de votre équipe :", defaultValue);
+    if (prompted === null) {
+      return null;
+    }
+
+    const trimmed = prompted.trim();
+    if (!trimmed) {
+      return null;
+    }
+
+    return trimmed;
+  }
+
+  async function updateTeamNameOnServer(newName) {
+    if (!newName) {
+      return;
+    }
+
+    const response = await fetch("./api/rename_team.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        id,
+        team_id: playerToken,
+        nouveau_nom: newName,
+      }),
+    });
+
+    const payload = await response.json();
+    if (!response.ok || !payload.ok) {
+      window.alert("Impossible de modifier le nom d’équipe.");
+      return;
+    }
+
+    teamName = payload.equipe?.nom || newName;
+    localStorage.setItem(TEAM_KEY, teamName);
+  }
+
+  async function renameTeam() {
+    const newName = askTeamName(teamName);
+    if (!newName || newName === teamName) {
+      return;
+    }
+
+    await updateTeamNameOnServer(newName);
+  }
+
+  elSetNameBtn.onclick = async () => {
+    const name = askTeamName(teamName || "");
+    if (!name) {
+      return;
+    }
+    await updateTeamNameOnServer(name);
+  };
+
+  elRenameBtn.onclick = async () => {
+    if (!teamName) {
+      elSetNameBtn.click();
+      return;
+    }
+    await renameTeam();
+  };
+
   async function loop() {
     if (hasFatalError) {
       return;
     }
 
+    if (!teamName) {
+      elNeedName.style.display = "block";
+      elStatus.textContent = "Merci de saisir le nom de votre équipe";
+      elStatus.style.background = "#fbbf24";
+      elTimer.textContent = "--:--";
+      elTeamLine.innerHTML = `Votre équipe : <strong>Non renseignée</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
+      document.getElementById("renameBtnDynamic").onclick = () => elSetNameBtn.click();
+      pollTimeoutId = setTimeout(loop, 1000);
+      return;
+    }
+
+    elNeedName.style.display = "none";
+
     try {
       const query = new URLSearchParams({
         id,
         token: playerToken,
-        team: teamName,
         t: String(Date.now())
       });
       const r = await fetch(`./api/status.php?${query.toString()}`);
@@ -185,56 +257,63 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      const position = Number.isInteger(data.position) ? data.position : 0;
-      const queueLength = data.queue_length ?? 1;
-      const waitRemaining = data.wait_remaining ?? 0;
+      const personnageNom = data.personnage?.nom || data.nom || `Personnage #${id}`;
+      const equipeNom = data.equipe?.nom || teamName;
+      const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : 0);
+      const queueTotal = data.file?.total ?? data.queue_length ?? 1;
+      const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
       const myRemaining = data.my_remaining ?? 0;
-      const canAccess = Boolean(data.can_access);
+      const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
+      const state = data.state || (data.can_access && myRemaining <= 0 ? "done" : "waiting");
 
-      elName.textContent = data.nom || `Personnage #${id}`;
+      teamName = equipeNom;
+      localStorage.setItem(TEAM_KEY, teamName);
 
-      if (!canAccess) {
+      elCharacterLine.textContent = `Vous allez voir : ${personnageNom}`;
+      elTeamLine.innerHTML = `Votre équipe : <strong>${teamName}</strong> <button id="renameBtnDynamic" style="margin-left:8px">Modifier</button>`;
+      document.getElementById("renameBtnDynamic").onclick = async () => {
+        await renameTeam();
+      };
+
+      elPosition.textContent = `${position + 1} / ${queueTotal}`;
+      elEstimatedWait.textContent = fmt(waitRemaining);
+      elPreviousTeam.textContent = previousTeam || "Aucune";
+
+      if (state === "waiting") {
         elTimer.textContent = fmt(waitRemaining);
-
-        if (position > 0) {
-          const previousTeam = (data.previous_team || "").trim();
-          elStatus.textContent = previousTeam
-            ? `Équipe ${teamName} en attente (position ${position + 1}) • Devant vous : ${previousTeam}`
-            : `Équipe ${teamName} en attente (position ${position + 1})`;
-        } else {
-          elStatus.textContent = `Équipe ${teamName} en attente`;
-        }
-
+        elStatus.textContent = `Équipe en attente`;
         elStatus.style.background = "#fbbf24";
         elResult.style.display = "none";
         notified = false;
-      } else if (myRemaining > 0) {
-        elTimer.textContent = fmt(myRemaining);
-        elStatus.textContent = "À vous de jouer !";
-        elStatus.style.background = "#fbbf24";
-        elResult.style.display = "none";
       } else {
-        elTimer.textContent = "00:00";
-        elStatus.textContent = "À vous de jouer !";
-        elStatus.style.background = "#4ade80";
-
-        elResult.style.display = "block";
-        elMessage.textContent =
-          queueLength > 1
-            ? "⚠️ Une autre équipe arrive dans quelques secondes"
-            : `Vous pouvez parler à ${data.nom} tant qu'aucune autre équipe n'arrive.`;
-
-        if (data.photo) {
-          elPhoto.src = data.photo;
-          elPhoto.style.display = "block";
+        if (myRemaining > 0) {
+          elTimer.textContent = fmt(myRemaining);
+          elStatus.textContent = "À vous de jouer !";
+          elStatus.style.background = "#fbbf24";
+          elResult.style.display = "none";
         } else {
-          elPhoto.style.display = "none";
-        }
+          elTimer.textContent = "00:00";
+          elStatus.textContent = "À vous de jouer !";
+          elStatus.style.background = "#4ade80";
 
-        if (!notified && unlocked) {
-          audio.currentTime = 0;
-          audio.play().catch(() => {});
-          notified = true;
+          elResult.style.display = "block";
+          elMessage.textContent =
+            queueTotal > 1
+              ? "⚠️ Une autre équipe arrive dans quelques secondes"
+              : `Vous pouvez parler à ${personnageNom} tant qu'aucune autre équipe n'arrive.`;
+
+          if (data.photo) {
+            elPhoto.src = data.photo;
+            elPhoto.style.display = "block";
+          } else {
+            elPhoto.style.display = "none";
+          }
+
+          if (!notified && unlocked) {
+            audio.currentTime = 0;
+            audio.play().catch(() => {});
+            notified = true;
+          }
         }
       }
     } catch (e) {
