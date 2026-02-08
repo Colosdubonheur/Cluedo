@@ -162,6 +162,7 @@ Toute évolution doit respecter ces principes.
 - `personnage`: `{ id, nom }`
 - `equipe`: `{ id, nom }`
 - `file`: `{ position, total, equipe_precedente, temps_attente_estime_seconds }`
+- `timers`: `{ active_remaining_before_takeover_seconds, courtesy_remaining_seconds, time_per_player_seconds, buffer_before_next_seconds }`
 
 **Exemple JSON réel**
 ```json
@@ -221,8 +222,9 @@ Sur `play` :
   - `equipe_precedente`
 - En état `active` :
   - ne pas afficher la notion de file (`position`, `1/1`, etc.)
-  - afficher un compteur `⏱️ Temps passé avec {personnage.nom}` incrémenté localement chaque seconde
-  - afficher ce compteur en couleur normale tant que `temps_passé < time_per_player`, puis en rouge au dépassement
+  - afficher un compteur `⏱️ Temps restant avant prise de place`
+  - ce compteur est piloté par la valeur serveur `timers.active_remaining_before_takeover_seconds`
+  - s’il n’existe aucune équipe en attente, le compteur affiche `∞` (aucune relève planifiée)
   - remplacer le message principal par :
     `Vous pouvez continuer à échanger avec {personnage.nom}, mais à tout instant une équipe peut vous prendre la place.`
   - ne jamais afficher littéralement le mot `personnage` dans les messages UI : utiliser systématiquement `{personnage.nom}`
@@ -328,3 +330,28 @@ Objectif : conserver un dépôt propre tout en laissant les animateurs modifier 
 - Pas de base de données.
 - Polling simple côté supervision/personnage.
 - Changements incrémentaux sans refonte lourde.
+
+## 11. Règles serveur de rotation (source de vérité)
+
+Ces règles sont **non négociables** et doivent rester alignées avec `api/status.php` :
+
+- Le serveur est l’unique autorité pour déterminer l’équipe `active`.
+- `time_per_player` représente le quota avant qu’une relève puisse être déclenchée, **pas** une expulsion immédiate.
+- Tant qu’aucune équipe valide n’est en attente, l’équipe active peut rester indéfiniment (`timers.active_remaining_before_takeover_seconds = null`).
+- Quand une équipe attend et que le quota de l’équipe active est dépassé :
+  - le serveur démarre une fenêtre de courtoisie de `buffer_before_next` secondes ;
+  - cette fenêtre est persistée côté serveur (`handover`) ;
+  - à l’expiration, le serveur retire l’équipe active et promeut automatiquement la suivante en tête de file.
+- Le front ne doit **jamais** expulser une équipe : il n’affiche que l’état et les timers calculés par le serveur.
+
+### Sémantique des timers contractuels
+
+- `timers.active_remaining_before_takeover_seconds`
+  - `number` : temps restant avant prise de place automatique (inclut la courtoisie si elle est en cours) ;
+  - `null` : aucune équipe en attente, donc aucune transition planifiée.
+- `timers.courtesy_remaining_seconds`
+  - `number` pendant la fenêtre de courtoisie ;
+  - `null` hors courtoisie.
+- `file.temps_attente_estime_seconds`
+  - estimation serveur pour les équipes en attente, compatible avec la logique de rotation automatique.
+

@@ -120,8 +120,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   let localTimerIntervalId = null;
   let localTimerMode = "none";
   let localTimerRemaining = 0;
-  let localTimerElapsed = 0;
-  let activeTimeLimitSeconds = 0;
   let localTimerLastTickAt = 0;
 
   function fmt(sec) {
@@ -258,7 +256,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   function stopLocalTimer() {
     localTimerMode = "none";
     localTimerRemaining = 0;
-    localTimerElapsed = 0;
     localTimerLastTickAt = 0;
   }
 
@@ -268,26 +265,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (localTimerMode !== mode) {
       localTimerMode = mode;
       localTimerRemaining = nextSeconds;
-      localTimerElapsed = nextSeconds;
       localTimerLastTickAt = Date.now();
       return;
     }
 
     if (localTimerLastTickAt === 0) {
       localTimerRemaining = nextSeconds;
-      localTimerElapsed = nextSeconds;
       localTimerLastTickAt = Date.now();
       return;
     }
 
-    if (mode === "waiting" && nextSeconds < localTimerRemaining - 1) {
+    if (nextSeconds < localTimerRemaining - 1 || nextSeconds > localTimerRemaining + 2) {
       localTimerRemaining = nextSeconds;
-      localTimerLastTickAt = Date.now();
-      return;
-    }
-
-    if (mode === "active" && Math.abs(nextSeconds - localTimerElapsed) > 1) {
-      localTimerElapsed = nextSeconds;
       localTimerLastTickAt = Date.now();
     }
   }
@@ -311,16 +300,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       localTimerRemaining = Math.max(0, localTimerRemaining - deltaSec);
       localTimerLastTickAt = now;
 
+      const current = fmt(localTimerRemaining);
+      elTimer.textContent = current;
+
       if (localTimerMode === "waiting") {
-        const current = fmt(localTimerRemaining);
-        elTimer.textContent = current;
         elEstimatedWait.textContent = current;
-      } else if (localTimerMode === "active") {
-        localTimerElapsed = Math.max(0, localTimerElapsed + deltaSec);
-        elTimer.textContent = fmt(localTimerElapsed);
-        elTimer.style.color = activeTimeLimitSeconds > 0 && localTimerElapsed >= activeTimeLimitSeconds
-          ? "#ef4444"
-          : "white";
       }
     }, 250);
   }
@@ -416,8 +400,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const position = Number.isInteger(data.file?.position) ? data.file.position : (Number.isInteger(data.position) ? data.position : null);
       const queueTotal = data.file?.total ?? data.queue_length ?? 0;
       const waitRemaining = data.file?.temps_attente_estime_seconds ?? data.wait_remaining ?? 0;
-      const myRemaining = data.my_remaining ?? 0;
-      const timePerPlayer = Math.max(0, Number(data.time_per_player) || 0);
+      const activeRemainingBeforeTakeover = data.timers?.active_remaining_before_takeover_seconds;
       const previousTeam = (data.file?.equipe_precedente ?? data.previous_team ?? "").trim();
       // Règle de sécurité métier : ne jamais inférer l'état "active" à partir du temps restant.
       // L'accès UI "C'est votre tour" n'est autorisé que sur signal explicite serveur
@@ -478,23 +461,26 @@ document.addEventListener("DOMContentLoaded", async () => {
         elResult.style.display = "none";
         notified = false;
       } else {
-        activeTimeLimitSeconds = timePerPlayer;
-        const elapsedFromServer = Math.max(0, timePerPlayer - Math.max(0, Number(myRemaining) || 0));
-        syncLocalTimer("active", elapsedFromServer);
+        const hasPendingTakeover = Number.isFinite(Number(activeRemainingBeforeTakeover));
+
+        if (hasPendingTakeover) {
+          syncLocalTimer("active", Math.max(0, Number(activeRemainingBeforeTakeover) || 0));
+          elTimer.textContent = fmt(localTimerRemaining);
+        } else {
+          stopLocalTimer();
+          elTimer.textContent = "∞";
+        }
 
         elQueueDetails.style.display = "none";
-        elTimerLabel.textContent = `⏱️ Temps passé avec ${personnageNom}`;
-        elTimer.textContent = fmt(localTimerElapsed);
-        elTimer.style.color = activeTimeLimitSeconds > 0 && localTimerElapsed >= activeTimeLimitSeconds
-          ? "#ef4444"
-          : "white";
+        elTimerLabel.textContent = "⏱️ Temps restant avant prise de place";
+        elTimer.style.color = "white";
         elStatus.textContent = `Vous pouvez continuer à échanger avec ${personnageNom}, mais à tout instant une équipe peut vous prendre la place.`;
         elStatus.style.background = "#4ade80";
         elResult.style.display = "block";
         elMessage.textContent =
-          queueTotal > 1
-            ? "⚠️ Une autre équipe peut arriver à tout moment"
-            : `Vous pouvez continuer avec ${personnageNom} tant qu'aucune autre équipe n'arrive.`;
+          hasPendingTakeover
+            ? "⚠️ Une équipe attend : la relève sera automatique à la fin du chrono."
+            : `Aucune équipe en attente : vous pouvez continuer avec ${personnageNom} sans limite.`;
 
         if (data.photo) {
           elPhoto.src = data.photo;
