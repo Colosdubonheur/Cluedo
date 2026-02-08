@@ -6,6 +6,26 @@ $id = $_GET['id'] ?? null;
 $token = $_GET['token'] ?? null;
 $teamNameInput = trim((string) ($_GET['team_name'] ?? ($_GET['team'] ?? '')));
 
+function normalize_team_name(string $name): string {
+  $trimmed = trim($name);
+  if ($trimmed === '') {
+    return '';
+  }
+
+  $normalized = mb_strtolower(iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $trimmed) ?: $trimmed, 'UTF-8');
+  $normalized = preg_replace('/\s+/', ' ', $normalized ?? '');
+
+  if ($normalized === 'equipe sans nom') {
+    return '';
+  }
+
+  return $trimmed;
+}
+
+function is_initialized_team(array $entry): bool {
+  return normalize_team_name((string) ($entry['team'] ?? '')) !== '';
+}
+
 if (!$id || !$token) {
   echo json_encode(["error" => "missing id or token"]);
   exit;
@@ -40,24 +60,25 @@ foreach ($p['queue'] as $i => $q) {
 }
 
 if ($index === null) {
-  $resolvedTeamName = $teamNameInput !== '' ? $teamNameInput : 'Équipe sans nom';
+  $resolvedTeamName = normalize_team_name($teamNameInput);
   $p['queue'][] = [
     "token" => $token,
     "team" => $resolvedTeamName,
-    "joined_at" => $now,
+    "joined_at" => $resolvedTeamName !== '' ? $now : null,
+    "created_at" => $now,
   ];
   $index = count($p['queue']) - 1;
 } else {
-  $existingTeamName = trim((string) ($p['queue'][$index]['team'] ?? ''));
+  $existingTeamName = normalize_team_name((string) ($p['queue'][$index]['team'] ?? ''));
 
-  if ($existingTeamName === '' && $teamNameInput !== '') {
+  if ($existingTeamName === '' && normalize_team_name($teamNameInput) !== '') {
+    $p['queue'][$index]['joined_at'] = $now;
     $p['queue'][$index]['team'] = $teamNameInput;
-    $existingTeamName = $teamNameInput;
+    $existingTeamName = normalize_team_name($teamNameInput);
   }
 
   if ($existingTeamName === '') {
-    $existingTeamName = 'Équipe sans nom';
-    $p['queue'][$index]['team'] = $existingTeamName;
+    $p['queue'][$index]['team'] = '';
   }
 
   $resolvedTeamName = $existingTeamName;
@@ -66,22 +87,35 @@ if ($index === null) {
 $timePerPlayer = (int) ($p['time_per_player'] ?? 120);
 $buffer = (int) ($p['buffer_before_next'] ?? 15);
 
-$first = $p['queue'][0] ?? ["joined_at" => $now];
+$visibleQueue = array_values(array_filter($p['queue'], 'is_initialized_team'));
+$visibleIndex = null;
+foreach ($visibleQueue as $i => $entry) {
+  if (($entry['token'] ?? null) === $token) {
+    $visibleIndex = $i;
+    break;
+  }
+}
+
+$teamNeedsName = $resolvedTeamName === '';
+
+$first = $visibleQueue[0] ?? ["joined_at" => $now];
 $elapsedFirst = $now - ($first['joined_at'] ?? $now);
 $remainingFirst = max(0, $timePerPlayer - $elapsedFirst);
 
 $wait = 0;
-if ($index > 0) {
+if (!$teamNeedsName && $visibleIndex !== null && $visibleIndex > 0) {
   $wait += $remainingFirst;
-  $wait += ($index - 1) * $timePerPlayer;
+  $wait += ($visibleIndex - 1) * $timePerPlayer;
   $wait += $buffer;
 }
 
-$canAccess = ($index === 0);
+$canAccess = !$teamNeedsName && ($visibleIndex === 0);
 $myRemaining = $canAccess ? $remainingFirst : 0;
-$previousTeam = $index > 0 ? (string) ($p['queue'][$index - 1]['team'] ?? '') : '';
+$previousTeam = ($visibleIndex !== null && $visibleIndex > 0)
+  ? (string) ($visibleQueue[$visibleIndex - 1]['team'] ?? '')
+  : '';
 $legacyState = $canAccess && $myRemaining <= 0 ? 'done' : 'waiting';
-$state = $canAccess ? 'active' : 'waiting';
+$state = $teamNeedsName ? 'need_name' : ($canAccess ? 'active' : 'waiting');
 
 $data[$id] = $p;
 file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
@@ -98,8 +132,8 @@ $response = [
     "nom" => $resolvedTeamName,
   ],
   "file" => [
-    "position" => $index,
-    "total" => count($p['queue']),
+    "position" => $teamNeedsName ? null : $visibleIndex,
+    "total" => count($visibleQueue),
     "equipe_precedente" => $previousTeam,
     "temps_attente_estime_seconds" => max(0, $wait),
   ],
@@ -110,8 +144,8 @@ $response = [
   // Champs hérités (compatibilité)
   "id" => $id,
   "nom" => $p['nom'] ?? '',
-  "position" => $index,
-  "queue_length" => count($p['queue']),
+  "position" => $teamNeedsName ? null : $visibleIndex,
+  "queue_length" => count($visibleQueue),
   "wait_remaining" => max(0, $wait),
   "time_per_player" => $timePerPlayer,
   "buffer_before_next" => $buffer,

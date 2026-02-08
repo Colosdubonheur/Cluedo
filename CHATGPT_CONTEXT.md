@@ -157,7 +157,7 @@ Toute évolution doit respecter ces principes.
   légitimement (équipe non encore initialisée) et afficher une erreur inutile.
 
 **Sortie contractuelle à consommer côté front**
-- `state`: `waiting` | `active`
+- `state`: `need_name` | `waiting` | `active`
 - `legacy_state`: `waiting` | `done` (compatibilité rétroactive)
 - `personnage`: `{ id, nom }`
 - `equipe`: `{ id, nom }`
@@ -196,6 +196,16 @@ Toute évolution doit respecter ces principes.
 - aucune duplication d’équipe
 - position inchangée
 
+### Règles métier verrouillées (need_name / timer / visibilité)
+
+- Une équipe en état `need_name` (nom absent/invalide) :
+  - **n’occupe pas** le personnage,
+  - **ne déclenche aucun timer**,
+  - **n’est pas visible** dans la file des autres équipes (`total`, `position`, `equipe_precedente`).
+- Le placeholder `Équipe sans nom` est interdit côté affichage file : il ne doit jamais être exposé aux autres équipes.
+- Le passage à l’état `active` n’est possible qu’après initialisation d’un nom valide.
+- Si la file visible est vide et qu’une première équipe initialise un nom valide, elle passe immédiatement en `active` (sans countdown d’attente).
+
 ---
 
 ## 10. UI rendering rules
@@ -222,6 +232,8 @@ Transition attendue :
   - `done` : interaction autorisée
 - Une équipe sans nom utilisateur valide est traitée comme `need_name`
   et ne doit jamais afficher un nom par défaut à l’écran
+- Dès réception de `state=need_name`, le front doit déclencher automatiquement la saisie du nom
+  (sans attendre une action supplémentaire) et rester bloqué hors file tant que le nom n’est pas valide.
 - En `need_name` initial, la saisie du nom réalise une **initialisation** via `status.php?team_name=...`
   (pas un renommage). Le bouton `Modifier` utilise `rename_team.php` uniquement après initialisation.
 
