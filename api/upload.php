@@ -3,7 +3,9 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_auth.php';
 require_once __DIR__ . '/_data_store.php';
 
-cluedo_require_admin_pin();
+$pinEnabled = cluedo_is_admin_pin_enabled();
+$providedPin = cluedo_get_admin_pin_from_request();
+$hasAdminAccess = !$pinEnabled || ($providedPin !== '' && hash_equals(cluedo_get_admin_pin(), $providedPin));
 
 if (!isset($_POST['id']) || !isset($_FILES['file'])) {
   http_response_code(400);
@@ -11,8 +13,18 @@ if (!isset($_POST['id']) || !isset($_FILES['file'])) {
   exit;
 }
 
+
 $id = preg_replace('/[^0-9]/', '', (string) $_POST['id']);
 $file = $_FILES['file'];
+$characterContextId = preg_replace('/[^0-9]/', '', (string) ($_POST['character_id'] ?? ''));
+
+if (!$hasAdminAccess) {
+  if ($characterContextId === '' || $characterContextId !== $id) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'forbidden']);
+    exit;
+  }
+}
 
 if ($id === '') {
   http_response_code(400);

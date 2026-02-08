@@ -62,6 +62,7 @@ echo json_encode([
     'nom' => (string) ($p['nom'] ?? ''),
     'time_per_player' => $timePerPlayer,
     'buffer_before_next' => $buffer,
+    'photo' => (string) ($p['photo'] ?? ''),
   ],
   'current' => $current,
   'queue' => $waiting,

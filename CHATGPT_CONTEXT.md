@@ -234,6 +234,10 @@ Toute évolution doit respecter ces principes.
 - Les fichiers PNG de QR téléchargés sont nommés avec l’ID et le nom courant du personnage (`qr_{id}_{nom}.png`).
 - Les QR codes encodent strictement l’URL joueur existante (`play.html?id=X`).
 
+Sur `character` :
+- La photo d’un personnage peut être modifiée depuis `admin.html` **et** depuis `character.html?id=X`.
+- Les deux interfaces réutilisent strictement le **même pipeline d’upload** (`api/upload.php`) : crop carré obligatoire, compression/standardisation JPEG, suppression éventuelle de l’ancienne photo dans `uploads/`, puis persistance de la référence dans `data/personnages.json`.
+- La photo reste une donnée de configuration runtime (source de vérité unique : `uploads/` + `data/personnages.json`).
 
 Sur `play` :
 - Afficher strictement :
