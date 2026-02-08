@@ -2,6 +2,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const TOKEN_KEY = "cluedo_player_token";
   const TEAM_KEY = "cluedo_team_name";
   const AUDIO_ENABLED_KEY = "cluedo_team_audio_enabled";
+  const MESSAGE_HISTORY_VERSION = "v1";
 
   let token = localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
   if (!token) token = crypto.randomUUID();
@@ -50,6 +51,48 @@ document.addEventListener("DOMContentLoaded", () => {
   let audioEnabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
   let currentTeamPhotoPath = "";
   const messageHistory = [];
+  const messageHistoryKeys = new Set();
+
+  function getMessageStorageKey() {
+    return `cluedo_team_message_history_${MESSAGE_HISTORY_VERSION}_${token}`;
+  }
+
+  function persistMessageHistory() {
+    try {
+      const payload = JSON.stringify(messageHistory);
+      localStorage.setItem(getMessageStorageKey(), payload);
+      sessionStorage.setItem(getMessageStorageKey(), payload);
+    } catch (_error) {
+      // Ignore storage failures (private mode, quota, ...)
+    }
+  }
+
+  function loadPersistedMessageHistory() {
+    const storageKey = getMessageStorageKey();
+    const serialized = localStorage.getItem(storageKey) || sessionStorage.getItem(storageKey);
+    if (!serialized) return;
+    try {
+      const parsed = JSON.parse(serialized);
+      if (!Array.isArray(parsed)) return;
+      parsed.forEach((entry) => {
+        const key = String(entry?.key || "");
+        const text = String(entry?.text || "").trim();
+        if (!key || !text || messageHistoryKeys.has(key)) return;
+        messageHistory.push({
+          key,
+          text,
+          time: String(entry?.time || formatTimestamp(0)),
+        });
+        messageHistoryKeys.add(key);
+      });
+      if (messageHistory.length > 0) {
+        lastMessageKey = messageHistory[messageHistory.length - 1].key;
+        lastPlayedMessageKey = lastMessageKey;
+      }
+    } catch (_error) {
+      // Ignore malformed storage and continue with a clean state.
+    }
+  }
 
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
@@ -171,9 +214,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const text = String(messageText || "").trim();
     if (!text) return;
     const key = `${text}::${String(createdAt || 0)}`;
-    if (key === lastMessageKey) return;
+    if (messageHistoryKeys.has(key)) return;
     lastMessageKey = key;
     messageHistory.push({ key, text, time: formatTimestamp(createdAt) });
+    messageHistoryKeys.add(key);
+    persistMessageHistory();
     renderMessageHistory();
   }
 
@@ -648,6 +693,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   syncAudioButtonState();
+  loadPersistedMessageHistory();
   renderMessageHistory();
 
   loadHub().catch(() => {
