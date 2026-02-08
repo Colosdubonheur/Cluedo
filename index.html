@@ -21,6 +21,7 @@
 
       <section class="hub-section">
         <h2>Accès personnages (1 à 15)</h2>
+        <button id="hub-download-all-qr" type="button" class="hub-button hub-button-qr hub-desktop-only">Télécharger tous les QR codes</button>
         <div id="hub-character-list" class="hub-character-list">Chargement…</div>
       </section>
     </div>
@@ -29,7 +30,56 @@
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
       const container = document.getElementById("hub-character-list");
+      const downloadAllButton = document.getElementById("hub-download-all-qr");
       const fallbackName = (id) => `Personnage ${id}`;
+      const characterEntries = [];
+
+      const sanitizeForFilename = (value) => value
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-zA-Z0-9_-]+/g, "_")
+        .replace(/^_+|_+$/g, "") || "Personnage";
+
+      const buildQrImage = async (id, name) => {
+        const playUrl = new URL(`./play.html?id=${id}`, window.location.href).href;
+        const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1024x1024&data=${encodeURIComponent(playUrl)}`;
+        const qrResponse = await fetch(qrApiUrl);
+        const qrBlob = await qrResponse.blob();
+
+        const imageBitmap = await createImageBitmap(qrBlob);
+        const canvas = document.createElement("canvas");
+        canvas.width = 1024;
+        canvas.height = 1160;
+        const context = canvas.getContext("2d");
+
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(imageBitmap, 0, 0, 1024, 1024);
+
+        context.fillStyle = "#111111";
+        context.font = "bold 48px Arial, sans-serif";
+        context.textAlign = "center";
+        context.textBaseline = "middle";
+        context.fillText(`${id} - ${name}`, canvas.width / 2, 1092);
+
+        return new Promise((resolve) => {
+          canvas.toBlob((blob) => resolve(blob), "image/png");
+        });
+      };
+
+      const downloadQr = async (id, name) => {
+        const fileSafeName = sanitizeForFilename(name);
+        const blob = await buildQrImage(id, name);
+        const blobUrl = URL.createObjectURL(blob);
+        const downloadLink = document.createElement("a");
+        downloadLink.href = blobUrl;
+        downloadLink.download = `qr_${id}_${fileSafeName}.png`;
+        downloadLink.rel = "noopener";
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        downloadLink.remove();
+        URL.revokeObjectURL(blobUrl);
+      };
 
       let personnages = {};
       try {
@@ -46,6 +96,7 @@
       for (let id = 1; id <= 15; id += 1) {
         const rawName = personnages[String(id)]?.nom;
         const name = rawName && rawName.trim() ? rawName.trim() : fallbackName(id);
+        characterEntries.push({ id, name });
 
         const card = document.createElement("article");
         card.className = "hub-character-card";
@@ -71,17 +122,8 @@
         qrButton.type = "button";
         qrButton.className = "hub-button hub-button-qr hub-desktop-only";
         qrButton.textContent = "Télécharger le QR code";
-        qrButton.addEventListener("click", () => {
-          const playUrl = new URL(`./play.html?id=${id}`, window.location.href).href;
-          const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=1024x1024&data=${encodeURIComponent(playUrl)}`;
-
-          const downloadLink = document.createElement("a");
-          downloadLink.href = qrApiUrl;
-          downloadLink.download = `cluedo-play-id-${id}.png`;
-          downloadLink.rel = "noopener";
-          document.body.appendChild(downloadLink);
-          downloadLink.click();
-          downloadLink.remove();
+        qrButton.addEventListener("click", async () => {
+          await downloadQr(id, name);
         });
 
         actions.append(playLink, characterLink, qrButton);
@@ -91,6 +133,12 @@
 
       container.innerHTML = "";
       container.appendChild(fragment);
+
+      downloadAllButton.addEventListener("click", async () => {
+        for (const entry of characterEntries) {
+          await downloadQr(entry.id, entry.name);
+        }
+      });
     });
   </script>
 </body>
