@@ -1106,6 +1106,7 @@ Tant que le nom d'équipe n'est pas valide **ou** qu'aucun participant n'est ren
 Quand les prérequis sont remplis (nom valide + participants renseignés + photo d'équipe définie), l'équipe peut agir sur les files.
 Le texte d'état « Espace équipe prêt : vous pouvez gérer les files des personnages » est supprimé.
 - Team / UI (responsive) : les messages d’alerte affichés dans `team.html` (notamment dans la section **Suspects**) doivent toujours respecter la largeur du conteneur, revenir automatiquement à la ligne sur mobile et ne jamais provoquer de débordement horizontal de page.
+- Team / UI (responsive) : dans le bloc de verrouillage de la section **Suspects**, le message bloquant « Interrogatoires bloqués tant que les informations de l'équipe ne sont pas complètes. » doit toujours être responsive (retour à la ligne automatique) et ne jamais dépasser la largeur de l'écran, y compris sur mobile.
 
 ### Section Suspects (affichage ligne unique)
 Lorsqu'une équipe clique sur un suspect disponible ou en attente depuis la liste des suspects :
