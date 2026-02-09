@@ -1,40 +1,15 @@
 document.addEventListener("DOMContentLoaded", async () => {
-  const PIN_KEY = "cluedo_admin_pin";
-  let adminPin = sessionStorage.getItem(PIN_KEY) || "";
-  let isPinEnabled = true;
+  const auth = await window.CluedoAuth.requireAdminAccess({
+    allowPinCreation: true,
+    firstSetupPrompt: "Premier accès administration : définissez le code admin global.",
+  });
 
-  async function verifyPin(pin) {
-    const query = new URLSearchParams({ t: Date.now().toString() });
-    if (pin) {
-      query.set("admin_pin", pin);
-    }
-
-    const response = await fetch(`./api/admin_auth.php?${query.toString()}`);
-    const payload = await response.json().catch(() => ({}));
-
-    if (!response.ok) {
-      return { ok: false, pinEnabled: payload.pin_enabled !== false };
-    }
-
-    return { ok: !!payload.ok, pinEnabled: payload.pin_enabled !== false };
+  if (!auth.ok) {
+    return;
   }
 
-  const authStatus = await verifyPin(adminPin);
-  isPinEnabled = authStatus.pinEnabled;
-
-  while (isPinEnabled && (!adminPin || !(await verifyPin(adminPin)).ok)) {
-    adminPin = window.prompt("Code administration :", adminPin || "") || "";
-    if (!adminPin) {
-      document.body.innerHTML = "<p style='color:white;padding:20px'>Accès refusé.</p>";
-      return;
-    }
-  }
-
-  if (isPinEnabled) {
-    sessionStorage.setItem(PIN_KEY, adminPin);
-  } else {
-    sessionStorage.removeItem(PIN_KEY);
-  }
+  const adminPin = auth.pin;
+  const isPinEnabled = auth.pinEnabled;
 
   const adminFetch = (url, options = {}) => {
     const headers = { ...(options.headers || {}) };

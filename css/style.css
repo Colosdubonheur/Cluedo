@@ -166,6 +166,14 @@ body {
 .hub-button:hover,
 .hub-button:focus-visible { background: var(--accent-hover); }
 
+
+.hub-button-secure { background: #dc2626; }
+.hub-button-secure:hover,
+.hub-button-secure:focus-visible { background: #b91c1c; }
+
+.hub-button-free { background: #2563eb; }
+.hub-button-free:hover,
+.hub-button-free:focus-visible { background: #1d4ed8; }
 .hub-button-secondary { background: #334155; }
 .hub-button-secondary:hover { background: #3f516d; }
 

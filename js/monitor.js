@@ -19,6 +19,16 @@
   let messageTargets = [];
   let monitorBaseTeamUrl = "";
 
+  let adminPin = "";
+
+  function supervisionFetch(url, options = {}) {
+    const headers = { ...(options.headers || {}) };
+    if (adminPin) {
+      headers["X-Admin-Pin"] = adminPin;
+    }
+    return fetch(url, { ...options, headers });
+  }
+
 
   function readSortMode() {
     const saved = window.localStorage.getItem(SORT_STORAGE_KEY);
@@ -322,7 +332,7 @@
     const body = new URLSearchParams({ action: "send_message", channel, message: text });
     targets.forEach((target) => body.append("targets[]", target));
 
-    const response = await fetch("./api/supervision.php", {
+    const response = await supervisionFetch("./api/supervision.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
       body: body.toString(),
@@ -364,7 +374,7 @@
       active: active ? "1" : "0",
     });
 
-    const response = await fetch("./api/supervision.php", {
+    const response = await supervisionFetch("./api/supervision.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
       body: body.toString(),
@@ -426,7 +436,7 @@
     if (!confirmed) return;
 
     const body = new URLSearchParams({ action: "delete_team", token: teamToken });
-    const response = await fetch("./api/supervision.php", {
+    const response = await supervisionFetch("./api/supervision.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
       body: body.toString(),
@@ -442,7 +452,7 @@
   }
 
   async function refresh() {
-    const response = await fetch(`./api/supervision.php?t=${Date.now()}`);
+    const response = await supervisionFetch(`./api/supervision.php?t=${Date.now()}`);
     const payload = await response.json();
 
     if (!response.ok || !payload.ok) {
@@ -468,7 +478,7 @@
     if (!window.confirm("Remettre tout l'historique à zéro ?")) return;
 
     resetBtn.disabled = true;
-    const response = await fetch("./api/supervision.php", {
+    const response = await supervisionFetch("./api/supervision.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
       body: new URLSearchParams({ action: "reset_history" }).toString(),
@@ -496,7 +506,7 @@
     if (!confirmed) return;
 
     clearMessagesHistoryBtn.disabled = true;
-    const response = await fetch("./api/supervision.php", {
+    const response = await supervisionFetch("./api/supervision.php", {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
       body: new URLSearchParams({ action: "clear_messages_history" }).toString(),
@@ -611,6 +621,16 @@
     }
   });
 
-  refresh();
-  setInterval(refresh, 3000);
+  async function init() {
+    const auth = await window.CluedoAuth.requireAdminAccess();
+    if (!auth.ok) {
+      return;
+    }
+
+    adminPin = auth.pinEnabled ? auth.pin : "";
+    await refresh();
+    setInterval(refresh, 3000);
+  }
+
+  init();
 })();
