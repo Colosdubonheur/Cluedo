@@ -1,5 +1,4 @@
 (function () {
-  const CHARACTER_AUDIO_ENABLED_KEY = "cluedo_character_audio_enabled";
   const CHARACTER_MESSAGE_HISTORY_VERSION = "v1";
 
   const params = new URLSearchParams(window.location.search);
@@ -18,6 +17,7 @@
   const characterLocationFeedbackEl = document.getElementById("characterLocationFeedback");
   const characterMessageHistoryEl = document.getElementById("characterSupervisionMessage");
   const audioEnableBtn = document.getElementById("character-audio-enable-btn");
+  const audioHintEl = document.getElementById("character-audio-hint");
 
   const messageAudio = new Audio("./assets/message.wav");
   messageAudio.preload = "auto";
@@ -29,7 +29,7 @@
   let hasUnsavedLocationChanges = false;
   let lastPlayedMessageKey = "";
   let lastMessagesClearedAt = 0;
-  let audioEnabled = localStorage.getItem(CHARACTER_AUDIO_ENABLED_KEY) === "1";
+  let audioEnabled = false;
   const messageHistory = [];
   const messageHistoryKeys = new Set();
 
@@ -180,7 +180,6 @@
       await messageAudio.play();
     } catch (_error) {
       audioEnabled = false;
-      localStorage.setItem(CHARACTER_AUDIO_ENABLED_KEY, "0");
       syncAudioButtonState();
     }
   }
@@ -191,6 +190,7 @@
     audioEnableBtn.classList.toggle("is-enabled", audioEnabled);
     audioEnableBtn.classList.toggle("is-disabled", !audioEnabled);
     audioEnableBtn.setAttribute("aria-pressed", audioEnabled ? "true" : "false");
+    if (audioHintEl) audioHintEl.hidden = audioEnabled;
   }
 
   async function uploadCharacterPhoto() {
@@ -416,8 +416,9 @@
 
   audioEnableBtn?.addEventListener("click", async () => {
     if (audioEnabled) {
+      const confirmed = window.confirm("Voulez-vous vraiment désactiver le son ?");
+      if (!confirmed) return;
       audioEnabled = false;
-      localStorage.setItem(CHARACTER_AUDIO_ENABLED_KEY, "0");
       syncAudioButtonState();
       return;
     }
@@ -426,10 +427,8 @@
     try {
       await soundOnAudio.play();
       audioEnabled = true;
-      localStorage.setItem(CHARACTER_AUDIO_ENABLED_KEY, "1");
     } catch (_error) {
       audioEnabled = false;
-      localStorage.setItem(CHARACTER_AUDIO_ENABLED_KEY, "0");
     }
     syncAudioButtonState();
   });

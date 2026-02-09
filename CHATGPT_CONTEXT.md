@@ -239,8 +239,8 @@ Le serveur est l’unique source de vérité pour :
   - les messages équipe sont lus par polling dans `team.html`,
   - les messages personnage sont lus par polling dans `character.html`.
 - Comportement sonore associé :
-  - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son (`cluedo_team_audio_enabled`) ; son de notification : `assets/message.wav`,
-  - côté personnage, notification sonore sur nouveau message ciblé avec `assets/message.wav`.
+  - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son sur la page courante ; son de notification : `assets/message.wav`,
+  - côté personnage, notification sonore sur nouveau message ciblé avec `assets/message.wav` après activation explicite du son sur la page courante.
 - Priorité d'affichage sur `character.html` (UI uniquement) :
   - les **messages de supervision** sont affichés avant le bloc de l'**équipe active** ;
   - ordre attendu : messages de supervision → équipe active → équipes en attente → paramètres secondaires (photo, lieu, etc.).
@@ -342,11 +342,11 @@ Le serveur est l’unique source de vérité pour :
 ### Complément UX team.html (notification sonore supervision)
 - Les navigateurs (Chrome, Safari, iOS inclus) imposent une interaction utilisateur explicite avant toute lecture audio fiable.
 - L'activation initiale du son dans `team.html` doit toujours provenir d'un clic volontaire sur le bouton audio ; ce clic joue `assets/soundon.wav` pour débloquer l'autorisation navigateur.
-- L'état audio équipe est persisté côté client via `localStorage` (`cluedo_team_audio_enabled`) et doit survivre aux rechargements/rerenders : si l'utilisateur a activé le son, le bouton reste sur **« Son activé »** tant qu'il ne le désactive pas explicitement.
+- L'état audio n'est pas persistant entre pages/reloads : à chaque navigation ou rafraîchissement, l'UI revient en **« Activer le son »** jusqu'à un nouveau geste explicite utilisateur sur la page courante.
 - Les deux seules sources sonores côté équipe à conserver sont :
   - `assets/message.wav` lors de la réception d'un nouveau message supervision (polling),
   - `assets/exit.mp3` comme alerte de fin imminente pendant une interrogation active (franchissement du seuil des 15 dernières secondes quand une autre équipe attend).
-- Aucune lecture audio ne doit provoquer une coupure implicite : un échec `play()` navigateur ne doit jamais repasser automatiquement l'état sur **« Activer le son »**.
+- L'UI audio doit toujours refléter l'autorisation réelle du navigateur : si un `play()` échoue (blocage iOS/Safari par exemple), l'état doit repasser sur **« Activer le son »**.
 - Quand le son est actif et que l'utilisateur reclique sur le bouton **« Son activé »**, une confirmation explicite est obligatoire (`Voulez-vous vraiment désactiver le son ?`) ; sans confirmation, l'état audio reste inchangé.
 
 ---
@@ -615,7 +615,7 @@ Transition attendue :
 - Sur sortie automatique (transition `active` -> non-`active` reçue du serveur), `play.html` tente la fermeture automatique de la fenêtre sans déclencher d’action serveur.
 - Le token équipe stable est persistant entre scans (`play.html?id=X` puis `play.html?id=Y`) et ne doit jamais être recréé tant qu’un token valide existe localement.
 - Le nom d’équipe déjà initialisé est conservé entre scans via ce token ; il ne doit pas être redemandé inutilement.
-- L’autorisation sonore est demandée une seule fois côté utilisateur puis mémorisée pour toutes les pages `play.html` (pas de redemande systématique à chaque ouverture).
+- L’autorisation sonore doit être redemandée après navigation/reload sur mobile : aucun écran ne doit supposer qu'une autorisation acquise ailleurs reste valide.
 - **Verrou front requis sur la saisie auto** : la demande automatique du nom d'équipe ne doit se déclencher
   qu'une seule fois par phase `need_name`, puis rester verrouillée dès qu'un nom valide existe.
   Le polling ne doit jamais réouvrir ce prompt tant que le nom valide est conservé.
