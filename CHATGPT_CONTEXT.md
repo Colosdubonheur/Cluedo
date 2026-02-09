@@ -1251,6 +1251,27 @@ Pour chaque ID de 1 à 15, les champs suivants sont configurables et persistés 
   - `Éjecter l’équipe` reste **`Éjecter l’équipe`** (couleur rouge).
 - Disposition des actions : les trois boutons sont alignés côte à côte tant que l’espace le permet, avec retour à la ligne CSS autorisé sur petit écran.
 
+
+### Character / UI / Visibilité globale (`character.html`)
+- Un bloc **`État du jeu`** est ajouté **immédiatement après** le bloc **`Interrogatoires en attente`** dans `character.html`.
+- Le bloc est affiché dans un accordéon (`details/summary`) pour limiter l’encombrement mobile, avec un contenu purement de lecture.
+- Sous-bloc **État des personnages** :
+  - liste tous les personnages actifs,
+  - affiche pour chacun son nom et son état synthétique :
+    - équipe en cours d’interrogatoire si présente,
+    - équipe(s) en attente si présentes,
+    - **`Libre`** si aucune équipe active ni en attente.
+- Sous-bloc **État des équipes** :
+  - liste toutes les équipes connues (équipes en cours/attente + équipes connues via profils),
+  - affiche pour chacune son état synthétique :
+    - **`Libre`**,
+    - **`En interrogation avec {Personnage}`**,
+    - **`En attente avec {Personnage}`**.
+- Ces deux sous-blocs sont **strictement informatifs** :
+  - aucun bouton d’action,
+  - aucune interaction métier,
+  - aucun impact sur timers, files, supervision ou règles serveur.
+
 ### Supervision / UI (`monitor.html`)
 - Dans chaque tuile équipe, le bloc membres affiche le total dérivé des prénoms : **`Membres de l’équipe (X)`** où `X` est le nombre de prénoms non vides enregistrés pour l’équipe.
 - Ce total est un calcul d’affichage uniquement (aucune donnée métier supplémentaire).

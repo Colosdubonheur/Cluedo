@@ -7,6 +7,93 @@ require_once __DIR__ . '/_character_visibility.php';
 require_once __DIR__ . '/_supervision_messages_store.php';
 require_once __DIR__ . '/_team_profiles_store.php';
 
+function cluedo_build_character_game_overview(array $data, int $now, array $profilesStore): array
+{
+  $maxWait = 600;
+  $characters = [];
+  $teamsByToken = [];
+
+  foreach ($data as $characterId => $character) {
+    if (!cluedo_character_is_active($character)) {
+      continue;
+    }
+
+    $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
+    $queue = cluedo_clean_character_queue($queue, $now, $maxWait);
+    $timePerPlayer = max(1, (int) ($character['time_per_player'] ?? 120));
+    $queue = cluedo_apply_runtime_handover($queue, $now, $timePerPlayer);
+
+    $activeTeamName = '';
+    $waitingTeamNames = [];
+
+    foreach ($queue as $index => $entry) {
+      $teamName = trim((string) ($entry['team'] ?? ''));
+      if ($teamName === '') {
+        $teamName = 'Équipe sans nom';
+      }
+
+      $token = trim((string) ($entry['token'] ?? ''));
+      if ($token !== '' && !isset($teamsByToken[$token])) {
+        $teamsByToken[$token] = [
+          'token' => $token,
+          'team_name' => $teamName,
+          'state' => $index === 0 ? 'active' : 'waiting',
+          'character_name' => (string) ($character['nom'] ?? ''),
+        ];
+      }
+
+      if ($index === 0) {
+        $activeTeamName = $teamName;
+      } else {
+        $waitingTeamNames[] = $teamName;
+      }
+    }
+
+    $characters[] = [
+      'id' => (string) $characterId,
+      'nom' => (string) ($character['nom'] ?? ''),
+      'active_team_name' => $activeTeamName,
+      'waiting_team_names' => $waitingTeamNames,
+    ];
+
+    $data[$characterId]['queue'] = $queue;
+  }
+
+  $profileTeams = isset($profilesStore['teams']) && is_array($profilesStore['teams']) ? $profilesStore['teams'] : [];
+  foreach ($profileTeams as $token => $profile) {
+    $token = trim((string) $token);
+    if ($token === '' || isset($teamsByToken[$token])) {
+      continue;
+    }
+
+    $teamName = trim((string) ($profile['team_name'] ?? ''));
+    if ($teamName === '') {
+      $teamName = 'Équipe sans nom';
+    }
+
+    $teamsByToken[$token] = [
+      'token' => $token,
+      'team_name' => $teamName,
+      'state' => 'free',
+      'character_name' => '',
+    ];
+  }
+
+  usort($characters, function ($a, $b) {
+    return strcasecmp((string) ($a['nom'] ?? ''), (string) ($b['nom'] ?? ''));
+  });
+
+  $teams = array_values($teamsByToken);
+  usort($teams, function ($a, $b) {
+    return strcasecmp((string) ($a['team_name'] ?? ''), (string) ($b['team_name'] ?? ''));
+  });
+
+  return [
+    'characters' => $characters,
+    'teams' => $teams,
+  ];
+}
+
 $id = $_GET['id'] ?? null;
 if (!$id) {
   http_response_code(400);
@@ -83,6 +170,8 @@ $messagesStore = cluedo_load_supervision_messages();
 $characterMessage = cluedo_resolve_character_message($messagesStore, (string) $id);
 
 $data[$id]['queue'] = $queue;
+$profilesStore = cluedo_load_team_profiles();
+$gameOverview = cluedo_build_character_game_overview($data, $now, $profilesStore);
 file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
 echo json_encode([
@@ -97,5 +186,6 @@ echo json_encode([
   ],
   'current' => $current,
   'queue' => $waiting,
+  'game_overview' => $gameOverview,
   'message' => $characterMessage,
 ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

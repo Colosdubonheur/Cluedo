@@ -8,6 +8,8 @@
   const characterNameEl = document.getElementById("characterName");
   const currentEl = document.getElementById("currentTeam");
   const queueEl = document.getElementById("queue");
+  const gameOverviewCharactersEl = document.getElementById("gameOverviewCharacters");
+  const gameOverviewTeamsEl = document.getElementById("gameOverviewTeams");
   const characterPhotoEl = document.getElementById("characterPhoto");
   const characterPhotoInputEl = document.getElementById("characterPhotoInput");
   const characterPhotoButtonEl = document.getElementById("characterPhotoButton");
