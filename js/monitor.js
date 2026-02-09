@@ -178,20 +178,6 @@
     };
   }
 
-  function renderLastSeenCharacter(team) {
-    const rows = Array.isArray(team.history) ? team.history : [];
-    const currentCharacter = String(team.current_personnage?.nom || "").trim();
-    const lastEntry = rows.length ? rows[rows.length - 1] : null;
-    const lastHistoryCharacter = String(lastEntry?.personnage?.nom || "").trim();
-    const character = currentCharacter || lastHistoryCharacter;
-
-    if (!character) {
-      return '<p class="monitor-muted">Aucun suspect vu.</p>';
-    }
-
-    return `<p class="monitor-last-character">${escapeHtml(character)}</p>`;
-  }
-
   function renderMessageSummary(team) {
     const text = String(team.message?.text || "").trim();
     if (!text) {
@@ -224,10 +210,6 @@
           <section>
             <h4>Dernier message reçu</h4>
             ${renderMessageSummary(team)}
-          </section>
-          <section>
-            <h4>Dernier suspect vu</h4>
-            ${renderLastSeenCharacter(team)}
           </section>
           <section>
             <h4>Membres de l'équipe (${players.count})</h4>
