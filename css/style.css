@@ -950,6 +950,8 @@ body {
 
 .monitor-team-card {
   border: 1px solid #2a3142;
+  display: flex;
+  flex-direction: column;
 }
 
 .monitor-team-header {
@@ -1025,10 +1027,10 @@ body {
 }
 
 .monitor-team-body {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(190px, 220px);
+  display: flex;
+  flex-direction: column;
   gap: 12px;
-  align-items: start;
+  flex: 1;
 }
 
 .monitor-team-main {
@@ -1040,8 +1042,7 @@ body {
   border: 1px solid #263247;
   border-radius: 8px;
   padding: 8px;
-  width: min(100%, 480px);
-  max-width: 100%;
+  width: 100%;
 }
 
 .monitor-card-message p {
@@ -1063,6 +1064,7 @@ body {
   flex-wrap: wrap;
   gap: 8px;
   margin: 0;
+  margin-top: auto;
 }
 
 .monitor-team-actions .admin-button {
@@ -1090,12 +1092,6 @@ body {
 .monitor-team-delete-btn:focus-visible {
   background: #991b1b;
   border-color: #991b1b;
-}
-
-@media (max-width: 900px) {
-  .monitor-team-body {
-    grid-template-columns: 1fr;
-  }
 }
 
 .monitor-modal {
