@@ -1138,6 +1138,9 @@ Chaque suspect affiche sur une ligne horizontale :
 
 Règle d'affichage du temps :
 - si `estimated_wait_seconds = 0` => afficher **« Disponible »**.
+- Côté équipe, le temps d'attente est **cumulatif** : il additionne le temps restant de l'interrogation active et une durée standard par équipe déjà devant dans la file.
+- Le temps affiché est **propre à chaque équipe** selon sa position réelle dans la file (les équipes en attente n'ont pas toutes la même valeur).
+- L'ordre de file et le calcul de rang proviennent de l'API, qui reste la **source de vérité** côté runtime.
 
 ### Couleur stricte du temps d'attente
 - **Vert** : 1 équipe avec le personnage, 0 équipe en attente.

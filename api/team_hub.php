@@ -128,9 +128,20 @@ foreach ($data as $characterId => $character) {
   }
 
   $waitingCount = max(0, count($queue) - 1);
-  $estimatedWait = $activeRemaining;
-  if ($waitingCount > 1) {
-    $estimatedWait += ($waitingCount - 1) * $timePerPlayer;
+  $tokenQueueIndex = null;
+  foreach ($queue as $queueIndex => $entry) {
+    if ((string) ($entry['token'] ?? '') === $token) {
+      $tokenQueueIndex = (int) $queueIndex;
+      break;
+    }
+  }
+
+  if ($tokenQueueIndex === 0) {
+    $estimatedWait = 0;
+  } elseif ($tokenQueueIndex !== null) {
+    $estimatedWait = $activeRemaining + max(0, ($tokenQueueIndex - 1) * $timePerPlayer);
+  } else {
+    $estimatedWait = $activeRemaining + ($waitingCount * $timePerPlayer);
   }
 
   foreach ($queue as $index => $entry) {
