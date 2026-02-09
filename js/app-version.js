@@ -7,22 +7,28 @@
       return;
     }
 
-    let version = "";
+    let versionLabel = "Version indisponible";
 
     try {
       const response = await fetch(VERSION_ENDPOINT, { cache: "no-store" });
       if (!response.ok) {
-        throw new Error("Version indisponible");
+        throw new Error(`HTTP ${response.status}`);
       }
 
       const payload = await response.json();
-      version = typeof payload.version === "string" ? payload.version.trim() : "";
+      const version = typeof payload.version === "string" ? payload.version.trim() : "";
+
+      if (!version) {
+        throw new Error("Réponse sans version exploitable");
+      }
+
+      versionLabel = version;
     } catch (error) {
-      version = "";
+      console.error("Impossible de charger la version applicative.", error);
     }
 
     for (const target of targets) {
-      target.textContent = version;
+      target.textContent = versionLabel;
     }
   };
 
