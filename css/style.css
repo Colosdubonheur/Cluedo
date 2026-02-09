@@ -1313,6 +1313,10 @@ body {
 .team-character-lock-message {
   margin: 0;
   min-height: 0;
+  max-width: 100%;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
 }
 
 .team-character-help {
