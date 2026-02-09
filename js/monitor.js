@@ -374,22 +374,32 @@
     if (!confirmed) return;
 
     resetGameBtn.disabled = true;
-    const response = await fetch("./api/supervision.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: new URLSearchParams({ action: "reset_game" }).toString(),
-    });
 
-    const payload = await response.json().catch(() => ({}));
-    resetGameBtn.disabled = false;
+    try {
+      const response = await supervisionFetch("./api/supervision.php", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+        body: new URLSearchParams({ action: "reset_game" }).toString(),
+      });
 
-    if (!response.ok || !payload.ok) {
-      window.alert(payload.error || "Échec de la réinitialisation.");
-      return;
+      const payload = await response.json().catch(() => ({}));
+
+      if (!response.ok || !payload.ok) {
+        const details = payload?.error ? ` (${payload.error})` : "";
+        const message = response.status === 403
+          ? `Réinitialisation refusée : authentification admin invalide ou expirée${details}.`
+          : `Échec serveur pendant la réinitialisation${details}.`;
+        window.alert(message);
+        return;
+      }
+
+      messageFeedbackEl.textContent = "Partie réinitialisée : toutes les équipes ont été effacées.";
+      await refresh();
+    } catch (error) {
+      window.alert(`Impossible de réinitialiser la partie : ${error?.message || "réseau indisponible"}.`);
+    } finally {
+      resetGameBtn.disabled = false;
     }
-
-    messageFeedbackEl.textContent = "Partie réinitialisée : toutes les équipes ont été effacées.";
-    await refresh();
   }
 
   async function setEndGame(active) {
