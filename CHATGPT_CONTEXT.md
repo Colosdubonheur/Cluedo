@@ -965,10 +965,11 @@ Contraintes non négociables :
 - Toutes les pages principales (`index.html`, `admin.html`, `monitor.html`, `play.html`, `team.html`, `character.html`) affichent la même version applicative visible en haut à droite, de façon permanente et purement informative.
 - La version affichée est alimentée partout via l’attribut `[data-app-version]` et le script front unique `js/app-version.js`.
 - Format officiel : `MAJEUR.MINEUR.PATCH`.
-- Source de vérité verrouillée : `data/version.json` avec la clé entière `build` (ex: `{ "build": 84 }`).
-- Règle de génération verrouillée : `api/version.php` convertit ce build global en `MAJEUR.MINEUR.PATCH` (ex: build `84` → `1.0.84`).
-- Le workflow GitHub Actions `.github/workflows/deploy.yml` écrit ce build automatiquement avant l’upload FTP (build = numéro de PR de déploiement).
-- Interdiction verrouillée : aucune dépendance à la date/heure locale, et aucune version codée en dur côté front/back.
+- Source de vérité **unique et obligatoire** : `data/version.json`, avec une seule clé `version` de type chaîne (ex: `{ "version": "1.1.86" }`).
+- Contrat backend verrouillé : `api/version.php` lit exclusivement `data/version.json`, valide strictement le format `MAJEUR.MINEUR.PATCH`, et renvoie une erreur explicite si le fichier est absent/invalide.
+- Contrat frontend verrouillé : `js/app-version.js` n’utilise que `api/version.php` pour afficher la version et ne doit jamais contenir de version codée en dur.
+- Interdiction absolue : aucun fallback silencieux vers `1.0.0` (ou toute autre valeur), aucune reconstruction automatique de version à partir d’un build, aucune dépendance à la date/heure locale.
+- Règle PR obligatoire : toute évolution de version doit se faire uniquement en modifiant `data/version.json`; toute valeur de version ailleurs dans le code est un bug bloquant à corriger avant merge.
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
 
 ## 11. Team UX technique (stabilité terrain)
