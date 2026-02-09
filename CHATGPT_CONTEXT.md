@@ -88,6 +88,7 @@
   - l’état visuel change,
   - le message contextuel passe en alerte (orange/rouge selon seuil),
   - le message « Préparez-vous à libérer la place » apparaît.
+- La tuile du personnage actuellement actif conserve son halo lumineux existant, avec une couleur strictement synchronisée sur la couleur du texte d’état affiché dans la tuile (vert/orange/rouge/blanc selon l’état visible).
 
 ### Séparation stricte UI / métier
 - Les termes « interrogatoire », « suspect » et « interrogation » sont des abstractions UI.
