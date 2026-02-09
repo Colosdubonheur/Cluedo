@@ -942,10 +942,11 @@ Contraintes non négociables :
 
 ### Team / Photo d'équipe — flux UI
 
-- Le flux visuel côté `team.html` est : **Choisir une photo** (CTA principal) → recadrer → **Valider la photo**.
+- Le flux visuel côté `team.html` est : **Choisir une photo** (CTA principal) → **Valider la photo**.
+- L'utilisateur ne réalise aucun recadrage manuel : l'ajustement/crop carré est appliqué automatiquement lors de la validation.
 - Tant qu’aucun fichier n’est sélectionné, le bouton de validation reste indisponible.
-- Le texte d’aide doit rester explicite et actionnable : `Recadrez puis validez votre photo.`
-- La logique technique ne change pas : même pipeline de crop/upload, mêmes endpoints, même stockage runtime, même format carré obligatoire.
+- Le texte d’aide doit rester explicite et cohérent avec le bouton : `Sélectionnez une photo puis validez.`
+- La logique technique ne change pas : même pipeline d'upload, mêmes endpoints, même stockage runtime, même format carré obligatoire.
 
 ### QR intégré
 

@@ -931,7 +931,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const hasSelectedFile = !!teamPhotoInputEl.files?.length;
     if (teamPhotoUploadBtn) teamPhotoUploadBtn.disabled = !hasSelectedFile;
     if (!hasSelectedFile) return;
-    setFeedback(teamPhotoFeedbackEl, "Recadrez puis validez votre photo.", "processing");
+    setFeedback(teamPhotoFeedbackEl, "Sélectionnez une photo puis validez.", "processing");
   });
 
   teamPhotoSelectBtn?.addEventListener("click", () => {
@@ -945,12 +945,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (!window.CluedoPhotoUpload?.uploadFromInput) {
-      setFeedback(teamPhotoFeedbackEl, "Module de recadrage indisponible.", "error");
+      setFeedback(teamPhotoFeedbackEl, "Module photo indisponible.", "error");
       return;
     }
 
     teamPhotoUploadBtn.disabled = true;
-    setFeedback(teamPhotoFeedbackEl, "Recadrez puis validez votre photo.", "processing");
+    setFeedback(teamPhotoFeedbackEl, "Sélectionnez une photo puis validez.", "processing");
 
     try {
       await runWithPollingPaused(async () =>
