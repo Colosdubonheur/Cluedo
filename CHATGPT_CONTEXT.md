@@ -346,7 +346,8 @@ Le serveur est l’unique source de vérité pour :
 - Les deux seules sources sonores côté équipe à conserver sont :
   - `assets/message.wav` lors de la réception d'un nouveau message supervision (polling),
   - `assets/exit.mp3` comme alerte de fin imminente pendant une interrogation active (franchissement du seuil des 15 dernières secondes quand une autre équipe attend).
-- L'UI audio doit toujours refléter l'autorisation réelle du navigateur : si un `play()` échoue (blocage iOS/Safari par exemple), l'état doit repasser sur **« Activer le son »**.
+- L'état du bouton audio reflète une **décision explicite utilisateur** (intention), pas le résultat ponctuel d'une tentative technique de lecture.
+- Si un `play()` échoue (blocage iOS/Safari, contexte navigateur, etc.), l'UI ne doit jamais repasser automatiquement sur **« Activer le son »** : aucun changement d'état silencieux n'est autorisé sans action utilisateur.
 - Quand le son est actif et que l'utilisateur reclique sur le bouton **« Son activé »**, une confirmation explicite est obligatoire (`Voulez-vous vraiment désactiver le son ?`) ; sans confirmation, l'état audio reste inchangé.
 
 ---
