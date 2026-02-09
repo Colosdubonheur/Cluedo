@@ -1089,19 +1089,21 @@ De haut en bas :
 
 ### Règle métier officielle — validité du profil équipe (`team.html` uniquement)
 - Le nom d'équipe est **obligatoire** et est invalide s'il est vide **ou** vaut exactement `Équipe sans nom`.
-- Tant que le nom d'équipe n'est pas valide **ou** que les participants ne sont pas correctement renseignés :
+- Les participants de l'équipe sont **obligatoires** via le mécanisme d'ajout des prénoms (au moins un prénom non vide).
+- La photo d'équipe est **obligatoire** : une équipe sans photo est considérée comme incomplète.
+- Tant que le nom d'équipe n'est pas valide, **ou** que les participants ne sont pas correctement renseignés, **ou** qu'aucune photo d'équipe n'est définie :
   - aucun interrogatoire n'est possible,
   - les tuiles suspects/personnages restent inactives.
-- Le message de blocage affiché côté équipe doit être exactement :
-  - `Complétez le nom de l’équipe et renseignez l’ensemble des participants de votre équipe pour interroger les personnages.`
+- Le message de blocage affiché côté équipe doit être :
+  - `Complétez les informations de votre équipe (nom, participants et photo) pour pouvoir interroger les personnages.`
 
 ### Blocage strict tant que profil incomplet
-Tant que le nom d'équipe n'est pas valide **ou** qu'aucun participant n'est renseigné :
+Tant que le nom d'équipe n'est pas valide **ou** qu'aucun participant n'est renseigné **ou** qu'aucune photo d'équipe n'est définie :
 - impossible de rejoindre/quitter une file,
 - les actions de file sont désactivées,
 - un message rouge explicite est affiché.
 
-Quand les prérequis sont remplis (nom valide + participants renseignés), l'équipe peut agir sur les files.
+Quand les prérequis sont remplis (nom valide + participants renseignés + photo d'équipe définie), l'équipe peut agir sur les files.
 Le texte d'état « Espace équipe prêt : vous pouvez gérer les files des personnages » est supprimé.
 
 ### Section Suspects (affichage ligne unique)
