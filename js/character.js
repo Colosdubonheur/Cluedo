@@ -260,7 +260,6 @@
     }
 
     const activeTeamName = activeTeam.team || activeTeam.name || activeTeam.nom || "(sans nom)";
-    const activeState = activeTeam.state || "active";
     const activePhoto = String(activeTeam.photo || "").trim();
     const players = Array.isArray(activeTeam.players)
       ? activeTeam.players.map((name) => String(name || "").trim()).filter((name) => name.length > 0)
@@ -281,7 +280,6 @@
             ? `<img class="character-active-team-photo" src="${escapeHtml(activePhoto)}" alt="Photo de l'équipe ${escapeHtml(activeTeamName)}">`
             : '<div class="character-active-team-photo-placeholder" aria-hidden="true">👥</div>'}
           <div>
-            <p class="character-active-team-state">État : <strong>${escapeHtml(activeState)}</strong></p>
             <p class="character-active-team-remaining">Temps restant : ${remainingDisplay}</p>
             <p class="character-active-team-players">Participants (${participantsCount}) : ${participantsDisplay}</p>
           </div>
