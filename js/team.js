@@ -1,7 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
   const TOKEN_KEY = "cluedo_player_token";
   const TEAM_KEY = "cluedo_team_name";
-  const AUDIO_ENABLED_KEY = "cluedo_team_audio_enabled";
   const MESSAGE_HISTORY_VERSION = "v1";
   const SEEN_THRESHOLD_SECONDS = 30;
   const DEFAULT_TEAM_NAME = "Équipe sans nom";
@@ -46,6 +45,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const messageHistoryEl = document.getElementById("team-message-history");
   const endGameBannerEl = document.getElementById("team-end-game-banner");
   const audioEnableBtn = document.getElementById("team-audio-enable-btn");
+  const audioHintEl = document.getElementById("team-audio-hint");
   const teamPhotoPreviewEl = document.getElementById("team-photo-preview");
   const teamPhotoEmptyEl = document.getElementById("team-photo-empty");
   const teamPhotoInputEl = document.getElementById("team-photo-input");
@@ -73,7 +73,7 @@ document.addEventListener("DOMContentLoaded", () => {
   let hubRequestSequence = 0;
   let lastAppliedHubSequence = 0;
   let pollingPausedCount = 0;
-  let audioEnabled = localStorage.getItem(AUDIO_ENABLED_KEY) === "1";
+  let audioEnabled = false;
   let currentTeamPhotoPath = "";
   let previousRemainingSeconds = null;
   let criticalAlertPlayedFor = "";
@@ -82,7 +82,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function setAudioEnabled(nextValue) {
     audioEnabled = !!nextValue;
-    localStorage.setItem(AUDIO_ENABLED_KEY, audioEnabled ? "1" : "0");
     syncAudioButtonState();
   }
 
@@ -679,7 +678,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await messageAudio.play();
     } catch (_error) {
-      // Le son reste explicitement activé côté utilisateur.
+      setAudioEnabled(false);
     }
   }
 
@@ -689,7 +688,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await exitAudio.play();
     } catch (_error) {
-      // Le son reste explicitement activé côté utilisateur.
+      setAudioEnabled(false);
     }
   }
 
@@ -804,10 +803,12 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function syncAudioButtonState() {
+    if (!audioEnableBtn) return;
     audioEnableBtn.textContent = audioEnabled ? "🔔 Son activé" : "🔔 Activer le son";
     audioEnableBtn.classList.toggle("is-enabled", audioEnabled);
     audioEnableBtn.classList.toggle("is-disabled", !audioEnabled);
     audioEnableBtn.setAttribute("aria-pressed", audioEnabled ? "true" : "false");
+    if (audioHintEl) audioHintEl.hidden = audioEnabled;
   }
 
   profileForm.addEventListener("submit", async (event) => {
