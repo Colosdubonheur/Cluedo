@@ -297,6 +297,62 @@
     document.getElementById("eject").onclick = () => control("eject");
   }
 
+  function renderGameOverviewCharacters(characters) {
+    const list = Array.isArray(characters) ? characters : [];
+    if (!list.length) {
+      gameOverviewCharactersEl.innerHTML = '<p class="character-game-overview-empty">Aucun personnage actif.</p>';
+      return;
+    }
+
+    gameOverviewCharactersEl.innerHTML = `<ol class="character-game-overview-list">${list
+      .map((character) => {
+        const name = String(character?.nom || `Personnage ${character?.id || "?"}`).trim() || "Personnage";
+        const activeTeam = String(character?.active_team_name || "").trim();
+        const waitingTeams = Array.isArray(character?.waiting_team_names)
+          ? character.waiting_team_names.map((teamName) => String(teamName || "").trim()).filter((teamName) => teamName.length > 0)
+          : [];
+
+        const stateParts = [];
+        if (activeTeam) {
+          stateParts.push(`Interrogatoire en cours : ${activeTeam}`);
+        }
+        if (waitingTeams.length > 0) {
+          stateParts.push(`En attente : ${waitingTeams.join(", ")}`);
+        }
+        if (stateParts.length === 0) {
+          stateParts.push("Libre");
+        }
+
+        return `<li><span class="character-game-overview-item-name">${escapeHtml(name)}</span><span class="character-game-overview-item-state">${escapeHtml(stateParts.join(" · "))}</span></li>`;
+      })
+      .join("")}</ol>`;
+  }
+
+  function renderGameOverviewTeams(teams) {
+    const list = Array.isArray(teams) ? teams : [];
+    if (!list.length) {
+      gameOverviewTeamsEl.innerHTML = '<p class="character-game-overview-empty">Aucune équipe connue.</p>';
+      return;
+    }
+
+    gameOverviewTeamsEl.innerHTML = `<ol class="character-game-overview-list">${list
+      .map((team) => {
+        const teamName = String(team?.team_name || "Équipe sans nom").trim() || "Équipe sans nom";
+        const characterName = String(team?.character_name || "").trim();
+        const teamState = String(team?.state || "free").trim().toLowerCase();
+
+        let stateLabel = "Libre";
+        if (teamState === "active" && characterName) {
+          stateLabel = `En interrogation avec ${characterName}`;
+        } else if (teamState === "waiting" && characterName) {
+          stateLabel = `En attente avec ${characterName}`;
+        }
+
+        return `<li><span class="character-game-overview-item-name">${escapeHtml(teamName)}</span><span class="character-game-overview-item-state">${escapeHtml(stateLabel)}</span></li>`;
+      })
+      .join("")}</ol>`;
+  }
+
   async function refresh() {
     const response = await fetch(`./api/character_status.php?id=${encodeURIComponent(id)}&t=${Date.now()}`);
     const payload = await response.json();
@@ -313,6 +369,10 @@
 
     const character = payload.character;
     characterNameEl.innerHTML = `Personnage : <strong>${character.nom || "(sans nom)"}</strong> (#${character.id})`;
+
+    const gameOverview = payload.game_overview || {};
+    renderGameOverviewCharacters(gameOverview.characters);
+    renderGameOverviewTeams(gameOverview.teams);
 
     const messagePayload = payload.message || {};
     clearMessageHistoryFromSupervision(messagePayload.cleared_at || 0);
