@@ -37,6 +37,18 @@ function cluedo_get_config(): array
   return is_array($decoded) ? $decoded : [];
 }
 
+function cluedo_save_config(array $config): bool
+{
+  $path = cluedo_config_path();
+  $encoded = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+
+  if ($encoded === false) {
+    return false;
+  }
+
+  return file_put_contents($path, $encoded . "\n") !== false;
+}
+
 function cluedo_get_admin_pin(): string
 {
   $config = cluedo_get_config();

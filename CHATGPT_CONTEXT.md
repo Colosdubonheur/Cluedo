@@ -684,12 +684,20 @@ Objectif : conserver un dépôt propre tout en laissant les animateurs modifier 
   - consomme uniquement `GET /api/character_status.php?id=X` (API personnage dédiée), jamais `status.php` ni `supervision.php`.
   - affiche en temps réel l'équipe `active` remontée par le serveur et la file FIFO `waiting` remontée par le serveur.
 
-### Sécurité administration
-- Seule l'interface admin est protégée par PIN.
-- Vérification **front** : `js/admin.js` demande le PIN puis vérifie via `api/admin_auth.php`.
-- Vérification **API** : endpoints admin valident `X-Admin-Pin` (ou `admin_pin` en query).
+### Sécurité / Accès
+- Un **code admin unique global** protège toutes les pages sensibles :
+  - `index.html` (Hub Cluedo)
+  - `admin.html` (Administration)
+  - `monitor.html` (Supervision)
+- Les pages en accès libre restent :
+  - `team.html` (Espace équipe)
+  - `character.html` (Interface personnage)
+- **Premier accès à l'administration** : si aucun code n'est configuré, `js/admin.js` déclenche un prompt pour définir le code admin, puis le backend l'enregistre dans `data/config.json` via `api/admin_auth.php`.
+- **Réutilisation** : le même code est ensuite demandé pour toutes les pages sécurisées si non validé dans la session courante (stockage session côté navigateur).
+- Vérification **API** : endpoints sensibles valident `X-Admin-Pin` (ou `admin_pin` en query).
 - Le code admin est lu dans `data/config.json` (clé recommandée : `admin_code`, rétrocompatibilité `admin_pin`).
-- **Protection activée uniquement si un code non vide est configuré**. Si la clé est absente / vide / `null`, l'admin est en accès libre (sans prompt PIN).
+- Indication visuelle hub : boutons rouges pour `Administration` et `Supervision` (pages sécurisées), bouton bleu pour `Espace équipe` (accès libre).
+- Aucun système de comptes et aucun flux “mot de passe oublié”.
 
 ### Endpoints ajoutés
 - `GET /api/admin_auth.php` : vérifie le PIN admin.

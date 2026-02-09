@@ -9,6 +9,9 @@ require_once __DIR__ . '/_supervision_messages_store.php';
 require_once __DIR__ . '/_game_state_store.php';
 require_once __DIR__ . '/_team_presence_store.php';
 require_once __DIR__ . '/_deleted_team_tokens_store.php';
+require_once __DIR__ . '/_auth.php';
+
+cluedo_require_admin_pin();
 
 function cluedo_history_path(): string
 {
