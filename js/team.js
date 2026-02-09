@@ -556,7 +556,9 @@ document.addEventListener("DOMContentLoaded", () => {
       ? (hasNextTeamWaiting && nextTeamName
         ? `Préparez-vous à libérer la place à l’équipe ${nextTeamName} dans ${fmt(remainingSeconds)}`
         : `Vous pouvez interroger ${characterName}`)
-      : "";
+      : (teamState.state === "waiting"
+        ? `Vous pourrez interroger ${characterName} dans ${fmt(remainingSeconds)}`
+        : "");
     const stateClass = teamState.state === "active"
       ? (isCriticalExitAlert ? "is-critical" : (hasNextTeamWaiting ? "is-alert" : "is-active"))
       : "is-waiting";
