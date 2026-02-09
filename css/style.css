@@ -1546,8 +1546,7 @@ body {
 }
 
 .character-game-overview-list li {
-  display: grid;
-  gap: 2px;
+  line-height: 1.4;
 }
 
 .character-game-overview-item-name {
@@ -1556,6 +1555,14 @@ body {
 
 .character-game-overview-item-state {
   color: #cfe0ff;
+}
+
+.character-game-overview-team-active {
+  color: #22c55e;
+}
+
+.character-game-overview-team-waiting {
+  color: #f59e0b;
 }
 
 .character-game-overview-empty {

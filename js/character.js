@@ -314,16 +314,20 @@
 
         const stateParts = [];
         if (activeTeam) {
-          stateParts.push(`Interrogatoire en cours : ${activeTeam}`);
+          stateParts.push(`<span class="character-game-overview-team-active">${escapeHtml(activeTeam)}</span>`);
         }
         if (waitingTeams.length > 0) {
-          stateParts.push(`En attente : ${waitingTeams.join(", ")}`);
+          stateParts.push(
+            ...waitingTeams.map(
+              (teamName) => `<span class="character-game-overview-team-waiting">${escapeHtml(teamName)}</span>`,
+            ),
+          );
         }
         if (stateParts.length === 0) {
           stateParts.push("Libre");
         }
 
-        return `<li><span class="character-game-overview-item-name">${escapeHtml(name)}</span><span class="character-game-overview-item-state">${escapeHtml(stateParts.join(" · "))}</span></li>`;
+        return `<li><span class="character-game-overview-item-name">${escapeHtml(name)} :</span> <span class="character-game-overview-item-state">${stateParts.join(", ")}</span></li>`;
       })
       .join("")}</ol>`;
   }
@@ -348,7 +352,7 @@
           stateLabel = `En attente avec ${characterName}`;
         }
 
-        return `<li><span class="character-game-overview-item-name">${escapeHtml(teamName)}</span><span class="character-game-overview-item-state">${escapeHtml(stateLabel)}</span></li>`;
+        return `<li><span class="character-game-overview-item-name">${escapeHtml(teamName)} :</span> <span class="character-game-overview-item-state">${escapeHtml(stateLabel)}</span></li>`;
       })
       .join("")}</ol>`;
   }
