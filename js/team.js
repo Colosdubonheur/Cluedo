@@ -80,6 +80,12 @@ document.addEventListener("DOMContentLoaded", () => {
   const messageHistory = [];
   const messageHistoryKeys = new Set();
 
+  function setAudioEnabled(nextValue) {
+    audioEnabled = !!nextValue;
+    localStorage.setItem(AUDIO_ENABLED_KEY, audioEnabled ? "1" : "0");
+    syncAudioButtonState();
+  }
+
   function initializeTestSlotSelector() {
     if (!testSlotControlsEl || !testSlotSelectEl) return;
     if (!isTestMode) {
@@ -673,9 +679,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await messageAudio.play();
     } catch (_error) {
-      audioEnabled = false;
-      localStorage.setItem(AUDIO_ENABLED_KEY, "0");
-      syncAudioButtonState();
+      // Le son reste explicitement activé côté utilisateur.
     }
   }
 
@@ -685,9 +689,7 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await exitAudio.play();
     } catch (_error) {
-      audioEnabled = false;
-      localStorage.setItem(AUDIO_ENABLED_KEY, "0");
-      syncAudioButtonState();
+      // Le son reste explicitement activé côté utilisateur.
     }
   }
 
@@ -870,18 +872,20 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   audioEnableBtn?.addEventListener("click", async () => {
-    if (audioEnabled) return;
+    if (audioEnabled) {
+      const confirmed = window.confirm("Voulez-vous vraiment désactiver le son ?");
+      if (!confirmed) return;
+      setAudioEnabled(false);
+      return;
+    }
 
     soundOnAudio.currentTime = 0;
     try {
       await runWithPollingPaused(async () => soundOnAudio.play());
-      audioEnabled = true;
-      localStorage.setItem(AUDIO_ENABLED_KEY, "1");
+      setAudioEnabled(true);
     } catch (_error) {
-      audioEnabled = false;
-      localStorage.setItem(AUDIO_ENABLED_KEY, "0");
+      setAudioEnabled(false);
     }
-    syncAudioButtonState();
   });
 
   teamPhotoUploadBtn?.addEventListener("click", async () => {
