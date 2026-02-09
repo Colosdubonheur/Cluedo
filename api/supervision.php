@@ -47,6 +47,43 @@ function cluedo_save_history(array $history): void
   file_put_contents($path, json_encode($history, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
 
+function cluedo_delete_team_photo_files(array $profilesStore): void
+{
+  $uploadsDir = realpath(__DIR__ . '/../uploads');
+  if ($uploadsDir === false) {
+    return;
+  }
+
+  $teams = isset($profilesStore['teams']) && is_array($profilesStore['teams'])
+    ? $profilesStore['teams']
+    : [];
+
+  $teamPhotos = [];
+  foreach ($teams as $profile) {
+    if (!is_array($profile)) {
+      continue;
+    }
+
+    $photoPath = trim((string) ($profile['photo'] ?? ''));
+    if ($photoPath === '' || !str_starts_with($photoPath, 'uploads/')) {
+      continue;
+    }
+
+    $teamPhotos[$photoPath] = true;
+  }
+
+  foreach (array_keys($teamPhotos) as $photoPath) {
+    $absolutePhotoPath = realpath(__DIR__ . '/../' . $photoPath);
+    if (
+      $absolutePhotoPath !== false
+      && str_starts_with($absolutePhotoPath, $uploadsDir . DIRECTORY_SEPARATOR)
+      && is_file($absolutePhotoPath)
+    ) {
+      @unlink($absolutePhotoPath);
+    }
+  }
+}
+
 $method = strtoupper((string) ($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 $action = trim((string) ($_POST['action'] ?? $_GET['action'] ?? ''));
 
@@ -187,26 +224,12 @@ if ($method === 'POST' && $action === 'reset_game') {
 
     file_put_contents($dataPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     cluedo_save_history(['teams' => []]);
+    $profilesStore = cluedo_load_team_profiles();
+    cluedo_delete_team_photo_files($profilesStore);
     cluedo_save_team_profiles(['teams' => []]);
     cluedo_save_team_presence(['teams' => []]);
     cluedo_clear_supervision_messages_history();
     cluedo_save_deleted_team_tokens(['tokens' => []]);
-
-    $uploadsDir = realpath(__DIR__ . '/../uploads');
-    if ($uploadsDir !== false) {
-      $files = scandir($uploadsDir);
-      if (is_array($files)) {
-        foreach ($files as $file) {
-          if ($file === '.' || $file === '..' || $file === '.gitkeep') {
-            continue;
-          }
-          $absolutePath = $uploadsDir . DIRECTORY_SEPARATOR . $file;
-          if (is_file($absolutePath)) {
-            @unlink($absolutePath);
-          }
-        }
-      }
-    }
 
     cluedo_save_game_state([
       'end_game_active' => false,
