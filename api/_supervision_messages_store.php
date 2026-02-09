@@ -51,12 +51,16 @@ function cluedo_load_supervision_messages(): array
 
 function cluedo_clear_supervision_messages_history(): bool
 {
+  $current = cluedo_load_supervision_messages();
+  $previousClearedAt = (int) ($current['cleared_at'] ?? 0);
+  $nextClearedAt = max((int) round(microtime(true) * 1000), $previousClearedAt + 1);
+
   return cluedo_save_supervision_messages([
     'team_broadcast' => ['text' => '', 'created_at' => 0],
     'character_broadcast' => ['text' => '', 'created_at' => 0],
     'teams' => [],
     'characters' => [],
-    'cleared_at' => time(),
+    'cleared_at' => $nextClearedAt,
   ]);
 }
 
