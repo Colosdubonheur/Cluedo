@@ -92,6 +92,7 @@
 - Dans la section **Suspects** de `team.html`, la zone de filtres (« Trier par » + case « Suspects jamais vus ») est considérée comme un **bloc UI unique** : l’espacement interne entre ces deux contrôles doit être conservé.
 - L’espace vertical **sous** ce bloc de filtres est volontairement réduit pour maximiser le nombre de suspects visibles à l’écran, en particulier sur mobile.
 - Les textes d’aide affichés sous les filtres doivent rester volontairement courts (une ligne privilégiée) pour optimiser l’espace vertical ; libellé de référence : « Cliquer sur un suspect pour l’interroger. »
+- En mode test (`team.html?test=1`), un sélecteur de **slot de test token** (`slot1` à `slot4`) est visible. Le slot actif est stocké dans `localStorage` (`cluedo_test_slot`, défaut `slot1`) et un changement de slot recharge la page. Hors mode test, ce sélecteur est invisible et le comportement utilisateur reste inchangé.
 
 ### Séparation stricte UI / métier
 - Les termes « interrogatoire », « suspect » et « interrogation » sont des abstractions UI.
