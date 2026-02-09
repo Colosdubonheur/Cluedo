@@ -253,68 +253,7 @@
     refresh();
   }
 
-
-  function describeCharacterState(character) {
-    const name = String(character?.nom || "").trim() || "(sans nom)";
-    const activeTeamName = String(character?.active_team_name || "").trim();
-    const waitingTeams = Array.isArray(character?.waiting_team_names)
-      ? character.waiting_team_names.map((teamName) => String(teamName || "").trim()).filter((teamName) => teamName.length > 0)
-      : [];
-
-    const parts = [];
-    if (activeTeamName) {
-      parts.push(`Interrogatoire en cours : ${activeTeamName}`);
-    }
-    if (waitingTeams.length > 0) {
-      parts.push(`En attente : ${waitingTeams.join(", ")}`);
-    }
-    if (!activeTeamName && waitingTeams.length === 0) {
-      parts.push("Libre");
-    }
-
-    return `<li><span class="character-game-overview-item-name">${escapeHtml(name)}</span><span class="character-game-overview-item-state">${escapeHtml(parts.join(" · "))}</span></li>`;
-  }
-
-  function describeTeamState(team) {
-    const teamName = String(team?.team_name || "").trim() || "Équipe sans nom";
-    const state = String(team?.state || "free");
-    const characterName = String(team?.character_name || "").trim() || "(sans nom)";
-
-    let text = "Libre";
-    if (state === "active") {
-      text = `En interrogation avec ${characterName}`;
-    } else if (state === "waiting") {
-      text = `En attente avec ${characterName}`;
-    }
-
-    return `<li><span class="character-game-overview-item-name">${escapeHtml(teamName)}</span><span class="character-game-overview-item-state">${escapeHtml(text)}</span></li>`;
-  }
-
-  function renderGameOverview(payload) {
-    if (!gameOverviewCharactersEl || !gameOverviewTeamsEl) return;
-
-    const characters = Array.isArray(payload?.game_overview?.characters)
-      ? payload.game_overview.characters
-      : [];
-    const teams = Array.isArray(payload?.game_overview?.teams)
-      ? payload.game_overview.teams
-      : [];
-
-    if (characters.length === 0) {
-      gameOverviewCharactersEl.innerHTML = '<p class="character-game-overview-empty">Aucun personnage actif.</p>';
-    } else {
-      gameOverviewCharactersEl.innerHTML = `<ul class="character-game-overview-list">${characters.map(describeCharacterState).join("")}</ul>`;
-    }
-
-    if (teams.length === 0) {
-      gameOverviewTeamsEl.innerHTML = '<p class="character-game-overview-empty">Aucune équipe connue.</p>';
-      return;
-    }
-
-    gameOverviewTeamsEl.innerHTML = `<ul class="character-game-overview-list">${teams.map(describeTeamState).join("")}</ul>`;
-  }
-
-  function renderActiveTeam(activeTeam) {
+  function renderActiveTeam(activeTeam, hasWaitingTeams) {
     if (!activeTeam) {
       currentEl.innerHTML = "<h3>Équipe active</h3><p>Aucune équipe active.</p>";
       return;
@@ -327,6 +266,12 @@
       ? activeTeam.players.map((name) => String(name || "").trim()).filter((name) => name.length > 0)
       : [];
     const participantsCount = players.length;
+    const remainingSeconds = Number(activeTeam.remaining_seconds);
+    const shouldDisplayNoUrgency = remainingSeconds <= 0 && !hasWaitingTeams;
+    const remainingDisplay = shouldDisplayNoUrgency ? "∞" : fmt(remainingSeconds);
+    const participantsDisplay = players.length
+      ? players.map((name) => escapeHtml(name)).join(", ")
+      : "Aucun participant renseigné.";
 
     currentEl.innerHTML = `
       <h3>Équipe active · ${escapeHtml(activeTeamName)}</h3>
@@ -337,11 +282,8 @@
             : '<div class="character-active-team-photo-placeholder" aria-hidden="true">👥</div>'}
           <div>
             <p class="character-active-team-state">État : <strong>${escapeHtml(activeState)}</strong></p>
-            <p class="character-active-team-remaining">Temps restant : ${fmt(activeTeam.remaining_seconds)}</p>
-            <p class="character-active-team-players-title">Participants (${participantsCount})</p>
-            ${players.length
-              ? `<p class="character-active-team-players">${players.map((name) => escapeHtml(name)).join(", ")}</p>`
-              : '<p class="character-active-team-players-empty">Aucun participant renseigné.</p>'}
+            <p class="character-active-team-remaining">Temps restant : ${remainingDisplay}</p>
+            <p class="character-active-team-players">Participants (${participantsCount}) : ${participantsDisplay}</p>
           </div>
         </div>
       </div>
@@ -391,8 +333,7 @@
       ? payload.queue
       : (Array.isArray(payload.waiting_queue) ? payload.waiting_queue : []);
 
-    renderActiveTeam(activeTeam);
-    renderGameOverview(payload);
+    renderActiveTeam(activeTeam, waitingQueue.length > 0);
 
     if (!waitingQueue.length) {
       queueEl.innerHTML = "<h3>Interrogatoires en attente</h3><p>Aucun interrogatoire en attente.</p>";
