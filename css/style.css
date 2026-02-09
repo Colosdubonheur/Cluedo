@@ -1327,6 +1327,12 @@ body {
   white-space: nowrap;
 }
 
+.team-character-help.is-error {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
 .team-current-character {
   margin: 2px 0 4px;
 }
