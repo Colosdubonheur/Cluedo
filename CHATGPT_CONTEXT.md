@@ -1242,7 +1242,8 @@ Pour chaque ID de 1 à 15, les champs suivants sont configurables et persistés 
 ## Ajustements UI — Character + Supervision (participants)
 
 ### Character / UI (`character.html`)
-- Bloc **Équipe active** (optimisation visuelle mobile) : le titre et le nom d’équipe sont fusionnés sur une seule ligne, au format **`Équipe active · {NomÉquipe}`**, avec le **même style typographique** que le titre existant ; cette règle réduit l’espace vertical sans modifier la photo, l’état, le temps restant, les participants, les actions, l’ordre des sections ni la logique fonctionnelle.
+- Bloc **Équipe active** (optimisation visuelle mobile) : le titre et le nom d’équipe sont fusionnés sur une seule ligne, au format **`Équipe active · {NomÉquipe}`**, avec le **même style typographique** que le titre existant ; le bloc conserve la photo, le temps restant, les participants et les actions, sans changement d’ordre des sections ni de logique fonctionnelle.
+- Dans le contenu du bloc **Équipe active**, l’état n’est pas affiché : le statut **actif** est implicite et ne doit jamais apparaître sous forme de libellé (ex. `État : active`).
 - Quand une équipe est active avec le personnage, le libellé participants affiche le total dérivé des prénoms : **`Participants (X)`** où `X` est le nombre de prénoms non vides enregistrés.
 - Le bloc participants s'affiche sur une seule ligne logique au format **`Participants (X) : Prénom1, Prénom2`** (les prénoms suivent immédiatement après le libellé, séparés par des virgules), avec retour à la ligne automatique CSS si la largeur est insuffisante.
 - Règle d'affichage du temps restant dans **Équipe active** : si le compteur atteint `00:00` et qu'aucune équipe n'est en attente, l'UI n'affiche plus `Temps restant : 00:00` et montre à la place **`Temps restant : ∞`** pour indiquer explicitement l'absence d'urgence de relève ; en présence d'au moins une équipe en attente, l'affichage du compte à rebours reste inchangé.
