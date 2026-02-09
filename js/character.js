@@ -72,7 +72,10 @@
 
   function persistMessageHistory() {
     try {
-      const payload = JSON.stringify(messageHistory);
+      const payload = JSON.stringify({
+        history: messageHistory,
+        cleared_at: lastMessagesClearedAt,
+      });
       localStorage.setItem(getMessageStorageKey(), payload);
       sessionStorage.setItem(getMessageStorageKey(), payload);
     } catch (_error) {
@@ -86,8 +89,15 @@
     if (!serialized) return;
     try {
       const parsed = JSON.parse(serialized);
-      if (!Array.isArray(parsed)) return;
-      parsed.forEach((entry) => {
+      const parsedHistory = Array.isArray(parsed)
+        ? parsed
+        : (Array.isArray(parsed?.history) ? parsed.history : []);
+      const parsedClearedAt = Number(parsed?.cleared_at || 0);
+      if (Number.isFinite(parsedClearedAt) && parsedClearedAt > 0) {
+        lastMessagesClearedAt = parsedClearedAt;
+      }
+
+      parsedHistory.forEach((entry) => {
         const key = String(entry?.key || "");
         const text = String(entry?.text || "").trim();
         if (!key || !text || messageHistoryKeys.has(key)) return;
@@ -104,6 +114,12 @@
     } catch (_error) {
       // noop
     }
+  }
+
+  function clearPersistedMessageHistoryForCurrentCharacter() {
+    const storageKey = getMessageStorageKey();
+    localStorage.removeItem(storageKey);
+    sessionStorage.removeItem(storageKey);
   }
 
   function fmt(sec) {
@@ -197,6 +213,21 @@
     lastPlayedMessageKey = "";
     clearPersistedMessageHistoryForCurrentCharacter();
     renderMessageHistory();
+  }
+
+  async function primeAudioElement(audioEl) {
+    const previousMuted = audioEl.muted;
+    const previousVolume = audioEl.volume;
+
+    audioEl.currentTime = 0;
+    audioEl.muted = true;
+    audioEl.volume = 0;
+    await audioEl.play();
+    audioEl.pause();
+    audioEl.currentTime = 0;
+
+    audioEl.muted = previousMuted;
+    audioEl.volume = previousVolume;
   }
 
   async function maybePlayMessageSound(messageText, createdAt) {
@@ -456,6 +487,7 @@
     setAudioEnabled(true);
     soundOnAudio.currentTime = 0;
     try {
+      await primeAudioElement(messageAudio);
       await soundOnAudio.play();
     } catch (_error) {
       // Le son reste activé : seul l'utilisateur peut changer cet état.
