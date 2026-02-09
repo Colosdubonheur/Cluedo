@@ -596,23 +596,34 @@ document.addEventListener("DOMContentLoaded", () => {
     `;
 
     const cardEl = currentCharacterEl.querySelector(".team-current-character-card");
-    if (!cardEl || teamState.state !== "active" || isQueueActionInProgress) return;
+    if (!cardEl || isQueueActionInProgress) return;
 
-    const triggerLeaveCurrentInterrogation = () => {
+    const canLeaveCurrentCharacter = teamState.state === "active" || teamState.state === "waiting";
+    if (!canLeaveCurrentCharacter) return;
+
+    const triggerLeaveCurrentCharacter = () => {
       if (isQueueActionInProgress) return;
-      const confirmed = window.confirm(`Voulez-vous quitter l’interrogatoire avec ${characterName} ?`);
+      const confirmationMessage = teamState.state === "active"
+        ? `Voulez-vous quitter l’interrogatoire avec ${characterName} ?`
+        : `Voulez-vous quitter la file d’attente de ${characterName} ?`;
+      const confirmed = window.confirm(confirmationMessage);
       if (!confirmed) return;
       void onQueueAction(currentCharacterId);
     };
 
     cardEl.setAttribute("role", "button");
     cardEl.setAttribute("tabindex", "0");
-    cardEl.setAttribute("aria-label", `Quitter l’interrogatoire avec ${characterName}`);
-    cardEl.addEventListener("click", triggerLeaveCurrentInterrogation);
+    cardEl.setAttribute(
+      "aria-label",
+      teamState.state === "active"
+        ? `Quitter l’interrogatoire avec ${characterName}`
+        : `Quitter la file d’attente de ${characterName}`,
+    );
+    cardEl.addEventListener("click", triggerLeaveCurrentCharacter);
     cardEl.addEventListener("keydown", (event) => {
       if (event.key !== "Enter" && event.key !== " ") return;
       event.preventDefault();
-      triggerLeaveCurrentInterrogation();
+      triggerLeaveCurrentCharacter();
     });
   }
 
