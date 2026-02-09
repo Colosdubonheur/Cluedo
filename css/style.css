@@ -1294,7 +1294,7 @@ body {
   align-items: center;
   gap: 8px 12px;
   margin-top: -2px;
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 .team-character-sort-wrap {
@@ -1308,6 +1308,18 @@ body {
   white-space: nowrap;
 }
 
+
+
+.team-character-lock-message {
+  margin: 0;
+  min-height: 0;
+}
+
+.team-character-help {
+  margin: 2px 0 8px;
+  min-height: 0;
+  white-space: nowrap;
+}
 
 .team-current-character {
   margin: 2px 0 4px;

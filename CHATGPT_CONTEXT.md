@@ -89,6 +89,9 @@
   - le message contextuel passe en alerte (orange/rouge selon seuil),
   - le message « Préparez-vous à libérer la place » apparaît.
 - La tuile du personnage actuellement actif conserve son halo lumineux existant, avec une couleur strictement synchronisée sur la couleur du texte d’état affiché dans la tuile (vert/orange/rouge/blanc selon l’état visible).
+- Dans la section **Suspects** de `team.html`, la zone de filtres (« Trier par » + case « Suspects jamais vus ») est considérée comme un **bloc UI unique** : l’espacement interne entre ces deux contrôles doit être conservé.
+- L’espace vertical **sous** ce bloc de filtres est volontairement réduit pour maximiser le nombre de suspects visibles à l’écran, en particulier sur mobile.
+- Les textes d’aide affichés sous les filtres doivent rester volontairement courts (une ligne privilégiée) pour optimiser l’espace vertical ; libellé de référence : « Cliquer sur un suspect pour l’interroger. »
 
 ### Séparation stricte UI / métier
 - Les termes « interrogatoire », « suspect » et « interrogation » sont des abstractions UI.
