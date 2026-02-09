@@ -211,17 +211,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resolveInitialization(profile) {
     const teamName = String(profile?.team_name || "").trim();
+    const photoPath = String(profile?.photo || currentTeamPhotoPath || "").trim();
     const profilePlayers = Array.isArray(profile?.players)
       ? profile.players.map((value) => String(value || "").trim()).filter((value) => value.length > 0)
       : [];
     const validPlayers = countValidPlayers(profilePlayers);
     const isTeamNameValid = hasValidTeamName(teamName);
+    const hasTeamPhoto = photoPath.length > 0;
     return {
       teamName,
+      photoPath,
       players: profilePlayers,
       validPlayers,
       isTeamNameValid,
-      isReady: isTeamNameValid && validPlayers > 0,
+      hasTeamPhoto,
+      isReady: isTeamNameValid && validPlayers > 0 && hasTeamPhoto,
     };
   }
 
@@ -656,10 +660,11 @@ document.addEventListener("DOMContentLoaded", () => {
   function renderLockState(init) {
     const missingParticipants = init.validPlayers <= 0;
     const missingName = !init.isTeamNameValid;
-    const isBlocked = missingName || missingParticipants;
+    const missingPhoto = !init.hasTeamPhoto;
+    const isBlocked = missingName || missingParticipants || missingPhoto;
 
     if (isBlocked) {
-      setFeedback(lockMessageEl, "Complétez le nom de l’équipe et renseignez l’ensemble des participants de votre équipe pour interroger les personnages.", "error");
+      setFeedback(lockMessageEl, "Complétez les informations de votre équipe (nom, participants et photo) pour pouvoir interroger les personnages.", "error");
       setFeedback(characterFeedbackEl, "Interrogatoires bloqués tant que les informations de l'équipe ne sont pas complètes.", "error");
     } else {
       setFeedback(lockMessageEl, "", "neutral");
@@ -809,14 +814,14 @@ document.addEventListener("DOMContentLoaded", () => {
   characterSortEl?.addEventListener("change", () => {
     characterSortMode = characterSortEl.value === "time" ? "time" : "name";
     if (!latestState) return;
-    const init = resolveInitialization({ team_name: teamNameInput.value, players });
+    const init = resolveInitialization({ team_name: teamNameInput.value, players, photo: currentTeamPhotoPath });
     renderCharactersList(latestState, !init.isReady);
   });
 
   characterFilterUnseenEl?.addEventListener("change", () => {
     filterOnlyUnseen = characterFilterUnseenEl.checked;
     if (!latestState) return;
-    const init = resolveInitialization({ team_name: teamNameInput.value, players });
+    const init = resolveInitialization({ team_name: teamNameInput.value, players, photo: currentTeamPhotoPath });
     renderCharactersList(latestState, !init.isReady);
   });
 
