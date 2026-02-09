@@ -96,8 +96,9 @@ cluedo_send_html_no_cache_headers();
         <p id="team-photo-empty" class="team-feedback">Aucune photo d'équipe.</p>
       </div>
       <div class="team-inline">
-        <input id="team-photo-input" type="file" class="admin-input" accept="image/png,image/jpeg,image/webp"/>
-        <button id="team-photo-upload-btn" type="button" class="admin-button">Mettre à jour la photo</button>
+        <input id="team-photo-input" type="file" class="admin-input team-photo-input-hidden" accept="image/png,image/jpeg,image/webp"/>
+        <button id="team-photo-select-btn" type="button" class="admin-button">Choisir une photo</button>
+        <button id="team-photo-upload-btn" type="button" class="admin-button" disabled>Valider la photo</button>
       </div>
       <p id="team-photo-feedback" class="team-feedback"></p>
     </section>

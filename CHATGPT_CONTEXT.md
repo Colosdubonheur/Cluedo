@@ -940,6 +940,13 @@ Contraintes non négociables :
   - jusqu’à 10 champs joueurs informatifs stockés en runtime JSON,
   - photo d’équipe dédiée (upload PHP, carré obligatoire, compression/standardisation, stockage `uploads/`, remplacement + suppression ancienne photo).
 
+### Team / Photo d'équipe — flux UI
+
+- Le flux visuel côté `team.html` est : **Choisir une photo** (CTA principal) → recadrer → **Valider la photo**.
+- Tant qu’aucun fichier n’est sélectionné, le bouton de validation reste indisponible.
+- Le texte d’aide doit rester explicite et actionnable : `Recadrez puis validez votre photo.`
+- La logique technique ne change pas : même pipeline de crop/upload, mêmes endpoints, même stockage runtime, même format carré obligatoire.
+
 ### QR intégré
 
 - La page équipe embarque un lecteur QR interne.

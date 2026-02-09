@@ -49,6 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const teamPhotoPreviewEl = document.getElementById("team-photo-preview");
   const teamPhotoEmptyEl = document.getElementById("team-photo-empty");
   const teamPhotoInputEl = document.getElementById("team-photo-input");
+  const teamPhotoSelectBtn = document.getElementById("team-photo-select-btn");
   const teamPhotoUploadBtn = document.getElementById("team-photo-upload-btn");
   const teamPhotoFeedbackEl = document.getElementById("team-photo-feedback");
   const testSlotControlsEl = document.getElementById("team-test-slot-controls");
@@ -926,14 +927,30 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
+  teamPhotoInputEl?.addEventListener("change", () => {
+    const hasSelectedFile = !!teamPhotoInputEl.files?.length;
+    if (teamPhotoUploadBtn) teamPhotoUploadBtn.disabled = !hasSelectedFile;
+    if (!hasSelectedFile) return;
+    setFeedback(teamPhotoFeedbackEl, "Recadrez puis validez votre photo.", "processing");
+  });
+
+  teamPhotoSelectBtn?.addEventListener("click", () => {
+    teamPhotoInputEl?.click();
+  });
+
   teamPhotoUploadBtn?.addEventListener("click", async () => {
+    if (!teamPhotoInputEl?.files?.length) {
+      setFeedback(teamPhotoFeedbackEl, "Choisissez une photo avant de valider.", "error");
+      return;
+    }
+
     if (!window.CluedoPhotoUpload?.uploadFromInput) {
       setFeedback(teamPhotoFeedbackEl, "Module de recadrage indisponible.", "error");
       return;
     }
 
     teamPhotoUploadBtn.disabled = true;
-    setFeedback(teamPhotoFeedbackEl, "Recadrage en attente…", "processing");
+    setFeedback(teamPhotoFeedbackEl, "Recadrez puis validez votre photo.", "processing");
 
     try {
       await runWithPollingPaused(async () =>
@@ -960,7 +977,8 @@ document.addEventListener("DOMContentLoaded", () => {
       );
       await loadHub();
     } finally {
-      teamPhotoUploadBtn.disabled = false;
+      const hasSelectedFile = !!teamPhotoInputEl?.files?.length;
+      teamPhotoUploadBtn.disabled = !hasSelectedFile;
     }
   });
 
