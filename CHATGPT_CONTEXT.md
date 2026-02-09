@@ -240,9 +240,14 @@ Le serveur est l’unique source de vérité pour :
   - les messages personnage sont lus par polling dans `character.html`.
 - Comportement sonore associé :
   - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son sur la page courante ; son de notification : `assets/message.wav`,
-  - côté personnage, notification sonore sur nouveau message ciblé avec `assets/message.wav` après activation explicite du son sur la page courante,
+  - côté personnage, notification sonore sur **chaque nouveau message entrant** avec `assets/message.wav` dès lors que l'utilisateur a activé le son sur la page,
   - côté personnage, l'état du bouton son est persistant (stockage local/session) et n'est jamais modifié par la réception d'un message ni par un événement automatique,
-  - côté personnage, seul un clic utilisateur sur le bouton peut activer/désactiver le son ; une erreur de lecture audio ne doit jamais forcer un retour visuel à « Activer le son ».
+  - côté personnage, seul un clic utilisateur sur le bouton peut activer/désactiver le son ; une erreur de lecture audio ne doit jamais forcer un retour visuel à « Activer le son » ni bloquer les notifications suivantes.
+- Historique des messages personnage (`character.html`) :
+  - l'historique est conservé côté runtime front pendant toute la durée de la partie en cours,
+  - l'historique est persistant (stockage local/session) et doit survivre à un refresh,
+  - l'affichage garde le message le plus récent en haut,
+  - la zone est scrollable et affiche les dernières lignes visibles sans perdre les messages antérieurs.
 - Priorité d'affichage sur `character.html` (UI uniquement) :
   - les **messages de supervision** sont affichés avant le bloc de l'**équipe active** ;
   - ordre attendu : messages de supervision → équipe active → équipes en attente → paramètres secondaires (photo, lieu, etc.).
