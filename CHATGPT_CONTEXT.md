@@ -1253,6 +1253,7 @@ Pour chaque ID de 1 à 15, les champs suivants sont configurables et persistés 
   - `-30 secondes` devient **`-30 S`** (couleur orange),
   - `Éjecter l’équipe` reste **`Éjecter l’équipe`** (couleur rouge).
 - Disposition des actions : les trois boutons sont alignés côte à côte tant que l’espace le permet, avec retour à la ligne CSS autorisé sur petit écran.
+- Bloc **Interrogatoires en attente** : chaque équipe est affichée sur **une seule ligne compacte** au format **`{ordre}. {NomÉquipe} ({participants}) – {mm:ss}`** ; l’ordre reste visible, le nombre de participants reflète le total réel des membres de l’équipe, et **aucun statut textuel** (ex. `waiting`) n’est affiché.
 
 
 ### Character / UI / Visibilité globale (`character.html`)

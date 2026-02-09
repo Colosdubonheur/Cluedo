@@ -342,8 +342,8 @@
       .map((team, index) => {
         const position = Number.isFinite(Number(team.position)) ? Number(team.position) : index + 1;
         const teamName = team.team || team.name || team.nom || "(sans nom)";
-        const state = team.state || "waiting";
-        return `<li><span class="character-queue-team">${position}. ${escapeHtml(teamName)}</span> <span class="character-queue-meta">${escapeHtml(state)} · ${fmt(team.estimated_seconds)}</span></li>`;
+        const participantsCount = Math.max(0, Number(team.participants_count) || 0);
+        return `<li><span class="character-queue-team">${position}. ${escapeHtml(teamName)} (${participantsCount})</span> <span class="character-queue-meta">– ${fmt(team.estimated_seconds)}</span></li>`;
       })
       .join("")}</ol>`;
   }
