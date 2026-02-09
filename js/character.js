@@ -8,6 +8,8 @@
   const characterNameEl = document.getElementById("characterName");
   const currentEl = document.getElementById("currentTeam");
   const queueEl = document.getElementById("queue");
+  const gameOverviewCharactersEl = document.getElementById("gameOverviewCharacters");
+  const gameOverviewTeamsEl = document.getElementById("gameOverviewTeams");
   const characterPhotoEl = document.getElementById("characterPhoto");
   const characterPhotoInputEl = document.getElementById("characterPhotoInput");
   const characterPhotoButtonEl = document.getElementById("characterPhotoButton");
@@ -251,6 +253,67 @@
     refresh();
   }
 
+
+  function describeCharacterState(character) {
+    const name = String(character?.nom || "").trim() || "(sans nom)";
+    const activeTeamName = String(character?.active_team_name || "").trim();
+    const waitingTeams = Array.isArray(character?.waiting_team_names)
+      ? character.waiting_team_names.map((teamName) => String(teamName || "").trim()).filter((teamName) => teamName.length > 0)
+      : [];
+
+    const parts = [];
+    if (activeTeamName) {
+      parts.push(`Interrogatoire en cours : ${activeTeamName}`);
+    }
+    if (waitingTeams.length > 0) {
+      parts.push(`En attente : ${waitingTeams.join(", ")}`);
+    }
+    if (!activeTeamName && waitingTeams.length === 0) {
+      parts.push("Libre");
+    }
+
+    return `<li><span class="character-game-overview-item-name">${escapeHtml(name)}</span><span class="character-game-overview-item-state">${escapeHtml(parts.join(" · "))}</span></li>`;
+  }
+
+  function describeTeamState(team) {
+    const teamName = String(team?.team_name || "").trim() || "Équipe sans nom";
+    const state = String(team?.state || "free");
+    const characterName = String(team?.character_name || "").trim() || "(sans nom)";
+
+    let text = "Libre";
+    if (state === "active") {
+      text = `En interrogation avec ${characterName}`;
+    } else if (state === "waiting") {
+      text = `En attente avec ${characterName}`;
+    }
+
+    return `<li><span class="character-game-overview-item-name">${escapeHtml(teamName)}</span><span class="character-game-overview-item-state">${escapeHtml(text)}</span></li>`;
+  }
+
+  function renderGameOverview(payload) {
+    if (!gameOverviewCharactersEl || !gameOverviewTeamsEl) return;
+
+    const characters = Array.isArray(payload?.game_overview?.characters)
+      ? payload.game_overview.characters
+      : [];
+    const teams = Array.isArray(payload?.game_overview?.teams)
+      ? payload.game_overview.teams
+      : [];
+
+    if (characters.length === 0) {
+      gameOverviewCharactersEl.innerHTML = '<p class="character-game-overview-empty">Aucun personnage actif.</p>';
+    } else {
+      gameOverviewCharactersEl.innerHTML = `<ul class="character-game-overview-list">${characters.map(describeCharacterState).join("")}</ul>`;
+    }
+
+    if (teams.length === 0) {
+      gameOverviewTeamsEl.innerHTML = '<p class="character-game-overview-empty">Aucune équipe connue.</p>';
+      return;
+    }
+
+    gameOverviewTeamsEl.innerHTML = `<ul class="character-game-overview-list">${teams.map(describeTeamState).join("")}</ul>`;
+  }
+
   function renderActiveTeam(activeTeam) {
     if (!activeTeam) {
       currentEl.innerHTML = "<h3>Équipe active</h3><p>Aucune équipe active.</p>";
@@ -329,6 +392,7 @@
       : (Array.isArray(payload.waiting_queue) ? payload.waiting_queue : []);
 
     renderActiveTeam(activeTeam);
+    renderGameOverview(payload);
 
     if (!waitingQueue.length) {
       queueEl.innerHTML = "<h3>Interrogatoires en attente</h3><p>Aucun interrogatoire en attente.</p>";

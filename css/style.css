@@ -1506,3 +1506,47 @@ body {
 .team-photo-preview-wrap {
   margin-bottom: 10px;
 }
+
+.character-game-overview {
+  border: 1px solid #2a3142;
+}
+
+.character-game-overview-accordion summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.character-game-overview-body {
+  display: grid;
+  gap: 12px;
+  margin-top: 10px;
+}
+
+.character-game-overview-body h4 {
+  margin: 0 0 8px;
+}
+
+.character-game-overview-list {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.character-game-overview-list li {
+  display: grid;
+  gap: 2px;
+}
+
+.character-game-overview-item-name {
+  font-weight: 700;
+}
+
+.character-game-overview-item-state {
+  color: #cfe0ff;
+}
+
+.character-game-overview-empty {
+  margin: 0;
+  color: #cfe0ff;
+}

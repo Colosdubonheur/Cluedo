@@ -28,6 +28,25 @@ cluedo_send_html_no_cache_headers();
     </section>
     <div id="currentTeam" class="card character-active-team" style="margin-top:12px"></div>
     <div id="queue" class="card character-waiting-queue" style="margin-top:12px"></div>
+    <section id="gameOverview" class="card character-game-overview" style="margin-top:12px">
+      <details class="character-game-overview-accordion">
+        <summary>État du jeu</summary>
+        <div class="character-game-overview-body">
+          <section>
+            <h4>État des personnages</h4>
+            <div id="gameOverviewCharacters">
+              <p class="character-game-overview-empty">Chargement…</p>
+            </div>
+          </section>
+          <section>
+            <h4>État des équipes</h4>
+            <div id="gameOverviewTeams">
+              <p class="character-game-overview-empty">Chargement…</p>
+            </div>
+          </section>
+        </div>
+      </details>
+    </section>
     <section class="card character-photo-card" style="margin-top:12px">
       <h3>Photo du personnage</h3>
       <img id="characterPhoto" class="admin-photo is-hidden" alt="Photo du personnage"/>
