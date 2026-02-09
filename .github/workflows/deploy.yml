@@ -1,49 +1,3 @@
-name: Deploy Cluedo to PlanetHoster
-
-on:
-  workflow_dispatch:
-    inputs:
-      pr_number:
-        description: "Numéro de Pull Request à utiliser pour la version (format numérique)"
-        required: true
-        type: string
-  pull_request:
-    types:
-      - closed
-    branches:
-      - main
-
-jobs:
-  deploy:
-    if: github.event_name != 'pull_request' || github.event.pull_request.merged == true
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Resolve application build number
-        shell: bash
-        env:
-          PR_NUMBER_EVENT: ${{ github.event.pull_request.number }}
-          PR_NUMBER_INPUT: ${{ github.event.inputs.pr_number }}
-          GITHUB_EVENT_NAME: ${{ github.event_name }}
-        run: |
-          set -euo pipefail
-          mkdir -p data
-
-          PR_NUMBER="${PR_NUMBER_EVENT:-${PR_NUMBER_INPUT:-}}"
-
-          if ! [[ "${PR_NUMBER}" =~ ^[0-9]+$ ]]; then
-            echo "Unable to resolve a valid PR number for this deployment." >&2
-            exit 1
-          fi
-
-          BUILD="${PR_NUMBER}"
-
-          printf '{\n  "build": %s\n}\n' "${BUILD}" > data/version.json
-          echo "Resolved application build: ${BUILD} (event=${GITHUB_EVENT_NAME})"
-
       - name: Upload to PlanetHoster via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
@@ -61,4 +15,3 @@ jobs:
             **/.DS_Store
             **/uploads/**
           log-level: verbose
-          force: true
