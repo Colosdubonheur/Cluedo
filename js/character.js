@@ -347,9 +347,9 @@
 
         let stateLabel = "Libre";
         if (teamState === "active" && characterName) {
-          stateLabel = `En interrogation avec ${characterName}`;
+          stateLabel = `🕵️ ${characterName}`;
         } else if (teamState === "waiting" && characterName) {
-          stateLabel = `En attente avec ${characterName}`;
+          stateLabel = `⏳ ${characterName}`;
         }
 
         return `<li><span class="character-game-overview-item-name">${escapeHtml(teamName)} :</span> <span class="character-game-overview-item-state">${escapeHtml(stateLabel)}</span></li>`;

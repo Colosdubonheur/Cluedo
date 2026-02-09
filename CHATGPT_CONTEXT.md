@@ -1278,8 +1278,9 @@ Pour chaque ID de 1 à 15, les champs suivants sont configurables et persistés 
   - liste toutes les équipes connues (équipes en cours/attente + équipes connues via profils),
   - affiche pour chacune son état synthétique :
     - **`Libre`**,
-    - **`En interrogation avec {Personnage}`**,
-    - **`En attente avec {Personnage}`**.
+    - icône d’interrogation + **nom du personnage** (ex. `🕵️ {Personnage}`),
+    - icône d’attente + **nom du personnage** (ex. `⏳ {Personnage}`),
+  - pour les états interrogation et attente, le nom du personnage concerné est toujours affiché après l’icône.
 - Ces deux sous-blocs sont **strictement informatifs** :
   - aucun bouton d’action,
   - aucune interaction métier,
