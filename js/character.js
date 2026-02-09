@@ -266,9 +266,8 @@
     const participantsCount = players.length;
 
     currentEl.innerHTML = `
-      <h3>Équipe active</h3>
+      <h3>Équipe active · ${escapeHtml(activeTeamName)}</h3>
       <div class="character-active-team-priority">
-        <p class="character-active-team-name">${escapeHtml(activeTeamName)}</p>
         <div class="character-active-team-identity">
           ${activePhoto
             ? `<img class="character-active-team-photo" src="${escapeHtml(activePhoto)}" alt="Photo de l'équipe ${escapeHtml(activeTeamName)}">`
