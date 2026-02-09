@@ -341,13 +341,13 @@ Le serveur est l’unique source de vérité pour :
 
 ### Complément UX team.html (notification sonore supervision)
 - Les navigateurs (Chrome, Safari, iOS inclus) imposent une interaction utilisateur explicite avant toute lecture audio fiable.
-- `team.html` expose un bouton visible **« Son activé »** : au clic utilisateur, `assets/soundon.wav` est joué immédiatement pour valider explicitement l'autorisation audio navigateur.
-- Les fichiers audio de référence sont :
-  - `assets/soundon.wav` (validation/activation audio),
-  - `assets/message.wav` (notification de nouveau message supervision).
-- Après validation réussie, l'état **son activé** est persisté côté client via `localStorage` (`cluedo_team_audio_enabled`), pour permettre les lectures automatiques ultérieures sans nouveau clic.
-- À chaque nouveau message supervision reçu automatiquement (polling), `assets/message.wav` doit être joué immédiatement si l'audio est activé.
-- En cas de blocage navigateur, l'UI doit afficher un retour clair pour relancer explicitement l'activation, sans erreurs console ni comportement aléatoire.
+- L'activation initiale du son dans `team.html` doit toujours provenir d'un clic volontaire sur le bouton audio ; ce clic joue `assets/soundon.wav` pour débloquer l'autorisation navigateur.
+- L'état audio équipe est persisté côté client via `localStorage` (`cluedo_team_audio_enabled`) et doit survivre aux rechargements/rerenders : si l'utilisateur a activé le son, le bouton reste sur **« Son activé »** tant qu'il ne le désactive pas explicitement.
+- Les deux seules sources sonores côté équipe à conserver sont :
+  - `assets/message.wav` lors de la réception d'un nouveau message supervision (polling),
+  - `assets/exit.mp3` comme alerte de fin imminente pendant une interrogation active (franchissement du seuil des 15 dernières secondes quand une autre équipe attend).
+- Aucune lecture audio ne doit provoquer une coupure implicite : un échec `play()` navigateur ne doit jamais repasser automatiquement l'état sur **« Activer le son »**.
+- Quand le son est actif et que l'utilisateur reclique sur le bouton **« Son activé »**, une confirmation explicite est obligatoire (`Voulez-vous vraiment désactiver le son ?`) ; sans confirmation, l'état audio reste inchangé.
 
 ---
 
