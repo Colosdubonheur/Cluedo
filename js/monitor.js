@@ -360,6 +360,14 @@
     endGameStatusEl.textContent = partyActive ? "Partie active" : "Partie inactive";
   }
 
+  function renderLoadingError(message, details) {
+    const safeMessage = String(message || "Erreur de chargement.");
+    const safeDetails = String(details || "").trim();
+    listEl.innerHTML = `<p class="monitor-muted">${escapeHtml(safeMessage)}</p>${
+      safeDetails ? `<p class="monitor-muted">${escapeHtml(safeDetails)}</p>` : ""
+    }`;
+  }
+
 
   async function resetGame() {
     const confirmed = window.confirm("Confirmer la réinitialisation complète ?\n\nLa partie en cours sera réinitialisée et une nouvelle partie commencera.\nToutes les données runtime des équipes seront supprimées (nom, photo, participants, passages, messages, états vu/jamais vu).\nLes données d'administration (personnages, lieux, durées, paramètres) seront conservées.");
@@ -477,48 +485,41 @@
   }
 
   async function refresh() {
-    const response = await supervisionFetch(`./api/supervision.php?t=${Date.now()}`);
-    const payload = await response.json();
+    try {
+      const response = await supervisionFetch(`./api/supervision.php?t=${Date.now()}`);
+      const payload = await response.json().catch(() => null);
 
-    if (!response.ok || !payload.ok) {
-      listEl.textContent = "Erreur de chargement.";
-      return;
+      if (!response.ok) {
+        const errorText = payload?.error || `HTTP ${response.status}`;
+        console.error("[monitor] Échec HTTP supervision", { status: response.status, payload });
+        renderLoadingError("Erreur de chargement des équipes.", errorText);
+        return;
+      }
+
+      if (!payload || !payload.ok) {
+        const errorText = payload?.error || "Réponse serveur invalide.";
+        console.error("[monitor] Payload supervision invalide", payload);
+        renderLoadingError("Erreur de chargement des équipes.", errorText);
+        return;
+      }
+
+      fillMessageTargets(payload.teams || [], Array.isArray(payload.characters) ? payload.characters : []);
+      renderEndGameControls(payload.game_state || {});
+
+      const sortMode = readSortMode();
+      const sortedTeams = sortTeams(payload.teams || [], sortMode);
+
+      if (!sortedTeams.length) {
+        listEl.textContent = "Aucune équipe connue.";
+        return;
+      }
+
+      listEl.innerHTML = sortedTeams.map(renderCard).join("");
+    } catch (error) {
+      console.error("[monitor] Impossible de récupérer la supervision", error);
+      renderLoadingError("Erreur de chargement des équipes.", error?.message || "Réseau indisponible.");
     }
-
-    fillMessageTargets(payload.teams || [], Array.isArray(payload.characters) ? payload.characters : []);
-    renderEndGameControls(payload.game_state || {});
-
-    const sortMode = readSortMode();
-    const sortedTeams = sortTeams(payload.teams || [], sortMode);
-
-    if (!sortedTeams.length) {
-      listEl.textContent = "Aucune équipe connue.";
-      return;
-    }
-
-    listEl.innerHTML = sortedTeams.map(renderCard).join("");
   }
-
-  resetBtn.addEventListener("click", async () => {
-    if (!window.confirm("Remettre tout l'historique à zéro ?")) return;
-
-    resetBtn.disabled = true;
-    const response = await supervisionFetch("./api/supervision.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: new URLSearchParams({ action: "reset_history" }).toString(),
-    });
-
-    const payload = await response.json().catch(() => ({}));
-    resetBtn.disabled = false;
-
-    if (!response.ok || !payload.ok) {
-      window.alert("Échec de la remise à zéro.");
-      return;
-    }
-
-    await refresh();
-  });
 
   toggleEndGameBtn.addEventListener("click", async () => {
     const active = !toggleEndGameBtn.classList.contains("is-active");
@@ -659,6 +660,7 @@
     }
 
     adminPin = auth.pinEnabled ? auth.pin : "";
+    renderEndGameControls({ end_game_active: false });
     await refresh();
     setInterval(refresh, 3000);
   }

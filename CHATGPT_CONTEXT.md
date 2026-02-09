@@ -265,6 +265,13 @@ Le serveur est l’unique source de vérité pour :
   - **Rond rouge** + texte **« Partie inactive »** quand `end_game_active = true`.
 - Cet indicateur est strictement informatif (aucun comportement métier supplémentaire).
 
+### Supervision — robustesse chargement UI
+- Correctif de régression front `monitor.js` : une référence JS invalide (`resetBtn`) stoppait l'exécution du script, ce qui laissait la zone équipes bloquée sur « Chargement… ».
+- Le chargement supervision doit désormais :
+  - journaliser l'erreur en console en cas d'échec HTTP/JSON/réseau,
+  - afficher un message d'erreur explicite dans la zone des tuiles (au lieu de rester sur « Chargement… »),
+  - conserver l'initialisation visuelle par défaut de l'indicateur global sur « Partie active » tant que l'état réel n'a pas encore été reçu.
+
 ### Supervision — statuts visuels verrouillés
 - Affichage statut équipe (couleur obligatoire) :
   - **Vert** = équipe libre,
