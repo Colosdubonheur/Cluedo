@@ -1,6 +1,5 @@
 (function () {
   const listEl = document.getElementById("teams");
-  const resetBtn = document.getElementById("reset-history");
   const clearMessagesHistoryBtn = document.getElementById("clear-messages-history");
   const toggleEndGameBtn = document.getElementById("toggle-end-game");
   const endGameStatusEl = document.getElementById("monitor-end-game-status");
@@ -341,12 +340,13 @@
   }
 
   function renderEndGameControls(gameState) {
-    const isActive = !!gameState?.end_game_active;
-    toggleEndGameBtn.textContent = isActive ? "Annuler la fin de jeu" : "Fin de jeu";
-    toggleEndGameBtn.classList.toggle("is-active", isActive);
-    endGameStatusEl.classList.toggle("is-active", isActive);
-    endGameStatusEl.classList.toggle("is-inactive", !isActive);
-    endGameStatusEl.textContent = isActive ? "Partie terminée" : "Partie active";
+    const endGameActive = !!gameState?.end_game_active;
+    const partyActive = !endGameActive;
+    toggleEndGameBtn.textContent = endGameActive ? "Annuler la fin de jeu" : "Fin de jeu";
+    toggleEndGameBtn.classList.toggle("is-active", endGameActive);
+    endGameStatusEl.classList.toggle("is-active", partyActive);
+    endGameStatusEl.classList.toggle("is-inactive", !partyActive);
+    endGameStatusEl.textContent = partyActive ? "Partie active" : "Partie inactive";
   }
 
   async function setEndGame(active) {
@@ -463,27 +463,6 @@
 
     listEl.innerHTML = sortedTeams.map(renderCard).join("");
   }
-
-  resetBtn.addEventListener("click", async () => {
-    if (!window.confirm("Remettre tout l'historique à zéro ?")) return;
-
-    resetBtn.disabled = true;
-    const response = await fetch("./api/supervision.php", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
-      body: new URLSearchParams({ action: "reset_history" }).toString(),
-    });
-
-    const payload = await response.json().catch(() => ({}));
-    resetBtn.disabled = false;
-
-    if (!response.ok || !payload.ok) {
-      window.alert("Échec de la remise à zéro.");
-      return;
-    }
-
-    await refresh();
-  });
 
   toggleEndGameBtn.addEventListener("click", async () => {
     const active = !toggleEndGameBtn.classList.contains("is-active");

@@ -245,7 +245,7 @@ Le serveur est l’unique source de vérité pour :
   - les **messages de supervision** sont affichés avant le bloc de l'**équipe active** ;
   - ordre attendu : messages de supervision → équipe active → équipes en attente → paramètres secondaires (photo, lieu, etc.).
 - Suppression globale de l’historique des messages (supervision uniquement) :
-  - `monitor.html` expose un bouton dédié **« Effacer l’historique des messages »** distinct de `Remettre l'historique à zéro`,
+  - `monitor.html` expose un bouton dédié **« Effacer tous les messages »** (libellé UI),
   - l’action est protégée par une confirmation explicite et ne s’exécute jamais sans validation,
   - la suppression efface **uniquement** les structures runtime de messagerie supervision (`teams`, `characters`, `team_broadcast`, `character_broadcast`),
   - l’effacement est persistant côté serveur et ne doit pas réapparaître après rafraîchissement,
@@ -256,13 +256,13 @@ Le serveur est l’unique source de vérité pour :
   - cette action ne supprime jamais les équipes/personnages/files/états, et ne remplace pas un reset global.
 
 ### Supervision — état global de la partie (indicateur)
-- La barre d'actions de `monitor.html` affiche sur une seule ligne :
-  - `Retour au Hub`,
-  - `Remettre l'historique à zéro`,
-  - `Fin de jeu`.
-- Un indicateur texte est affiché immédiatement à droite du bouton `Fin de jeu` et reste toujours visible :
-  - **Vert** + texte **« Partie active »** quand `end_game_active = false`,
-  - **Rouge** + texte **« Partie terminée »** quand `end_game_active = true`.
+- Organisation UI du haut de `monitor.html` en deux lignes compactes :
+  - Ligne 1 : `Retour au Hub` + indicateur d’état (visuel uniquement),
+  - Ligne 2 : `Effacer tous les messages` + `Fin de jeu`.
+- Le bouton **« Remettre l'historique à zéro »** est retiré de l'UI supervision.
+- L’indicateur d’état affiche :
+  - **Rond vert** + texte **« Partie active »** quand `end_game_active = false`,
+  - **Rond rouge** + texte **« Partie inactive »** quand `end_game_active = true`.
 - Cet indicateur est strictement informatif (aucun comportement métier supplémentaire).
 
 ### Supervision — statuts visuels verrouillés
