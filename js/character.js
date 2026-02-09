@@ -30,7 +30,9 @@
   let hasUnsavedLocationChanges = false;
   let lastPlayedMessageKey = "";
   let lastMessagesClearedAt = 0;
-  let audioEnabled = false;
+  let audioPreferenceEnabled = false;
+  let audioPermissionGranted = false;
+  let hasAudioPermissionError = false;
   const messageHistory = [];
   const messageHistoryKeys = new Set();
 
@@ -44,7 +46,7 @@
   }
 
   function persistAudioPreference() {
-    const serialized = audioEnabled ? "1" : "0";
+    const serialized = audioPreferenceEnabled ? "1" : "0";
     try {
       localStorage.setItem(getAudioPreferenceStorageKey(), serialized);
       sessionStorage.setItem(getAudioPreferenceStorageKey(), serialized);
@@ -57,13 +59,28 @@
     const key = getAudioPreferenceStorageKey();
     const stored = localStorage.getItem(key) || sessionStorage.getItem(key);
     if (stored !== "1" && stored !== "0") return;
-    audioEnabled = stored === "1";
+    audioPreferenceEnabled = stored === "1";
   }
 
-  function setAudioEnabled(nextValue) {
-    audioEnabled = !!nextValue;
+  function setAudioPreferenceEnabled(nextValue) {
+    audioPreferenceEnabled = !!nextValue;
     persistAudioPreference();
     syncAudioButtonState();
+  }
+
+  function setAudioPermissionGranted(nextValue) {
+    audioPermissionGranted = !!nextValue;
+    syncAudioButtonState();
+  }
+
+  function setAudioHintState(message, status = "neutral", hidden = false) {
+    if (!audioHintEl) return;
+    audioHintEl.hidden = hidden;
+    audioHintEl.textContent = message;
+    audioHintEl.classList.remove("is-success", "is-error", "is-processing");
+    if (status === "success") audioHintEl.classList.add("is-success");
+    if (status === "error") audioHintEl.classList.add("is-error");
+    if (status === "processing") audioHintEl.classList.add("is-processing");
   }
 
   function getMessageStorageKey() {
@@ -232,23 +249,37 @@
 
   async function maybePlayMessageSound(messageText, createdAt) {
     const key = `${messageText}::${String(createdAt || 0)}`;
-    if (!audioEnabled || !messageText || key === lastPlayedMessageKey) return;
-    lastPlayedMessageKey = key;
+    if (!audioPermissionGranted || !messageText || key === lastPlayedMessageKey) return;
     messageAudio.currentTime = 0;
     try {
       await messageAudio.play();
-    } catch (_error) {
-      // Ne jamais modifier l'état du bouton son sur événement automatique.
+      lastPlayedMessageKey = key;
+    } catch (error) {
+      if (error?.name === "NotAllowedError" || error?.name === "SecurityError") {
+        hasAudioPermissionError = true;
+        setAudioPermissionGranted(false);
+      }
     }
   }
 
   function syncAudioButtonState() {
     if (!audioEnableBtn) return;
-    audioEnableBtn.textContent = audioEnabled ? "🔔 Son activé" : "🔔 Activer le son";
-    audioEnableBtn.classList.toggle("is-enabled", audioEnabled);
-    audioEnableBtn.classList.toggle("is-disabled", !audioEnabled);
-    audioEnableBtn.setAttribute("aria-pressed", audioEnabled ? "true" : "false");
-    if (audioHintEl) audioHintEl.hidden = audioEnabled;
+    audioEnableBtn.textContent = audioPermissionGranted ? "🔔 Son activé" : "🔔 Activer le son";
+    audioEnableBtn.classList.toggle("is-enabled", audioPermissionGranted);
+    audioEnableBtn.classList.toggle("is-disabled", !audioPermissionGranted);
+    audioEnableBtn.setAttribute("aria-pressed", audioPermissionGranted ? "true" : "false");
+
+    if (audioPermissionGranted) {
+      setAudioHintState("", "neutral", true);
+      return;
+    }
+
+    if (hasAudioPermissionError) {
+      setAudioHintState("⚠️ Audio bloqué : touchez « Activer le son ».", "error", false);
+      return;
+    }
+
+    setAudioHintState("Sur mobile (iPhone inclus), touchez « Activer le son » sur cette page pour autoriser les alertes audio.");
   }
 
   async function uploadCharacterPhoto() {
@@ -477,20 +508,27 @@
   characterPhotoInputEl.addEventListener("change", uploadCharacterPhoto);
 
   audioEnableBtn?.addEventListener("click", async () => {
-    if (audioEnabled) {
+    if (audioPermissionGranted) {
       const confirmed = window.confirm("Voulez-vous vraiment désactiver le son ?");
       if (!confirmed) return;
-      setAudioEnabled(false);
+      hasAudioPermissionError = false;
+      setAudioPreferenceEnabled(false);
+      setAudioPermissionGranted(false);
       return;
     }
 
-    setAudioEnabled(true);
     soundOnAudio.currentTime = 0;
+    hasAudioPermissionError = false;
+    setAudioPreferenceEnabled(true);
     try {
-      await primeAudioElement(messageAudio);
       await soundOnAudio.play();
-    } catch (_error) {
-      // Le son reste activé : seul l'utilisateur peut changer cet état.
+      await primeAudioElement(messageAudio);
+      setAudioPermissionGranted(true);
+    } catch (error) {
+      hasAudioPermissionError = true;
+      if (error?.name === "NotAllowedError" || error?.name === "SecurityError") {
+        setAudioPermissionGranted(false);
+      }
     }
   });
 
@@ -527,6 +565,9 @@
   }
 
   loadPersistedAudioPreference();
+  if (!audioPreferenceEnabled) {
+    setAudioPermissionGranted(false);
+  }
   syncAudioButtonState();
   loadPersistedMessageHistory();
   renderMessageHistory();
