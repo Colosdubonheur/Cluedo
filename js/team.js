@@ -652,7 +652,7 @@ document.addEventListener("DOMContentLoaded", () => {
       setFeedback(characterFeedbackEl, "Interrogatoires bloqués tant que les informations de l'équipe ne sont pas complètes.", "error");
     } else {
       setFeedback(lockMessageEl, "", "neutral");
-      setFeedback(characterFeedbackEl, "Cliquez sur une tuile de suspect pour interroger ce suspect.", "success");
+      setFeedback(characterFeedbackEl, "Cliquer sur un suspect pour l’interroger.", "success");
     }
 
     return isBlocked;
