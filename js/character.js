@@ -398,11 +398,11 @@
     renderActiveTeam(activeTeam, waitingQueue.length > 0);
 
     if (!waitingQueue.length) {
-      queueEl.innerHTML = "<h3>Interrogatoires en attente</h3><p>Aucun interrogatoire en attente.</p>";
+      queueEl.innerHTML = "<h3>Prochains enquêteurs</h3><p>Aucun interrogatoire en attente.</p>";
       return;
     }
 
-    queueEl.innerHTML = `<h3>Interrogatoires en attente</h3><ol class="character-queue-list">${waitingQueue
+    queueEl.innerHTML = `<h3>Prochains enquêteurs</h3><ol class="character-queue-list">${waitingQueue
       .map((team, index) => {
         const position = Number.isFinite(Number(team.position)) ? Number(team.position) : index + 1;
         const teamName = team.team || team.name || team.nom || "(sans nom)";
