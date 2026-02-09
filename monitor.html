@@ -16,12 +16,12 @@ cluedo_send_html_no_cache_headers();
   <div class="container monitor-page">
     <div class="monitor-header-row">
       <a class="monitor-hub-btn" href="./index.html">Retour au Hub</a>
-      <button id="reset-history" class="monitor-reset-btn">Remettre l'historique à zéro</button>
-      <button id="clear-messages-history" class="monitor-reset-btn">Effacer l’historique des messages</button>
-      <div class="monitor-endgame-group">
-        <button id="toggle-end-game" class="monitor-endgame-btn">Fin de jeu</button>
-        <p id="monitor-end-game-status" class="monitor-endgame-status" aria-live="polite"></p>
-      </div>
+      <p id="monitor-end-game-status" class="monitor-end-game-indicator" aria-live="polite"></p>
+    </div>
+
+    <div class="monitor-actions-row">
+      <button id="clear-messages-history" class="monitor-reset-btn">Effacer tous les messages</button>
+      <button id="toggle-end-game" class="monitor-endgame-btn">Fin de jeu</button>
     </div>
 
     <h1>📊 Supervision terrain</h1>

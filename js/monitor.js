@@ -1,6 +1,5 @@
 (function () {
   const listEl = document.getElementById("teams");
-  const resetBtn = document.getElementById("reset-history");
   const clearMessagesHistoryBtn = document.getElementById("clear-messages-history");
   const toggleEndGameBtn = document.getElementById("toggle-end-game");
   const endGameStatusEl = document.getElementById("monitor-end-game-status");
@@ -351,12 +350,13 @@
   }
 
   function renderEndGameControls(gameState) {
-    const isActive = !!gameState?.end_game_active;
-    toggleEndGameBtn.textContent = isActive ? "Annuler la fin de jeu" : "Fin de jeu";
-    toggleEndGameBtn.classList.toggle("is-active", isActive);
-    endGameStatusEl.classList.toggle("is-active", isActive);
-    endGameStatusEl.classList.toggle("is-inactive", !isActive);
-    endGameStatusEl.textContent = isActive ? "Partie terminée" : "Partie active";
+    const endGameActive = !!gameState?.end_game_active;
+    const partyActive = !endGameActive;
+    toggleEndGameBtn.textContent = endGameActive ? "Annuler la fin de jeu" : "Fin de jeu";
+    toggleEndGameBtn.classList.toggle("is-active", endGameActive);
+    endGameStatusEl.classList.toggle("is-active", partyActive);
+    endGameStatusEl.classList.toggle("is-inactive", !partyActive);
+    endGameStatusEl.textContent = partyActive ? "Partie active" : "Partie inactive";
   }
 
   async function setEndGame(active) {
