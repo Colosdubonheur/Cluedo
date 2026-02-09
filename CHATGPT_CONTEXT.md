@@ -346,8 +346,11 @@ Le serveur est l’unique source de vérité pour :
 - Les deux seules sources sonores côté équipe à conserver sont :
   - `assets/message.wav` lors de la réception d'un nouveau message supervision (polling),
   - `assets/exit.mp3` comme alerte de fin imminente pendant une interrogation active (franchissement du seuil des 15 dernières secondes quand une autre équipe attend).
-- L'état du bouton audio reflète une **décision explicite utilisateur** (intention), pas le résultat ponctuel d'une tentative technique de lecture.
-- Si un `play()` échoue (blocage iOS/Safari, contexte navigateur, etc.), l'UI ne doit jamais repasser automatiquement sur **« Activer le son »** : aucun changement d'état silencieux n'est autorisé sans action utilisateur.
+- Cause bug corrigée (alerte 15s): sur certains navigateurs mobiles (Safari/iOS), le clic sur **« Activer le son »** validait `soundon.wav` mais n'armait pas forcément les autres éléments audio (`message.wav`, `exit.mp3`) ; le `play()` de `exit.mp3` à 15s était bien appelé mais rejeté (`NotAllowedError`), donc aucun son perçu malgré le clignotement rouge.
+- Règle de synchronisation UI/audio retenue :
+  - après activation utilisateur, la page pré-initialise explicitement `message.wav` et `exit.mp3` dans le même geste utilisateur (lecture muette courte), pour aligner la capacité réelle de lecture sur l'état affiché,
+  - si un `play()` échoue avec une erreur d'autorisation (`NotAllowedError`/`SecurityError`), l'UI revient en **« Activer le son »** afin d'éviter tout faux positif « Son activé »,
+  - les autres erreurs transitoires de lecture ne modifient pas automatiquement l'intention utilisateur.
 - Quand le son est actif et que l'utilisateur reclique sur le bouton **« Son activé »**, une confirmation explicite est obligatoire (`Voulez-vous vraiment désactiver le son ?`) ; sans confirmation, l'état audio reste inchangé.
 
 ---

@@ -85,6 +85,34 @@ document.addEventListener("DOMContentLoaded", () => {
     syncAudioButtonState();
   }
 
+  function isAudioPermissionError(error) {
+    if (!error || typeof error !== "object") return false;
+    const errorName = String(error.name || "").trim();
+    return errorName === "NotAllowedError" || errorName === "SecurityError";
+  }
+
+  function syncAudioCapabilityAfterPlaybackFailure(error) {
+    if (!isAudioPermissionError(error)) return;
+    // The browser rejected playback permissions for the current page context.
+    // Keep the UI aligned with actual capability until the user taps again.
+    setAudioEnabled(false);
+  }
+
+  async function primeAudioElement(audioEl) {
+    const previousMuted = audioEl.muted;
+    const previousVolume = audioEl.volume;
+
+    audioEl.currentTime = 0;
+    audioEl.muted = true;
+    audioEl.volume = 0;
+    await audioEl.play();
+    audioEl.pause();
+    audioEl.currentTime = 0;
+
+    audioEl.muted = previousMuted;
+    audioEl.volume = previousVolume;
+  }
+
   function initializeTestSlotSelector() {
     if (!testSlotControlsEl || !testSlotSelectEl) return;
     if (!isTestMode) {
@@ -596,7 +624,7 @@ document.addEventListener("DOMContentLoaded", () => {
       : Math.max(0, Number(queueStatus?.timers?.active_remaining_before_takeover_seconds ?? row?.estimated_wait_seconds ?? 0));
     const hasNextTeamWaiting = teamState.state === "active" && Number(teamState.queue_total || 0) > 1;
     const nextTeamName = String(queueStatus?.file?.next_team_name || "").trim();
-    const isCriticalExitAlert = teamState.state === "active" && hasNextTeamWaiting && remainingSeconds < 15;
+    const isCriticalExitAlert = teamState.state === "active" && hasNextTeamWaiting && remainingSeconds <= 15;
     const statusText = teamState.state === "active"
       ? (hasNextTeamWaiting && nextTeamName
         ? `Préparez-vous à libérer la place à l’équipe ${nextTeamName} dans ${fmt(remainingSeconds)}`
@@ -608,19 +636,20 @@ document.addEventListener("DOMContentLoaded", () => {
       ? (isCriticalExitAlert ? "is-critical" : (hasNextTeamWaiting ? "is-alert" : "is-active"))
       : "is-waiting";
 
-    const crossedCriticalThreshold =
+    const shouldPlayCriticalAlert =
       teamState.state === "active"
       && hasNextTeamWaiting
-      && previousRemainingSeconds !== null
-      && previousRemainingSeconds >= 15
-      && remainingSeconds < 15;
+      && remainingSeconds <= 15
+      && criticalAlertPlayedFor !== currentCharacterId;
 
-    if (crossedCriticalThreshold && criticalAlertPlayedFor !== currentCharacterId) {
-      criticalAlertPlayedFor = currentCharacterId;
-      void maybePlayExitSound();
+    if (shouldPlayCriticalAlert) {
+      void maybePlayExitSound().then((played) => {
+        if (!played) return;
+        criticalAlertPlayedFor = currentCharacterId;
+      });
     }
 
-    if (teamState.state !== "active" || !hasNextTeamWaiting || remainingSeconds >= 15) {
+    if (teamState.state !== "active" || !hasNextTeamWaiting || remainingSeconds > 15) {
       criticalAlertPlayedFor = "";
     }
 
@@ -680,19 +709,19 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await messageAudio.play();
     } catch (_error) {
-      // Keep the explicit user choice: a transient browser playback failure must
-      // not silently disable audio in the UI.
+      syncAudioCapabilityAfterPlaybackFailure(_error);
     }
   }
 
   async function maybePlayExitSound() {
-    if (!audioEnabled) return;
+    if (!audioEnabled) return false;
     exitAudio.currentTime = 0;
     try {
       await exitAudio.play();
+      return true;
     } catch (_error) {
-      // Keep the explicit user choice: a transient browser playback failure must
-      // not silently disable audio in the UI.
+      syncAudioCapabilityAfterPlaybackFailure(_error);
+      return false;
     }
   }
 
@@ -886,7 +915,11 @@ document.addEventListener("DOMContentLoaded", () => {
 
     soundOnAudio.currentTime = 0;
     try {
-      await runWithPollingPaused(async () => soundOnAudio.play());
+      await runWithPollingPaused(async () => {
+        await soundOnAudio.play();
+        await primeAudioElement(messageAudio);
+        await primeAudioElement(exitAudio);
+      });
       setAudioEnabled(true);
     } catch (_error) {
       setAudioEnabled(false);
