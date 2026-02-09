@@ -1109,6 +1109,12 @@ Lorsqu'une équipe clique sur un suspect disponible ou en attente depuis la list
 
 Quand un suspect est déjà actif (interrogatoire en cours), un clic sur sa tuile dans le bloc actif du haut doit proposer la sortie d'interrogatoire avec confirmation.
 
+La tuile du suspect actif (bloc supérieur) doit rester cliquable de manière uniforme dans les deux états `active` et `waiting` :
+- si l'équipe est en `active`, le clic propose de quitter l'interrogatoire avec confirmation,
+- si l'équipe est en `waiting`, le clic propose de quitter la file d'attente du même suspect avec confirmation,
+- même zone cliquable, même logique de confirmation existante, sans bouton additionnel,
+- cette règle s'applique uniquement à la tuile active du haut (aucun changement de comportement des tuiles inactives de la liste).
+
 Lorsqu'une équipe est avec un personnage, le statut affiché est :
 « Vous pouvez interroger {nom_du_personnage} ».
 
