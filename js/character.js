@@ -1,5 +1,6 @@
 (function () {
   const CHARACTER_MESSAGE_HISTORY_VERSION = "v1";
+  const CHARACTER_AUDIO_PREFERENCE_VERSION = "v1";
 
   const params = new URLSearchParams(window.location.search);
   const id = params.get("id");
@@ -36,6 +37,33 @@
   if (!id) {
     characterNameEl.textContent = "Paramètre id manquant.";
     return;
+  }
+
+  function getAudioPreferenceStorageKey() {
+    return `cluedo_character_audio_enabled_${CHARACTER_AUDIO_PREFERENCE_VERSION}_${id}`;
+  }
+
+  function persistAudioPreference() {
+    const serialized = audioEnabled ? "1" : "0";
+    try {
+      localStorage.setItem(getAudioPreferenceStorageKey(), serialized);
+      sessionStorage.setItem(getAudioPreferenceStorageKey(), serialized);
+    } catch (_error) {
+      // noop
+    }
+  }
+
+  function loadPersistedAudioPreference() {
+    const key = getAudioPreferenceStorageKey();
+    const stored = localStorage.getItem(key) || sessionStorage.getItem(key);
+    if (stored !== "1" && stored !== "0") return;
+    audioEnabled = stored === "1";
+  }
+
+  function setAudioEnabled(nextValue) {
+    audioEnabled = !!nextValue;
+    persistAudioPreference();
+    syncAudioButtonState();
   }
 
   function getMessageStorageKey() {
@@ -179,8 +207,7 @@
     try {
       await messageAudio.play();
     } catch (_error) {
-      audioEnabled = false;
-      syncAudioButtonState();
+      // Ne jamais modifier l'état du bouton son sur événement automatique.
     }
   }
 
@@ -422,19 +449,17 @@
     if (audioEnabled) {
       const confirmed = window.confirm("Voulez-vous vraiment désactiver le son ?");
       if (!confirmed) return;
-      audioEnabled = false;
-      syncAudioButtonState();
+      setAudioEnabled(false);
       return;
     }
 
+    setAudioEnabled(true);
     soundOnAudio.currentTime = 0;
     try {
       await soundOnAudio.play();
-      audioEnabled = true;
     } catch (_error) {
-      audioEnabled = false;
+      // Le son reste activé : seul l'utilisateur peut changer cet état.
     }
-    syncAudioButtonState();
   });
 
   if (characterLocationButtonEl) {
@@ -469,6 +494,7 @@
     });
   }
 
+  loadPersistedAudioPreference();
   syncAudioButtonState();
   loadPersistedMessageHistory();
   renderMessageHistory();
