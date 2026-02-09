@@ -680,7 +680,8 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await messageAudio.play();
     } catch (_error) {
-      setAudioEnabled(false);
+      // Keep the explicit user choice: a transient browser playback failure must
+      // not silently disable audio in the UI.
     }
   }
 
@@ -690,7 +691,8 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       await exitAudio.play();
     } catch (_error) {
-      setAudioEnabled(false);
+      // Keep the explicit user choice: a transient browser playback failure must
+      // not silently disable audio in the UI.
     }
   }
 
