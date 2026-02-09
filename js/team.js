@@ -581,7 +581,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     currentCharacterEl.hidden = false;
     currentCharacterEl.innerHTML = `
-      <div class="team-current-character-card">
+      <div class="team-current-character-card ${stateClass}">
         <div class="team-current-character-layout">
           <div class="team-current-character-photo-wrap">${characterPhoto}</div>
           <div class="team-current-character-meta">

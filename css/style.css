@@ -1314,12 +1314,34 @@ body {
 }
 
 .team-current-character-card {
+  --team-current-state-color: #ffffff;
+  --team-current-state-color-rgb: 255, 255, 255;
   border: 1px solid #2a3142;
   border-radius: 10px;
   padding: 10px;
   background: #0f131d;
-  border-color: #4ade80;
-  box-shadow: 0 0 0 2px rgba(74, 222, 128, 0.25), 0 0 24px rgba(74, 222, 128, 0.2);
+  border-color: var(--team-current-state-color);
+  box-shadow: 0 0 0 2px rgba(var(--team-current-state-color-rgb), 0.25), 0 0 24px rgba(var(--team-current-state-color-rgb), 0.2);
+}
+
+.team-current-character-card.is-active {
+  --team-current-state-color: #4ade80;
+  --team-current-state-color-rgb: 74, 222, 128;
+}
+
+.team-current-character-card.is-alert {
+  --team-current-state-color: #f59e0b;
+  --team-current-state-color-rgb: 245, 158, 11;
+}
+
+.team-current-character-card.is-critical {
+  --team-current-state-color: #ef4444;
+  --team-current-state-color-rgb: 239, 68, 68;
+}
+
+.team-current-character-card.is-waiting {
+  --team-current-state-color: #fbbf24;
+  --team-current-state-color-rgb: 251, 191, 36;
 }
 
 .team-current-character-card h3 {
