@@ -247,13 +247,13 @@ Le serveur est l’unique source de vérité pour :
 - Suppression globale de l’historique des messages (supervision uniquement) :
   - `monitor.html` expose un bouton dédié **« Effacer les messages »** (libellé UI),
   - l’action est protégée par une confirmation explicite et ne s’exécute jamais sans validation,
-  - la suppression efface **uniquement** les structures runtime de messagerie supervision (`teams`, `characters`, `team_broadcast`, `character_broadcast`),
+  - la suppression efface **uniquement** les structures runtime de messagerie supervision (`teams`, `characters`, `team_broadcast`, `character_broadcast`) + l’historique local affiché côté `team.html` et `character.html`,
   - l’effacement est persistant côté serveur et ne doit pas réapparaître après rafraîchissement,
   - l’effacement est propagé immédiatement :
     - `team.html` vide l’historique des messages,
     - `character.html` vide l’historique des messages,
     - `monitor.html` n’affiche plus de « dernier message reçu »,
-  - cette action ne supprime jamais les équipes/personnages/files/états, et ne remplace pas un reset global.
+  - cette action ne supprime jamais les équipes/personnages/files/états/timers/attributs, et ne remplace pas un reset global.
 
 ### Supervision — état global de la partie (indicateur)
 - Organisation UI du haut de `monitor.html` en deux lignes compactes :
@@ -383,11 +383,15 @@ Le serveur est l’unique source de vérité pour :
   - conserve toutes les files/états/messages/profils en cours.
 - **Réinitialiser** (confirmation obligatoire) :
   - lance une **nouvelle partie complète** côté runtime équipes,
-  - supprime toutes les données équipes : nom, photo, participants, historique des passages, messages supervision liés aux équipes, états de présence et états vu/jamais vu (via purge des historiques et files),
+  - inclut systématiquement la même purge globale de messages que **« Effacer les messages »** (équipes + personnages + historique supervision),
+  - supprime toutes les données runtime de partie : nom/photo/participants des équipes, historique des passages, files d’attente, états de présence et états vu/jamais vu,
   - vide toutes les files d'attente personnages et remet `end_game_active` à `false`,
   - impose aux joueurs revenant sur `team.html` de ressaisir nom d'équipe, participants et photo comme une première connexion.
 - **Données conservées lors d'un reset** :
-  - toutes les données d'administration restent intactes (personnages, noms, photos, lieux, durées, paramètres globaux).
+  - toutes les données d'administration restent intactes,
+  - les attributs saisis dans admin pour les personnages sont conservés,
+  - les informations modifiables dans `character.html` (nom, photo, textes, etc.) sont conservées,
+  - les photos des personnages sont conservées.
 
 ## 6. Architecture technique
 
