@@ -297,7 +297,7 @@ Le serveur est l’unique source de vérité pour :
   - passage en multi-colonnes à partir d'environ **640px**,
   - au-delà de 640px, conservation des paliers existants (3 à 4 colonnes sur écrans moyens, puis jusqu'à 5 ou 6 colonnes sur desktop large).
 - Objectif supervision : maximiser le nombre d'équipes visibles simultanément et limiter le scroll vertical.
-- Le contenu fonctionnel de chaque tuile équipe reste strictement inchangé (photo, nom, statut, dernier message reçu, dernier suspect vu, membres, actions QR/suppression).
+- Le contenu fonctionnel de chaque tuile équipe reste strictement inchangé (photo, nom, statut, dernier message reçu, membres, actions QR/suppression), à l'exception du champ « dernier suspect vu » qui n'est plus affiché.
 - Les ajustements de lisibilité ci-dessous s'appliquent **uniquement** à `monitor.html`.
 - Zone « Dernier message reçu » :
   - largeur maximale fixe dans la carte équipe,
@@ -1050,7 +1050,7 @@ Contraintes non négociables :
   - équipe dans la plus longue file d’attente,
   - équipe ayant vu le moins de suspects,
   - équipe ayant le temps moyen par suspect le plus élevé (métrique informative runtime).
-- Dans chaque carte équipe de supervision, l’historique détaillé n’est plus affiché : seul le **dernier suspect vu** est visible.
+- Dans chaque carte équipe de supervision, l’historique détaillé n’est plus affiché et l’information **dernier suspect vu** n’est plus affichée dans la tuile équipe.
 - Dans chaque carte équipe de supervision, l’aperçu message est mono-ligne : seul le **dernier message envoyé** à l’équipe est affiché visuellement.
 - La supervision inclut un canal de messages `supervision -> équipes` :
   - envoi individuel (par équipe) ou global (toutes les équipes),
