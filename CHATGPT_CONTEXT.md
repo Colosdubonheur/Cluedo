@@ -1111,6 +1111,9 @@ Quand un suspect est déjà actif (interrogatoire en cours), un clic sur sa tuil
 Lorsqu'une équipe est avec un personnage, le statut affiché est :
 « Vous pouvez interroger {nom_du_personnage} ».
 
+Lorsqu'une équipe est en interrogatoire avec un personnage, la tuile de ce personnage est mise en évidence par un contour lumineux (ou effet visuel équivalent) afin d'indiquer clairement le suspect actuellement interrogé.
+
+
 Chaque suspect affiche sur une ligne horizontale :
 - photo,
 - nom,
