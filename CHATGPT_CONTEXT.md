@@ -965,11 +965,19 @@ Contraintes non négociables :
 - Toutes les pages principales (`index.html`, `admin.html`, `monitor.html`, `play.html`, `team.html`, `character.html`) affichent la même version applicative visible en haut à droite, de façon permanente et purement informative.
 - La version affichée est alimentée partout via l’attribut `[data-app-version]` et le script front unique `js/app-version.js`.
 - Format officiel : `MAJEUR.MINEUR.PATCH`.
-- Source de vérité **unique et obligatoire** : `data/version.json`, avec une seule clé `version` de type chaîne (ex: `{ "version": "1.1.86" }`).
+- Source de vérité **unique et obligatoire** : `data/version.json`, avec une clé `version` de type chaîne (`{ "version": "MAJEUR.MINEUR.PATCH" }`).
 - Contrat backend verrouillé : `api/version.php` lit exclusivement `data/version.json`, valide strictement le format `MAJEUR.MINEUR.PATCH`, et renvoie une erreur explicite si le fichier est absent/invalide.
 - Contrat frontend verrouillé : `js/app-version.js` n’utilise que `api/version.php` pour afficher la version et ne doit jamais contenir de version codée en dur.
-- Interdiction absolue : aucun fallback silencieux vers `1.0.0` (ou toute autre valeur), aucune reconstruction automatique de version à partir d’un build, aucune dépendance à la date/heure locale.
-- Règle PR obligatoire : toute évolution de version doit se faire uniquement en modifiant `data/version.json`; toute valeur de version ailleurs dans le code est un bug bloquant à corriger avant merge.
+- Génération **automatique obligatoire** lors du déploiement : `scripts/generate-version.sh` calcule la version depuis le numéro de PR GitHub (fallback numéro de build/commit), puis écrit `data/version.json` avant publication.
+- Règle de calcul officielle (à appliquer automatiquement, jamais à la main) pour un numéro `N` :
+  - `major = floor(N / 1000) + 1`
+  - `minor = floor((N % 1000) / 100)`
+  - `patch = N % 100`
+  - version affichée = `"{major}.{minor}.{patch}"`
+- Exemples de référence :
+  - `N = 187` → `1.1.87`
+  - `N = 1238` → `2.2.38`
+- Interdiction absolue : aucun fallback silencieux vers `1.0.0` (ou toute autre valeur) et aucune valeur hardcodée dans le front/back.
 - Cette version ne modifie aucune règle métier ni le gameplay ; elle sert uniquement à identifier rapidement le déploiement actif sur le terrain.
 
 ## 11. Team UX technique (stabilité terrain)

@@ -13,6 +13,9 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Generate app version from PR/build metadata
+        run: ./scripts/generate-version.sh data/version.json
+
       - name: Upload to PlanetHoster via FTP
         uses: SamKirkland/FTP-Deploy-Action@v4.3.4
         with:
