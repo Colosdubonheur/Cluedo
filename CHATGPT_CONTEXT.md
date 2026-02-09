@@ -1057,6 +1057,9 @@ Contraintes non négociables :
 
 
 ### Règles UX Hub (`index.html`)
+- Depuis le Hub, le lien **Espace équipe** ouvre par défaut `team.html?test=1` afin d'activer le mode test et de faciliter les phases terrain.
+- Ce mode test permet de disposer automatiquement des slots d'équipe (sélecteur de slots de test) pour les essais.
+- L'accès direct à `team.html` sans paramètre `test` reste le mode réel nominal et continue de fonctionner sans changement métier.
 - Dans chaque carte personnage, le nom du personnage doit apparaître **une seule fois** au format `ID - Nom` (aucune répétition du nom dans les actions).
 - L’action `QR Code` doit d’abord proposer un choix explicite `Afficher` / `Télécharger` avant exécution de l’action.
 - Comportement attendu :
