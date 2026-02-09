@@ -129,13 +129,13 @@ $queue = cluedo_clean_character_queue($queue, $now, $maxWait);
 $timePerPlayer = max(1, (int) ($p['time_per_player'] ?? 120));
 $queue = cluedo_apply_runtime_handover($queue, $now, $timePerPlayer);
 $buffer = max(0, (int) ($p['buffer_before_next'] ?? 15));
+$profilesStore = cluedo_load_team_profiles();
 
 $current = null;
 $waiting = [];
 
 if (isset($queue[0])) {
   $activeToken = (string) ($queue[0]['token'] ?? '');
-  $profilesStore = cluedo_load_team_profiles();
   $activeProfile = cluedo_get_team_profile($profilesStore, $activeToken);
   $activePlayers = array_values(array_filter(array_map(function ($name) {
     return trim((string) $name);
@@ -157,10 +157,19 @@ if (isset($queue[0])) {
 }
 
 for ($i = 1; $i < count($queue); $i++) {
+  $waitingToken = (string) ($queue[$i]['token'] ?? '');
+  $waitingProfile = cluedo_get_team_profile($profilesStore, $waitingToken);
+  $waitingPlayers = array_values(array_filter(array_map(function ($name) {
+    return trim((string) $name);
+  }, isset($waitingProfile['players']) && is_array($waitingProfile['players']) ? $waitingProfile['players'] : []), function ($name) {
+    return $name !== '';
+  }));
+
   $waiting[] = [
-    'token' => (string) ($queue[$i]['token'] ?? ''),
+    'token' => $waitingToken,
     'team' => (string) ($queue[$i]['team'] ?? ''),
     'position' => $i,
+    'participants_count' => count($waitingPlayers),
     'estimated_seconds' => (($current ? ($current['remaining_seconds'] + $buffer) : 0) + ($i - 1) * $timePerPlayer),
     'state' => 'waiting',
   ];
@@ -170,7 +179,6 @@ $messagesStore = cluedo_load_supervision_messages();
 $characterMessage = cluedo_resolve_character_message($messagesStore, (string) $id);
 
 $data[$id]['queue'] = $queue;
-$profilesStore = cluedo_load_team_profiles();
 $gameOverview = cluedo_build_character_game_overview($data, $now, $profilesStore);
 file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
