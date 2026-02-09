@@ -591,7 +591,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const characterPhoto = row?.photo
       ? `<img src="${row.photo}" alt="${characterName}" class="team-character-photo"/>`
       : '<div class="team-character-photo team-character-photo-placeholder">Photo indisponible</div>';
-    const remainingSeconds = Math.max(0, Number(queueStatus?.timers?.active_remaining_before_takeover_seconds ?? row?.estimated_wait_seconds ?? 0));
+    const remainingSeconds = teamState.state === "waiting"
+      ? Math.max(0, Number(queueStatus?.file?.temps_attente_estime_seconds ?? row?.estimated_wait_seconds ?? 0))
+      : Math.max(0, Number(queueStatus?.timers?.active_remaining_before_takeover_seconds ?? row?.estimated_wait_seconds ?? 0));
     const hasNextTeamWaiting = teamState.state === "active" && Number(teamState.queue_total || 0) > 1;
     const nextTeamName = String(queueStatus?.file?.next_team_name || "").trim();
     const isCriticalExitAlert = teamState.state === "active" && hasNextTeamWaiting && remainingSeconds < 15;

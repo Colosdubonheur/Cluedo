@@ -1149,7 +1149,10 @@ Règle d'affichage du temps :
 
 ### Attente sur personnage occupé — tuile active uniquement
 - Quand une équipe sélectionne un personnage déjà occupé, le délai restant avant accès est affiché **uniquement** dans la tuile active (bloc supérieur).
-- Message explicite attendu : `Vous pourrez interroger {nom_du_personnage} dans XX:XX` (temps estimé restant de l'interrogatoire en cours).
+- Message explicite attendu : `Vous pourrez interroger {nom_du_personnage} dans XX:XX`.
+- Sur la tuile active, ce temps d'attente est **cumulatif** : `temps restant de l'équipe en cours + (index dans la file d'attente × durée d'interrogatoire)`.
+- Sur la tuile active, l'équipe en attente à l'index `0` voit uniquement le temps restant courant ; les index suivants ajoutent une durée complète par équipe devant elles.
+- Les tuiles inactives (liste des suspects) utilisent déjà le bon calcul cumulatif et doivent rester inchangées.
 - Tant que l'équipe est en attente, ce texte d'attente est affiché en **blanc**.
 - Les tuiles inactives (liste des suspects) conservent strictement leur comportement et affichage existants : aucun ajout de texte, aucune modification de couleur, aucun changement de logique ou de comportement.
 
