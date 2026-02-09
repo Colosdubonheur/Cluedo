@@ -750,6 +750,23 @@ body {
 }
 .monitor-reset-btn { background: #475569; color: #fff; }
 
+
+.monitor-hard-reset-btn {
+  border: none;
+  border-radius: 10px;
+  padding: 10px 14px;
+  font-size: 14px;
+  cursor: pointer;
+  white-space: nowrap;
+  background: #ea580c;
+  color: #fff;
+}
+
+.monitor-hard-reset-btn:hover,
+.monitor-hard-reset-btn:focus-visible {
+  background: #c2410c;
+}
+
 .monitor-endgame-btn {
   border: none;
   border-radius: 10px;

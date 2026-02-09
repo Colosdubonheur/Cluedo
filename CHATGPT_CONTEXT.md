@@ -245,7 +245,7 @@ Le serveur est l’unique source de vérité pour :
   - les **messages de supervision** sont affichés avant le bloc de l'**équipe active** ;
   - ordre attendu : messages de supervision → équipe active → équipes en attente → paramètres secondaires (photo, lieu, etc.).
 - Suppression globale de l’historique des messages (supervision uniquement) :
-  - `monitor.html` expose un bouton dédié **« Effacer tous les messages »** (libellé UI),
+  - `monitor.html` expose un bouton dédié **« Effacer les messages »** (libellé UI),
   - l’action est protégée par une confirmation explicite et ne s’exécute jamais sans validation,
   - la suppression efface **uniquement** les structures runtime de messagerie supervision (`teams`, `characters`, `team_broadcast`, `character_broadcast`),
   - l’effacement est persistant côté serveur et ne doit pas réapparaître après rafraîchissement,
@@ -258,7 +258,7 @@ Le serveur est l’unique source de vérité pour :
 ### Supervision — état global de la partie (indicateur)
 - Organisation UI du haut de `monitor.html` en deux lignes compactes :
   - Ligne 1 : `Retour au Hub` + indicateur d’état (visuel uniquement),
-  - Ligne 2 : `Effacer tous les messages` + `Fin de jeu`.
+  - Ligne 2 : `Effacer les messages` + `Réinitialiser` + `Fin de jeu`.
 - Le bouton **« Remettre l'historique à zéro »** est retiré de l'UI supervision.
 - L’indicateur d’état affiche :
   - **Rond vert** + texte **« Partie active »** quand `end_game_active = false`,
@@ -362,11 +362,25 @@ Le serveur est l’unique source de vérité pour :
   - les équipes voient une notification rouge persistante **« Fin de jeu »** dans `team.html`,
   - les équipes **déjà en cycle** (active ou waiting) continuent normalement (FIFO/timers inchangés),
   - les équipes libres ne peuvent plus entrer dans une nouvelle file.
-- Désactivation via le bouton supervision **« Annuler la fin de jeu »** avec confirmation :
+- Désactivation via le bouton supervision **« Reprendre »** avec confirmation :
   - la notification disparaît côté équipes,
   - les entrées en file redeviennent possibles,
   - aucun état d'engagement existant n'est modifié.
 - La messagerie supervision reste active avant, pendant et après la fin de jeu (équipes et personnages).
+
+
+### Supervision / Cycle de jeu — Fin de jeu vs Réinitialiser
+- **Fin de jeu** (bouton `Fin de jeu` puis `Reprendre`) :
+  - active/désactive un **blocage des nouvelles entrées** en file (`end_game_active`),
+  - ne supprime aucune donnée équipe,
+  - conserve toutes les files/états/messages/profils en cours.
+- **Réinitialiser** (confirmation obligatoire) :
+  - lance une **nouvelle partie complète** côté runtime équipes,
+  - supprime toutes les données équipes : nom, photo, participants, historique des passages, messages supervision liés aux équipes, états de présence et états vu/jamais vu (via purge des historiques et files),
+  - vide toutes les files d'attente personnages et remet `end_game_active` à `false`,
+  - impose aux joueurs revenant sur `team.html` de ressaisir nom d'équipe, participants et photo comme une première connexion.
+- **Données conservées lors d'un reset** :
+  - toutes les données d'administration restent intactes (personnages, noms, photos, lieux, durées, paramètres globaux).
 
 ## 6. Architecture technique
 
