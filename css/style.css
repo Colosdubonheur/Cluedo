@@ -1250,8 +1250,10 @@ body {
 }
 
 .character-queue-list li {
-  display: grid;
-  gap: 2px;
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .character-queue-team {
