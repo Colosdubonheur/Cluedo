@@ -240,9 +240,12 @@ Le serveur est l’unique source de vérité pour :
   - les messages personnage sont lus par polling dans `character.html`.
 - Comportement sonore associé :
   - côté équipe, notification sonore sur nouveau message uniquement si l'utilisateur a activé le son sur la page courante ; son de notification : `assets/message.wav`,
-  - côté personnage, notification sonore sur **chaque nouveau message entrant** avec `assets/message.wav` dès lors que l'utilisateur a activé le son sur la page,
-  - côté personnage, l'état du bouton son est persistant (stockage local/session) et n'est jamais modifié par la réception d'un message ni par un événement automatique,
-  - côté personnage, seul un clic utilisateur sur le bouton peut activer/désactiver le son ; une erreur de lecture audio ne doit jamais forcer un retour visuel à « Activer le son » ni bloquer les notifications suivantes.
+  - son de notification message (équipe + personnage) : `assets/message.wav`,
+  - côté personnage, distinction obligatoire entre **préférence utilisateur** (persistée en local/session) et **autorisation audio réelle** (capacité effective de lecture dans le contexte navigateur courant),
+  - côté personnage, après refresh l'UI doit refléter l'autorisation réelle : si la page n'est pas autorisée à lire l'audio (cas fréquent iOS), le bouton revient à « 🔔 Activer le son » même si la préférence persistée était activée,
+  - côté personnage, « 🔔 Son activé » (état vert) n'est affiché qu'après validation audio réussie via interaction explicite utilisateur sur la page,
+  - côté personnage, sur nouveau message entrant, `assets/message.wav` est joué uniquement si l'autorisation audio réelle est active ; cet essai de lecture ne doit jamais réinitialiser la préférence utilisateur,
+  - côté personnage, en cas d'échec `play()` (autoplay bloqué / permission), un indicateur court non intrusif est affiché sous le bouton pour inviter à retoucher « Activer le son ».
 - Historique des messages personnage (`character.html`) :
   - l'historique est conservé côté runtime front pendant toute la durée de la partie en cours,
   - l'historique est persistant (stockage local/session) et doit survivre à un refresh,
