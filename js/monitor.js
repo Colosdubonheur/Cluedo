@@ -2,6 +2,7 @@
   const listEl = document.getElementById("teams");
   const clearMessagesHistoryBtn = document.getElementById("clear-messages-history");
   const toggleEndGameBtn = document.getElementById("toggle-end-game");
+  const resetGameBtn = document.getElementById("reset-game");
   const endGameStatusEl = document.getElementById("monitor-end-game-status");
 
   const sortSelectEl = document.getElementById("monitor-team-sort");
@@ -342,11 +343,35 @@
   function renderEndGameControls(gameState) {
     const endGameActive = !!gameState?.end_game_active;
     const partyActive = !endGameActive;
-    toggleEndGameBtn.textContent = endGameActive ? "Annuler la fin de jeu" : "Fin de jeu";
+    toggleEndGameBtn.textContent = endGameActive ? "Reprendre" : "Fin de jeu";
     toggleEndGameBtn.classList.toggle("is-active", endGameActive);
     endGameStatusEl.classList.toggle("is-active", partyActive);
     endGameStatusEl.classList.toggle("is-inactive", !partyActive);
     endGameStatusEl.textContent = partyActive ? "Partie active" : "Partie inactive";
+  }
+
+
+  async function resetGame() {
+    const confirmed = window.confirm("Confirmer la réinitialisation complète ?\n\nLa partie en cours sera réinitialisée et une nouvelle partie commencera.\nToutes les données runtime des équipes seront supprimées (nom, photo, participants, passages, messages, états vu/jamais vu).\nLes données d'administration (personnages, lieux, durées, paramètres) seront conservées.");
+    if (!confirmed) return;
+
+    resetGameBtn.disabled = true;
+    const response = await fetch("./api/supervision.php", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded;charset=UTF-8" },
+      body: new URLSearchParams({ action: "reset_game" }).toString(),
+    });
+
+    const payload = await response.json().catch(() => ({}));
+    resetGameBtn.disabled = false;
+
+    if (!response.ok || !payload.ok) {
+      window.alert(payload.error || "Échec de la réinitialisation.");
+      return;
+    }
+
+    messageFeedbackEl.textContent = "Partie réinitialisée : toutes les équipes ont été effacées.";
+    await refresh();
   }
 
   async function setEndGame(active) {
@@ -469,6 +494,12 @@
     await setEndGame(active);
   });
 
+
+
+
+  resetGameBtn?.addEventListener("click", async () => {
+    await resetGame();
+  });
 
   clearMessagesHistoryBtn?.addEventListener("click", async () => {
     const confirmed = window.confirm("Confirmer la suppression de tout l’historique des messages ?");

@@ -155,6 +155,73 @@ if ($method === 'POST' && $action === 'clear_messages_history') {
   exit;
 }
 
+
+if ($method === 'POST' && $action === 'reset_game') {
+  $lockPath = __DIR__ . '/../data/.runtime_reset_game.lock';
+  $lockHandle = fopen($lockPath, 'c');
+  if ($lockHandle === false || !flock($lockHandle, LOCK_EX)) {
+    if (is_resource($lockHandle)) {
+      fclose($lockHandle);
+    }
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'verrou runtime indisponible'], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+    exit;
+  }
+
+  try {
+    $dataPath = cluedo_data_path();
+    $data = json_decode((string) file_get_contents($dataPath), true);
+    if (!is_array($data)) {
+      $data = [];
+    }
+
+    foreach ($data as $characterId => $character) {
+      if (!is_array($character)) {
+        continue;
+      }
+      $data[$characterId]['queue'] = [];
+    }
+
+    file_put_contents($dataPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    cluedo_save_history(['teams' => []]);
+    cluedo_save_team_profiles(['teams' => []]);
+    cluedo_save_team_presence(['teams' => []]);
+    cluedo_clear_supervision_messages_history();
+    cluedo_save_deleted_team_tokens(['tokens' => []]);
+
+    $uploadsDir = realpath(__DIR__ . '/../uploads');
+    if ($uploadsDir !== false) {
+      $files = scandir($uploadsDir);
+      if (is_array($files)) {
+        foreach ($files as $file) {
+          if ($file === '.' || $file === '..' || $file === '.gitkeep') {
+            continue;
+          }
+          $absolutePath = $uploadsDir . DIRECTORY_SEPARATOR . $file;
+          if (is_file($absolutePath)) {
+            @unlink($absolutePath);
+          }
+        }
+      }
+    }
+
+    cluedo_save_game_state([
+      'end_game_active' => false,
+      'updated_at' => time(),
+    ]);
+  } finally {
+    flock($lockHandle, LOCK_UN);
+    fclose($lockHandle);
+  }
+
+  echo json_encode([
+    'ok' => true,
+    'reset' => true,
+    'game_state' => cluedo_load_game_state(),
+  ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+  exit;
+}
+
 if ($method === 'POST' && $action === 'reset_history') {
   cluedo_save_history(['teams' => []]);
   echo json_encode(['ok' => true, 'reset' => true], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
