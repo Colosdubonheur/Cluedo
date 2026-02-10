@@ -37,10 +37,10 @@
 
 - L'**Espace Équipe** (`team.html`) est désormais l'**entrée unique** pour gérer l'engagement dans les files des personnages.
 - Le **token équipe** reste la seule identité technique côté front.
-- Le mécanisme de récupération par QR Code est **réservé à la supervision** (`monitor.html`) :
-  - génération d'un QR code par équipe existante,
-  - lien vers `team.html` avec le token existant,
-  - aucun changement de règle métier ni d'identité.
+- Le mécanisme de récupération par QR Code existe sur deux surfaces sans changer les règles métier :
+  - **Supervision** (`monitor.html`) : génération d'un QR code par équipe existante, avec lien `team.html` porteur du token existant.
+  - **Hub** (`index.html`) : bouton dédié d'affichage d'un QR code générique vers l'Espace Équipe (même URL que le bouton Hub « Espace équipe », incluant le mode test si actif).
+  - dans les deux cas, aucun changement de règle métier ni d'identité.
 
 
 ## Suppression d’équipe depuis la supervision (critique)
@@ -63,7 +63,12 @@
 ## Portée technique
 
 - `team.html` + `js/team.js` : gestion des files sans scan.
-- `index.html` : hub simplifié (Administration, Supervision, Espace équipe + accès Joueur/Personnage).
+- `index.html` : hub simplifié (Administration, Supervision, Espace équipe + accès Joueur/Personnage) et bouton supplémentaire « Afficher le QR code – Espace équipe ».
+- Bouton Hub « Afficher le QR code – Espace équipe » :
+  - ouvre un affichage à l'écran (modal/overlay) avec le QR code,
+  - cible strictement la même URL que le bouton Hub « Espace équipe » (`team.html` ou `team.html?test=1` selon la configuration courante du Hub),
+  - sert à la reprise rapide lorsqu'une équipe a fermé la page par erreur,
+  - ne déclenche aucun téléchargement automatique (mobile et desktop).
 - Aucun appel `getUserMedia`, aucun usage de librairie de scan.
 
 
