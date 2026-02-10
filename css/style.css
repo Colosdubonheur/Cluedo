@@ -180,6 +180,50 @@ body {
 
 .hub-desktop-only { display: none; }
 
+.hub-qr-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.75);
+}
+
+.hub-qr-modal-dialog {
+  width: min(420px, 100%);
+  background: #0f172a;
+  border: 1px solid #334155;
+  border-radius: 14px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  text-align: center;
+}
+
+.hub-qr-modal-dialog h3 {
+  margin: 0;
+  font-size: 1.12rem;
+  color: #dbeafe;
+}
+
+.hub-team-qr-image {
+  width: min(320px, 100%);
+  height: auto;
+  border-radius: 10px;
+  background: #fff;
+  padding: 8px;
+}
+
+.hub-qr-modal-help {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
 
 
 

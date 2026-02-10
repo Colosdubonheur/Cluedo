@@ -22,6 +22,7 @@ cluedo_send_html_no_cache_headers();
           <a class="hub-button hub-button-secure" href="./admin.html">🔐 Administration</a>
           <a class="hub-button hub-button-secure" href="./monitor.html">📊 Supervision</a>
           <a class="hub-button hub-button-free" href="./team.html?test=1">👥 Espace équipe</a>
+          <button type="button" class="hub-button hub-button-secondary" id="hub-show-team-qr">📱 Afficher le QR code – Espace équipe</button>
         </div>
       </section>
 
@@ -29,6 +30,15 @@ cluedo_send_html_no_cache_headers();
         <h2>Accès personnages actifs</h2>
         <div id="hub-character-list" class="hub-character-list">Chargement…</div>
       </section>
+    </div>
+  </div>
+
+  <div class="hub-qr-modal is-hidden" id="hub-qr-modal" role="dialog" aria-modal="true" aria-labelledby="hub-qr-title">
+    <div class="hub-qr-modal-dialog">
+      <h3 id="hub-qr-title">QR code – Espace équipe</h3>
+      <img id="hub-team-qr-image" class="hub-team-qr-image" alt="QR code pour ouvrir l'Espace équipe"/>
+      <p class="hub-qr-modal-help">Scannez ce QR code pour rouvrir rapidement l'Espace équipe.</p>
+      <button type="button" class="hub-button hub-button-secondary" id="hub-close-team-qr">Fermer</button>
     </div>
   </div>
 
@@ -40,6 +50,36 @@ cluedo_send_html_no_cache_headers();
       if (!auth.ok) {
         return;
       }
+
+      const modal = document.getElementById("hub-qr-modal");
+      const qrButton = document.getElementById("hub-show-team-qr");
+      const closeQrButton = document.getElementById("hub-close-team-qr");
+      const qrImage = document.getElementById("hub-team-qr-image");
+      const teamLink = document.querySelector('.hub-button-free[href*="team.html"]');
+
+      const buildQrImageUrl = (targetUrl) => {
+        const payload = encodeURIComponent(targetUrl);
+        return `https://api.qrserver.com/v1/create-qr-code/?size=320x320&format=png&data=${payload}`;
+      };
+
+      const openQrModal = () => {
+        const teamHref = teamLink?.getAttribute("href") || "./team.html?test=1";
+        const absoluteTargetUrl = new URL(teamHref, window.location.href).toString();
+        qrImage.src = buildQrImageUrl(absoluteTargetUrl);
+        modal.classList.remove("is-hidden");
+      };
+
+      const closeQrModal = () => {
+        modal.classList.add("is-hidden");
+      };
+
+      qrButton?.addEventListener("click", openQrModal);
+      closeQrButton?.addEventListener("click", closeQrModal);
+      modal?.addEventListener("click", (event) => {
+        if (event.target === modal) {
+          closeQrModal();
+        }
+      });
 
       const container = document.getElementById("hub-character-list");
       const fallbackName = (id) => `Personnage ${id}`;
