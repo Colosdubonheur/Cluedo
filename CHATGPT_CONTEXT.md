@@ -64,6 +64,7 @@
 
 - `team.html` + `js/team.js` : gestion des files sans scan.
 - `index.html` : hub simplifié (Administration, Supervision, Espace équipe + accès Joueur/Personnage) et bouton supplémentaire « Afficher le QR code – Espace équipe ».
+- Le Hub expose aussi un bouton « Télécharger tous les QR codes Personnages (ZIP) » qui déclenche une génération côté serveur (`api/download_character_qrs.php`) d’un ZIP contenant 15 images PNG des QR codes `character.html?id=1` à `character.html?id=15`, avec noms de fichiers `ID-NomPersonnage.png`.
 - Bouton Hub « Afficher le QR code – Espace équipe » :
   - ouvre un affichage à l'écran (modal/overlay) avec le QR code,
   - cible strictement la même URL que le bouton Hub « Espace équipe » (`team.html` ou `team.html?test=1` selon la configuration courante du Hub),
@@ -577,6 +578,7 @@ Contraintes :
 - Sur desktop, les cartes personnages du Hub sont affichées en **grille 3 colonnes**.
 - Le Hub propose une zone **Accès rapide** avec un bouton par personnage (`ID - Nom`) pour naviguer directement vers sa carte.
 - Le Hub propose des exports QR codes à la demande :
+  - **ZIP personnages** via le bouton « Télécharger tous les QR codes Personnages (ZIP) » : archive unique de 15 PNG individuels pointant vers `character.html?id=1..15` et nommés `ID-NomPersonnage.png`.
   - **unitaire** (par personnage)
   - **groupé en ZIP** (`Télécharger tous les QR codes (ZIP)`)
   - **en PDF A4** à raison de **6 QR codes par page** (`Télécharger en PDF (A4 – 6 QR codes par page)`)
