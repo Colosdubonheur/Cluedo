@@ -5,28 +5,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const SEEN_THRESHOLD_SECONDS = 30;
   const DEFAULT_TEAM_NAME = "Équipe sans nom";
 
-  const TEST_SLOT_KEY = "cluedo_test_slot";
-  const DEFAULT_TEST_SLOT = "slot1";
-  const TEST_SLOTS = ["slot1", "slot2", "slot3", "slot4"];
-
   const params = new URLSearchParams(window.location.search);
   const tokenFromUrl = String(params.get("token") || "").trim();
-  const isTestMode = params.get("test") === "1";
 
-  function activeTestSlot() {
-    const storedSlot = String(localStorage.getItem(TEST_SLOT_KEY) || "").trim();
-    if (TEST_SLOTS.includes(storedSlot)) return storedSlot;
-    return DEFAULT_TEST_SLOT;
-  }
-
-  function tokenStorageKey() {
-    return `${TOKEN_KEY}_${activeTestSlot()}`;
-  }
-
-  let token = tokenFromUrl || localStorage.getItem(tokenStorageKey()) || sessionStorage.getItem(tokenStorageKey());
+  let token = tokenFromUrl || localStorage.getItem(TOKEN_KEY) || sessionStorage.getItem(TOKEN_KEY);
   if (!token) token = crypto.randomUUID();
-  localStorage.setItem(tokenStorageKey(), token);
-  sessionStorage.setItem(tokenStorageKey(), token);
+  localStorage.setItem(TOKEN_KEY, token);
+  sessionStorage.setItem(TOKEN_KEY, token);
 
   const heroTeamNameEl = document.getElementById("team-hero-name");
   const editNameBtn = document.getElementById("team-edit-name-btn");
@@ -52,8 +37,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const teamPhotoSelectBtn = document.getElementById("team-photo-select-btn");
   const teamPhotoUploadBtn = document.getElementById("team-photo-upload-btn");
   const teamPhotoFeedbackEl = document.getElementById("team-photo-feedback");
-  const testSlotControlsEl = document.getElementById("team-test-slot-controls");
-  const testSlotSelectEl = document.getElementById("team-test-slot-select");
 
   const messageAudio = new Audio("./assets/message.wav");
   messageAudio.preload = "auto";
@@ -112,23 +95,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
     audioEl.muted = previousMuted;
     audioEl.volume = previousVolume;
-  }
-
-  function initializeTestSlotSelector() {
-    if (!testSlotControlsEl || !testSlotSelectEl) return;
-    if (!isTestMode) {
-      testSlotControlsEl.hidden = true;
-      return;
-    }
-
-    testSlotControlsEl.hidden = false;
-    testSlotSelectEl.value = activeTestSlot();
-    testSlotSelectEl.addEventListener("change", () => {
-      const nextSlot = String(testSlotSelectEl.value || "").trim();
-      const resolvedSlot = TEST_SLOTS.includes(nextSlot) ? nextSlot : DEFAULT_TEST_SLOT;
-      localStorage.setItem(TEST_SLOT_KEY, resolvedSlot);
-      window.location.reload();
-    });
   }
 
   function getMessageStorageKey() {
@@ -211,8 +177,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function rotateInvalidatedTeamToken() {
     token = crypto.randomUUID();
-    localStorage.setItem(tokenStorageKey(), token);
-    sessionStorage.setItem(tokenStorageKey(), token);
+    localStorage.setItem(TOKEN_KEY, token);
+    sessionStorage.setItem(TOKEN_KEY, token);
     lastAppliedHubSequence = 0;
     hubRequestSequence = 0;
     clearProfileEditing();
@@ -982,7 +948,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  initializeTestSlotSelector();
   syncAudioButtonState();
   loadPersistedMessageHistory();
   renderMessageHistory();

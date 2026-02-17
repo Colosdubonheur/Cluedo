@@ -47,6 +47,26 @@ function cluedo_save_history(array $history): void
   file_put_contents($path, json_encode($history, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 }
 
+function cluedo_is_team_visible_in_supervision(array $profile, string $fallbackTeamName = ''): bool
+{
+  $teamName = trim((string) ($profile['team_name'] ?? ''));
+  if ($teamName === '') {
+    $teamName = trim($fallbackTeamName);
+  }
+
+  $players = isset($profile['players']) && is_array($profile['players']) ? $profile['players'] : [];
+  $validPlayers = 0;
+  foreach ($players as $playerName) {
+    if (trim((string) $playerName) !== '') {
+      $validPlayers++;
+    }
+  }
+
+  $photoPath = trim((string) ($profile['photo'] ?? ''));
+
+  return $teamName !== '' && $validPlayers > 0 && $photoPath !== '';
+}
+
 function cluedo_delete_team_photo_files(array $profilesStore): void
 {
   $uploadsDir = realpath(__DIR__ . '/../uploads');
@@ -610,26 +630,29 @@ foreach ($knownTokens as $token) {
     ];
   }
 
-  $teamsPayload[] = [
-    'token' => (string) $token,
-    'team_name' => (string) ($teamHistory[$token]['team_name'] ?? ''),
-    'state' => $state,
-    'current_personnage' => $activeCharacter,
-    'waiting_queue' => $waitingQueue,
-    'queue_position' => $stateInfo['queue_position'] ?? null,
-    'queue_length' => $stateInfo['queue_length'] ?? 0,
-    'state_since' => $stateInfo['state_since'] ?? null,
-    'active_remaining_seconds' => $activeRemainingSeconds,
-    'has_waiting_queue' => $hasWaitingQueue,
-    'takeover_warning' => $takeoverWarning,
-    'history' => $historyRows,
-    'time_per_personnage' => array_values($characterTotals),
-    'players' => $profile['players'],
-    'photo' => $profile['photo'],
-    'encountered_personnages' => array_values($encounteredByCharacter),
-    'seen_personnages' => array_values($seenByCharacter),
-    'message' => cluedo_resolve_team_message($messagesStore, (string) $token),
-  ];
+  $isVisibleInSupervision = cluedo_is_team_visible_in_supervision($profile, (string) ($teamHistory[$token]['team_name'] ?? ''));
+  if ($isVisibleInSupervision) {
+    $teamsPayload[] = [
+      'token' => (string) $token,
+      'team_name' => (string) ($teamHistory[$token]['team_name'] ?? ''),
+      'state' => $state,
+      'current_personnage' => $activeCharacter,
+      'waiting_queue' => $waitingQueue,
+      'queue_position' => $stateInfo['queue_position'] ?? null,
+      'queue_length' => $stateInfo['queue_length'] ?? 0,
+      'state_since' => $stateInfo['state_since'] ?? null,
+      'active_remaining_seconds' => $activeRemainingSeconds,
+      'has_waiting_queue' => $hasWaitingQueue,
+      'takeover_warning' => $takeoverWarning,
+      'history' => $historyRows,
+      'time_per_personnage' => array_values($characterTotals),
+      'players' => $profile['players'],
+      'photo' => $profile['photo'],
+      'encountered_personnages' => array_values($encounteredByCharacter),
+      'seen_personnages' => array_values($seenByCharacter),
+      'message' => cluedo_resolve_team_message($messagesStore, (string) $token),
+    ];
+  }
 }
 
 usort($teamsPayload, function ($a, $b) {

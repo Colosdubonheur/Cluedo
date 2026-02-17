@@ -39,7 +39,7 @@
 - Le **token équipe** reste la seule identité technique côté front.
 - Le mécanisme de récupération par QR Code existe sur deux surfaces sans changer les règles métier :
   - **Supervision** (`monitor.html`) : génération d'un QR code par équipe existante, avec lien `team.html` porteur du token existant.
-  - **Hub** (`index.html`) : bouton dédié d'affichage d'un QR code générique vers l'Espace Équipe (même URL que le bouton Hub « Espace équipe », incluant le mode test si actif).
+  - **Hub** (`index.html`) : bouton dédié d'affichage d'un QR code générique vers l'Espace Équipe (même URL que le bouton Hub « Espace équipe »).
   - dans les deux cas, aucun changement de règle métier ni d'identité.
 
 
@@ -67,7 +67,7 @@
 - Le Hub expose aussi un bouton « Télécharger tous les QR codes Personnages (ZIP) » qui déclenche une génération côté serveur (`api/download_character_qrs.php`) d’un ZIP contenant 15 images PNG des QR codes `character.html?id=1` à `character.html?id=15`, avec noms de fichiers `ID-NomPersonnage.png`.
 - Bouton Hub « Afficher le QR code – Espace équipe » :
   - ouvre un affichage à l'écran (modal/overlay) avec le QR code,
-  - cible strictement la même URL que le bouton Hub « Espace équipe » (`team.html` ou `team.html?test=1` selon la configuration courante du Hub),
+  - cible strictement la même URL que le bouton Hub « Espace équipe » (`team.html`),
   - sert à la reprise rapide lorsqu'une équipe a fermé la page par erreur,
   - ne déclenche aucun téléchargement automatique (mobile et desktop).
 - Aucun appel `getUserMedia`, aucun usage de librairie de scan.
@@ -98,7 +98,7 @@
 - Dans la section **Suspects** de `team.html`, la zone de filtres (« Trier par » + case « Suspects jamais vus ») est considérée comme un **bloc UI unique** : l’espacement interne entre ces deux contrôles doit être conservé.
 - L’espace vertical **sous** ce bloc de filtres est volontairement réduit pour maximiser le nombre de suspects visibles à l’écran, en particulier sur mobile.
 - Les textes d’aide affichés sous les filtres doivent rester volontairement courts (une ligne privilégiée) pour optimiser l’espace vertical ; libellé de référence : « Cliquer sur un suspect pour l’interroger. »
-- En mode test (`team.html?test=1`), un sélecteur de **slot de test token** (`slot1` à `slot4`) est visible. Le slot actif est stocké dans `localStorage` (`cluedo_test_slot`, défaut `slot1`) et un changement de slot recharge la page. Hors mode test, ce sélecteur est invisible et le comportement utilisateur reste inchangé.
+- Le mode test token est supprimé : aucun sélecteur de slot, aucun comportement spécial lié au paramètre `test`, aucun stockage séparé par slot.
 
 ### Séparation stricte UI / métier
 - Les termes « interrogatoire », « suspect » et « interrogation » sont des abstractions UI.
@@ -300,12 +300,12 @@ Le serveur est l’unique source de vérité pour :
 - Le statut doit rester purement informatif et ne change aucune règle métier serveur.
 
 ### Supervision — périmètre des équipes listées
-- `monitor.html` doit lister toutes les équipes connues côté runtime, y compris celles sans engagement en file.
-- Une équipe est référencée dès qu'elle ouvre `team.html` (heartbeat serveur lié au token équipe).
-- Les équipes connectées ne doivent jamais être invisibles, même si elles sont :
-  - libres,
-  - dans aucune file,
-  - sans passage historique.
+- `monitor.html` liste uniquement les équipes **valides et complètement initialisées**.
+- Une équipe est visible en supervision seulement si les règles de validation existantes sont satisfaites :
+  - nom d'équipe renseigné,
+  - participants renseignés selon les règles métier existantes,
+  - photo d'équipe présente.
+- Avant cette initialisation complète, l'équipe peut exister côté `team.html` mais reste invisible en supervision et n'est pas comptée dans l'état global.
 
 ### Supervision — historique des passages
 - L'historique affiché dans `monitor.html` est **informatif uniquement**.
@@ -1064,9 +1064,8 @@ Contraintes non négociables :
 
 
 ### Règles UX Hub (`index.html`)
-- Depuis le Hub, le lien **Espace équipe** ouvre par défaut `team.html?test=1` afin d'activer le mode test et de faciliter les phases terrain.
-- Ce mode test permet de disposer automatiquement des slots d'équipe (sélecteur de slots de test) pour les essais.
-- L'accès direct à `team.html` sans paramètre `test` reste le mode réel nominal et continue de fonctionner sans changement métier.
+- Depuis le Hub, le lien **Espace équipe** ouvre `team.html` (sans mode spécial).
+- Le QR code Hub « Espace équipe » cible la même URL `team.html` pour tous les usages.
 - Dans chaque carte personnage, le nom du personnage doit apparaître **une seule fois** au format `ID - Nom` (aucune répétition du nom dans les actions).
 - L’action `QR Code` doit d’abord proposer un choix explicite `Afficher` / `Télécharger` avant exécution de l’action.
 - Comportement attendu :
