@@ -381,19 +381,23 @@
         <button id="minus30" type="button" class="admin-button character-action-minus">-30 S</button>
         <button id="eject" type="button" class="admin-button character-action-eject">Éjecter l’équipe</button>
       </div>
-      <div class="character-active-team-actions">
-        <button id="malus1" type="button" class="admin-button">Retirer 1 point</button>
-        <button id="malus2" type="button" class="admin-button">Retirer 2 points</button>
-        <button id="malus5" type="button" class="admin-button">Retirer 5 points</button>
+      <div class="character-active-team-actions character-score-actions">
+        <button id="score-team-complete" type="button" class="admin-button character-score-action character-score-action-bonus">+1 point · Équipe complète</button>
+        <button id="score-team-spirit" type="button" class="admin-button character-score-action character-score-action-bonus">+2 points · Bonus exceptionnel : bon esprit d'équipe</button>
+        <button id="score-children-running" type="button" class="admin-button character-score-action character-score-action-penalty">-1 point · Enfants qui courent</button>
+        <button id="score-team-separated" type="button" class="admin-button character-score-action character-score-action-penalty">-1 point · Équipe séparée</button>
+        <button id="score-rules" type="button" class="admin-button character-score-action character-score-action-penalty">-1 point · Non-respect des consignes</button>
       </div>
     `;
 
     document.getElementById("plus30").onclick = () => control("plus_30");
     document.getElementById("minus30").onclick = () => control("minus_30");
     document.getElementById("eject").onclick = () => control("eject");
-    document.getElementById("malus1").onclick = () => control("remove_points", { delta: -1 });
-    document.getElementById("malus2").onclick = () => control("remove_points", { delta: -2 });
-    document.getElementById("malus5").onclick = () => control("remove_points", { delta: -5 });
+    document.getElementById("score-team-complete").onclick = () => control("score_action", { reason: "team_complete" });
+    document.getElementById("score-team-spirit").onclick = () => control("score_action", { reason: "bonus_team_spirit" });
+    document.getElementById("score-children-running").onclick = () => control("score_action", { reason: "children_running" });
+    document.getElementById("score-team-separated").onclick = () => control("score_action", { reason: "team_separated" });
+    document.getElementById("score-rules").onclick = () => control("score_action", { reason: "rules_not_respected" });
   }
 
   function renderGameOverviewCharacters(characters) {

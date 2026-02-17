@@ -4,6 +4,7 @@ header('Content-Type: application/json; charset=utf-8');
 require_once __DIR__ . '/_data_store.php';
 require_once __DIR__ . '/_character_visibility.php';
 require_once __DIR__ . '/_team_profiles_store.php';
+require_once __DIR__ . '/_supervision_messages_store.php';
 
 $payload = json_decode((string) file_get_contents('php://input'), true);
 $id = $payload['id'] ?? null;
@@ -57,7 +58,7 @@ if ($action === 'set_incomplete_team_penalty') {
   exit;
 }
 
-if ($action === 'remove_points') {
+if ($action === 'score_action') {
   $character = $data[$id];
   if (!cluedo_character_is_active($character)) {
     http_response_code(403);
@@ -73,20 +74,52 @@ if ($action === 'remove_points') {
     exit;
   }
 
-  $delta = (int) ($payload['delta'] ?? 0);
-  if (!in_array($delta, [-1, -2, -5], true)) {
+  $reason = trim((string) ($payload['reason'] ?? ''));
+  $catalog = [
+    'team_complete' => ['delta' => 1, 'label' => '+1 point – Équipe complète'],
+    'bonus_team_spirit' => ['delta' => 2, 'label' => '+2 points – Bonus exceptionnel : bon esprit d’équipe'],
+    'children_running' => ['delta' => -1, 'label' => '-1 point – Enfants qui courent'],
+    'team_separated' => ['delta' => -1, 'label' => '-1 point – Équipe séparée'],
+    'rules_not_respected' => ['delta' => -1, 'label' => '-1 point – Non-respect des consignes'],
+  ];
+
+  if (!isset($catalog[$reason])) {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'invalid delta']);
+    echo json_encode(['ok' => false, 'error' => 'invalid reason']);
     exit;
   }
 
+  $delta = (int) $catalog[$reason]['delta'];
+  $label = (string) $catalog[$reason]['label'];
+  $createdAt = time();
+
   try {
-    $updatedStore = cluedo_update_team_profiles(function (array $profilesStore) use ($activeToken, $delta): array {
+    $updatedStore = cluedo_update_team_profiles(function (array $profilesStore) use ($activeToken, $delta, $reason, $label, $createdAt, $id): array {
       $profile = cluedo_get_team_profile($profilesStore, $activeToken);
       $profile['score'] = (int) ($profile['score'] ?? 0) + $delta;
+
+      $history = isset($profile['score_history']) && is_array($profile['score_history'])
+        ? $profile['score_history']
+        : [];
+      $history[] = [
+        'reason_key' => $reason,
+        'label' => $label,
+        'delta' => $delta,
+        'created_at' => $createdAt,
+        'character_id' => (string) $id,
+      ];
+      $profile['score_history'] = array_slice($history, -100);
+
       $profilesStore['teams'][$activeToken] = $profile;
       return $profilesStore;
     });
+
+    $messagesStore = cluedo_load_supervision_messages();
+    $messagesStore['teams'][$activeToken] = [
+      'text' => $label,
+      'created_at' => $createdAt,
+    ];
+    cluedo_save_supervision_messages($messagesStore);
   } catch (RuntimeException $e) {
     http_response_code(500);
     echo json_encode(['ok' => false, 'error' => 'save failed']);
@@ -100,6 +133,8 @@ if ($action === 'remove_points') {
     'token' => $activeToken,
     'score' => (int) ($updatedProfile['score'] ?? 0),
     'delta' => $delta,
+    'label' => $label,
+    'reason' => $reason,
   ]);
   exit;
 }
