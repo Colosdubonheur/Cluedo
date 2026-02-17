@@ -17,7 +17,6 @@ if ($token === '') {
   exit;
 }
 
-
 if (cluedo_is_team_token_deleted($token)) {
   echo json_encode([
     'ok' => true,
@@ -45,14 +44,6 @@ if (cluedo_is_team_token_deleted($token)) {
   ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
   exit;
 }
-
-$dataPath = cluedo_data_path();
-$data = json_decode((string) file_get_contents($dataPath), true);
-if (!is_array($data)) {
-  $data = [];
-}
-
-$changed = cluedo_enforce_character_visibility($data);
 
 function cluedo_team_hub_history_path(): string
 {
@@ -88,14 +79,14 @@ function cluedo_team_hub_save_history(array $history): void
 }
 
 $history = cluedo_team_hub_load_history();
-
 $profilesStore = cluedo_load_team_profiles();
 $profile = cluedo_get_team_profile($profilesStore, $token);
+$messagesStore = cluedo_load_supervision_messages();
+$teamMessage = cluedo_resolve_team_message($messagesStore, $token);
 
 $now = time();
 $presenceEntry = cluedo_touch_team_presence($token, $now);
 $isNewTeamSession = !empty($presenceEntry['is_new']);
-$maxWait = 600;
 $teamState = [
   'state' => 'free',
   'character_id' => null,
@@ -105,78 +96,86 @@ $teamState = [
 ];
 $global = [];
 $teamActiveStartedAt = null;
-$activeCharacterIds = array_fill_keys(array_map('strval', array_keys(cluedo_get_active_characters($data))), true);
+$activeCharacterIds = [];
 
-foreach ($data as $characterId => $character) {
-  if (!cluedo_character_is_active($character)) {
-    continue;
-  }
-  $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
-  $queue = cluedo_clean_character_queue($queue, $now, $maxWait);
-  $timePerPlayer = max(1, (int) ($character['time_per_player'] ?? 120));
-  $queue = cluedo_apply_runtime_handover($queue, $now, $timePerPlayer);
+cluedo_update_characters_data(function (array $data) use ($token, $now, &$teamState, &$global, &$teamActiveStartedAt, &$activeCharacterIds): array {
+  cluedo_enforce_character_visibility($data);
 
-  $data[$characterId]['queue'] = $queue;
+  $maxWait = 600;
+  $activeCharacterIds = array_fill_keys(array_map('strval', array_keys(cluedo_get_active_characters($data))), true);
 
-  $activeTeamName = '';
-  $activeRemaining = 0;
-  if (isset($queue[0])) {
-    $activeTeamName = trim((string) ($queue[0]['team'] ?? ''));
-    $activeStartedAt = (int) ($queue[0]['joined_at'] ?? $now);
-    $activeElapsed = max(0, $now - $activeStartedAt);
-    $activeRemaining = max(0, $timePerPlayer - $activeElapsed);
-  }
-
-  $waitingCount = max(0, count($queue) - 1);
-  $tokenQueueIndex = null;
-  foreach ($queue as $queueIndex => $entry) {
-    if ((string) ($entry['token'] ?? '') === $token) {
-      $tokenQueueIndex = (int) $queueIndex;
-      break;
-    }
-  }
-
-  if ($tokenQueueIndex === 0) {
-    $estimatedWait = 0;
-  } elseif ($tokenQueueIndex !== null) {
-    $estimatedWait = $activeRemaining + max(0, ($tokenQueueIndex - 1) * $timePerPlayer);
-  } else {
-    $estimatedWait = $activeRemaining + ($waitingCount * $timePerPlayer);
-  }
-
-  foreach ($queue as $index => $entry) {
-    if ((string) ($entry['token'] ?? '') !== $token) {
+  foreach ($data as $characterId => $character) {
+    if (!cluedo_character_is_active($character)) {
       continue;
     }
 
-    $teamState = [
-      'state' => $index === 0 ? 'active' : 'waiting',
-      'character_id' => (string) $characterId,
-      'character_name' => (string) ($character['nom'] ?? ''),
-      'position' => (int) $index,
-      'queue_total' => count($queue),
-    ];
-    if ($index === 0) {
-      $teamActiveStartedAt = (int) ($entry['joined_at'] ?? $now);
+    $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
+    $queue = cluedo_clean_character_queue($queue, $now, $maxWait);
+    $timePerPlayer = max(1, (int) ($character['time_per_player'] ?? 120));
+    $queue = cluedo_apply_runtime_handover($queue, $now, $timePerPlayer);
+
+    $data[$characterId]['queue'] = $queue;
+
+    $activeTeamName = '';
+    $activeRemaining = 0;
+    if (isset($queue[0])) {
+      $activeTeamName = trim((string) ($queue[0]['team'] ?? ''));
+      $activeStartedAt = (int) ($queue[0]['joined_at'] ?? $now);
+      $activeElapsed = max(0, $now - $activeStartedAt);
+      $activeRemaining = max(0, $timePerPlayer - $activeElapsed);
     }
-    break;
+
+    $waitingCount = max(0, count($queue) - 1);
+    $tokenQueueIndex = null;
+    foreach ($queue as $queueIndex => $entry) {
+      if ((string) ($entry['token'] ?? '') === $token) {
+        $tokenQueueIndex = (int) $queueIndex;
+        break;
+      }
+    }
+
+    if ($tokenQueueIndex === 0) {
+      $estimatedWait = 0;
+    } elseif ($tokenQueueIndex !== null) {
+      $estimatedWait = $activeRemaining + max(0, ($tokenQueueIndex - 1) * $timePerPlayer);
+    } else {
+      $estimatedWait = $activeRemaining + ($waitingCount * $timePerPlayer);
+    }
+
+    foreach ($queue as $index => $entry) {
+      if ((string) ($entry['token'] ?? '') !== $token) {
+        continue;
+      }
+
+      $teamState = [
+        'state' => $index === 0 ? 'active' : 'waiting',
+        'character_id' => (string) $characterId,
+        'character_name' => (string) ($character['nom'] ?? ''),
+        'position' => (int) $index,
+        'queue_total' => count($queue),
+      ];
+      if ($index === 0) {
+        $teamActiveStartedAt = (int) ($entry['joined_at'] ?? $now);
+      }
+      break;
+    }
+
+    $global[] = [
+      'id' => (string) $characterId,
+      'nom' => (string) ($character['nom'] ?? ''),
+      'location' => (string) ($character['location'] ?? ''),
+      'photo' => (string) ($character['photo'] ?? ''),
+      'state' => count($queue) > 0 ? 'queue' : 'available',
+      'queue_total' => count($queue),
+      'active_team_name' => $activeTeamName,
+      'waiting_count' => $waitingCount,
+      'estimated_wait_seconds' => $estimatedWait,
+      'is_current_team_engagement' => $teamState['character_id'] === (string) $characterId,
+    ];
   }
 
-  $global[] = [
-    'id' => (string) $characterId,
-    'nom' => (string) ($character['nom'] ?? ''),
-    'location' => (string) ($character['location'] ?? ''),
-    'photo' => (string) ($character['photo'] ?? ''),
-    'state' => count($queue) > 0 ? 'queue' : 'available',
-    'queue_total' => count($queue),
-    'active_team_name' => $activeTeamName,
-    'waiting_count' => $waitingCount,
-    'estimated_wait_seconds' => $estimatedWait,
-    'is_current_team_engagement' => $teamState['character_id'] === (string) $characterId,
-  ];
-}
-
-file_put_contents($dataPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+  return $data;
+});
 
 if (!isset($history['teams'][$token]) || !is_array($history['teams'][$token])) {
   $history['teams'][$token] = ['team_name' => '', 'current' => null, 'history' => []];
@@ -282,9 +281,6 @@ $recap = array_values($totalsByCharacter);
 usort($recap, function ($a, $b) {
   return strcmp($a['id'], $b['id']);
 });
-
-$messagesStore = cluedo_load_supervision_messages();
-$teamMessage = cluedo_resolve_team_message($messagesStore, $token);
 
 echo json_encode([
   'ok' => true,

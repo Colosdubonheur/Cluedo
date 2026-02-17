@@ -1363,3 +1363,20 @@ Pour chaque ID de 1 à 15, les champs suivants sont configurables et persistés 
 ### Supervision / UI (`monitor.html`)
 - Dans chaque tuile équipe, le bloc membres affiche le total dérivé des prénoms : **`Membres de l’équipe (X)`** où `X` est le nombre de prénoms non vides enregistrés pour l’équipe.
 - Ce total est un calcul d’affichage uniquement (aucune donnée métier supplémentaire).
+
+## Robustesse et concurrence en exploitation terrain
+
+- Le runtime `data/personnages.json` est désormais traité comme **état critique** :
+  - le fichier ne peut plus être recréé silencieusement en cas d'absence,
+  - l'initialisation automatique n'est possible qu'avec validation explicite (`CLUEDO_ALLOW_RUNTIME_INIT=1`),
+  - si le fichier est absent/corrompu/vide sans validation explicite, l'API renvoie une erreur critique explicite et n'écrit rien.
+- Toutes les écritures runtime de l'état personnages passent par une stratégie commune de protection :
+  - verrou de fichier dédié (`data/personnages.lock`) via `flock`,
+  - section critique lecture→mutation→écriture sous verrou exclusif,
+  - écriture atomique via fichier temporaire puis `rename`.
+- Les lectures critiques de l'état personnages sont également protégées (verrou partagé) pour éviter les lectures concurrentes d'un fichier partiellement écrit.
+- Les endpoints sensibles (`save`, `upload`, `character_control`, `character_status`, `rename_team`, `leave_queue`, `team_hub`) utilisent désormais ces garde-fous pour empêcher les pertes d'état liées aux accès concurrents.
+- Garantie comportementale attendue en production terrain :
+  - aucune requête concurrente (20–40 utilisateurs) ne peut écraser silencieusement les modifications admin/personnage,
+  - aucune erreur de décodage JSON ne déclenche un retour implicite à un état neutre,
+  - toute situation critique renvoie une erreur explicite côté API (`critical runtime state error`) avec détail journalisé.

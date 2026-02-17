@@ -17,87 +17,109 @@ if (!$id || !$action) {
   exit;
 }
 
-$path = cluedo_data_path();
-$data = json_decode(file_get_contents($path), true);
+$data = cluedo_get_characters_data();
 if (!isset($data[$id])) {
   http_response_code(404);
   echo json_encode(['ok' => false, 'error' => 'unknown id']);
   exit;
 }
 
-$changed = cluedo_enforce_character_visibility($data);
-
-if ($action === 'set_location') {
-  $data[$id]['location'] = $location;
-  file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-  echo json_encode(['ok' => true, 'changed' => true, 'location' => $location]);
-  exit;
-}
-
-if (!cluedo_character_is_active($data[$id])) {
-  if ($changed) {
-    file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
-  }
-
-  http_response_code(403);
-  echo json_encode(['ok' => false, 'error' => 'character unavailable']);
-  exit;
-}
-
-$now = time();
-$maxWait = 600;
-$queue = isset($data[$id]['queue']) && is_array($data[$id]['queue']) ? $data[$id]['queue'] : [];
-$queue = array_values(array_filter($queue, function ($q) use ($now, $maxWait) {
-  return isset($q['joined_at']) && ($now - $q['joined_at']) < $maxWait;
-}));
-
-$findActiveIndex = function (array $items): ?int {
-  foreach ($items as $i => $entry) {
-    if (trim((string) ($entry['team'] ?? '')) !== '') {
-      return $i;
-    }
-  }
-  return null;
-};
-
-$activeIndex = $findActiveIndex($queue);
-if ($activeIndex === null) {
-  echo json_encode(['ok' => true, 'changed' => false]);
-  exit;
-}
-
-switch ($action) {
-  case 'plus_30':
-    $queue[$activeIndex]['joined_at'] = (int) ($queue[$activeIndex]['joined_at'] ?? $now) + 30;
-    break;
-  case 'minus_30':
-    $queue[$activeIndex]['joined_at'] = (int) ($queue[$activeIndex]['joined_at'] ?? $now) - 30;
-    break;
-  case 'eject':
-    array_splice($queue, $activeIndex, 1);
-    break;
-  case 'set_incomplete_team_penalty':
-    $activeToken = trim((string) ($queue[$activeIndex]['token'] ?? ''));
-    if ($activeToken === '') {
-      http_response_code(400);
-      echo json_encode(['ok' => false, 'error' => 'missing active token']);
-      exit;
-    }
-
-    $profilesStore = cluedo_load_team_profiles();
-    $profile = cluedo_get_team_profile($profilesStore, $activeToken);
-    $profile['incomplete_team_penalty'] = $penaltyValue;
-    $profilesStore['teams'][$activeToken] = $profile;
-    cluedo_save_team_profiles($profilesStore);
-    echo json_encode(['ok' => true, 'changed' => true, 'incomplete_team_penalty' => $penaltyValue]);
+if ($action === 'set_incomplete_team_penalty') {
+  $character = $data[$id];
+  if (!cluedo_character_is_active($character)) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'character unavailable']);
     exit;
-  default:
+  }
+
+  $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
+  $activeToken = trim((string) (($queue[0] ?? [])['token'] ?? ''));
+  if ($activeToken === '') {
     http_response_code(400);
-    echo json_encode(['ok' => false, 'error' => 'unknown action']);
+    echo json_encode(['ok' => false, 'error' => 'missing active token']);
     exit;
+  }
+
+  $profilesStore = cluedo_load_team_profiles();
+  $profile = cluedo_get_team_profile($profilesStore, $activeToken);
+  $profile['incomplete_team_penalty'] = $penaltyValue;
+  $profilesStore['teams'][$activeToken] = $profile;
+  cluedo_save_team_profiles($profilesStore);
+
+  echo json_encode(['ok' => true, 'changed' => true, 'incomplete_team_penalty' => $penaltyValue]);
+  exit;
 }
 
-$data[$id]['queue'] = array_values($queue);
-file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+$result = ['ok' => true, 'changed' => false];
+$error = null;
+$status = 200;
 
-echo json_encode(['ok' => true, 'changed' => true]);
+cluedo_update_characters_data(function (array $lockedData) use ($id, $action, $location, &$result, &$error, &$status): array {
+  if (!isset($lockedData[$id])) {
+    $error = 'unknown id';
+    $status = 404;
+    return $lockedData;
+  }
+
+  $changed = cluedo_enforce_character_visibility($lockedData);
+
+  if ($action === 'set_location') {
+    $lockedData[$id]['location'] = $location;
+    $result = ['ok' => true, 'changed' => true, 'location' => $location];
+    return $lockedData;
+  }
+
+  if (!cluedo_character_is_active($lockedData[$id])) {
+    $error = 'character unavailable';
+    $status = 403;
+    $result = ['ok' => false, 'error' => $error];
+    return $changed ? $lockedData : $lockedData;
+  }
+
+  $now = time();
+  $maxWait = 600;
+  $queue = isset($lockedData[$id]['queue']) && is_array($lockedData[$id]['queue']) ? $lockedData[$id]['queue'] : [];
+  $queue = array_values(array_filter($queue, function ($q) use ($now, $maxWait) {
+    return isset($q['joined_at']) && ($now - (int) $q['joined_at']) < $maxWait;
+  }));
+
+  $activeIndex = null;
+  foreach ($queue as $i => $entry) {
+    if (trim((string) ($entry['team'] ?? '')) !== '') {
+      $activeIndex = $i;
+      break;
+    }
+  }
+
+  if ($activeIndex === null) {
+    $result = ['ok' => true, 'changed' => false];
+    return $lockedData;
+  }
+
+  switch ($action) {
+    case 'plus_30':
+      $queue[$activeIndex]['joined_at'] = (int) ($queue[$activeIndex]['joined_at'] ?? $now) + 30;
+      break;
+    case 'minus_30':
+      $queue[$activeIndex]['joined_at'] = (int) ($queue[$activeIndex]['joined_at'] ?? $now) - 30;
+      break;
+    case 'eject':
+      array_splice($queue, $activeIndex, 1);
+      break;
+    default:
+      $error = 'unknown action';
+      $status = 400;
+      $result = ['ok' => false, 'error' => $error];
+      return $lockedData;
+  }
+
+  $lockedData[$id]['queue'] = array_values($queue);
+  $result = ['ok' => true, 'changed' => true];
+  return $lockedData;
+});
+
+if ($error !== null) {
+  http_response_code($status);
+}
+
+echo json_encode($result);

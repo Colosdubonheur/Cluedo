@@ -9,13 +9,11 @@ $input = json_decode((string) file_get_contents('php://input'), true);
 $id = $input['id'] ?? null;
 $token = $input['token'] ?? null;
 
-
 if (cluedo_is_team_token_deleted((string) $token)) {
   http_response_code(410);
   echo json_encode(['ok' => false, 'error' => 'token deleted', 'token_invalidated' => true]);
   exit;
 }
-
 
 if (!$id || !$token) {
   http_response_code(400);
@@ -23,37 +21,44 @@ if (!$id || !$token) {
   exit;
 }
 
-$path = cluedo_data_path();
-$data = json_decode(file_get_contents($path), true);
+$removed = false;
+$error = null;
+$status = 200;
 
-if (!isset($data[$id])) {
-  http_response_code(404);
-  echo json_encode(['ok' => false, 'error' => 'unknown id']);
-  exit;
-}
-
-$changed = cluedo_enforce_character_visibility($data);
-
-if (!cluedo_character_is_active($data[$id])) {
-  if ($changed) {
-    file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+cluedo_update_characters_data(function (array $data) use ($id, $token, &$removed, &$error, &$status): array {
+  if (!isset($data[$id])) {
+    $error = 'unknown id';
+    $status = 404;
+    return $data;
   }
 
-  http_response_code(403);
-  echo json_encode(['ok' => false, 'error' => 'character unavailable']);
+  cluedo_enforce_character_visibility($data);
+
+  if (!cluedo_character_is_active($data[$id])) {
+    $error = 'character unavailable';
+    $status = 403;
+    return $data;
+  }
+
+  $queue = isset($data[$id]['queue']) && is_array($data[$id]['queue']) ? $data[$id]['queue'] : [];
+  $initialCount = count($queue);
+  $queue = array_values(array_filter($queue, function ($entry) use ($token) {
+    return (string) ($entry['token'] ?? '') !== (string) $token;
+  }));
+
+  $data[$id]['queue'] = $queue;
+  $removed = $initialCount !== count($queue);
+
+  return $data;
+});
+
+if ($error !== null) {
+  http_response_code($status);
+  echo json_encode(['ok' => false, 'error' => $error]);
   exit;
 }
-
-$queue = isset($data[$id]['queue']) && is_array($data[$id]['queue']) ? $data[$id]['queue'] : [];
-$initialCount = count($queue);
-$queue = array_values(array_filter($queue, function ($entry) use ($token) {
-  return (string) ($entry['token'] ?? '') !== (string) $token;
-}));
-
-$data[$id]['queue'] = $queue;
-file_put_contents($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
 
 echo json_encode([
   'ok' => true,
-  'removed' => $initialCount !== count($queue),
+  'removed' => $removed,
 ]);

@@ -16,39 +16,27 @@ if (!is_array($incomingData)) {
   exit;
 }
 
-$dataPath = cluedo_data_path();
-$currentRaw = (string) file_get_contents($dataPath);
-$currentData = json_decode($currentRaw, true);
+cluedo_update_characters_data(function (array $currentData) use ($incomingData): array {
+  $mergedData = cluedo_normalize_characters_data($incomingData);
 
-if (!is_array($currentData)) {
-  $currentData = [];
-}
+  foreach ($mergedData as $id => &$character) {
+    if (!is_array($character)) {
+      continue;
+    }
 
-$mergedData = cluedo_normalize_characters_data($incomingData);
+    $incomingPhoto = $character['photo'] ?? null;
+    $currentPhoto = $currentData[$id]['photo'] ?? null;
 
-foreach ($mergedData as $id => &$character) {
-  if (!is_array($character)) {
-    continue;
+    if ((!is_string($incomingPhoto) || trim($incomingPhoto) === '') && is_string($currentPhoto) && trim($currentPhoto) !== '') {
+      $character['photo'] = $currentPhoto;
+    }
+
+    $character['active'] = ($character['active'] ?? true) !== false;
   }
+  unset($character);
 
-  $incomingPhoto = $character['photo'] ?? null;
-  $currentPhoto = $currentData[$id]['photo'] ?? null;
-
-  if ((!is_string($incomingPhoto) || trim($incomingPhoto) === '') && is_string($currentPhoto) && trim($currentPhoto) !== '') {
-    $character['photo'] = $currentPhoto;
-  }
-
-  $character['active'] = ($character['active'] ?? true) !== false;
-}
-unset($character);
-
-cluedo_enforce_character_visibility($mergedData);
-
-$encoded = json_encode($mergedData, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
-if ($encoded === false || file_put_contents($dataPath, $encoded) === false) {
-  http_response_code(500);
-  echo json_encode(['ok' => false, 'error' => 'save failed']);
-  exit;
-}
+  cluedo_enforce_character_visibility($mergedData);
+  return $mergedData;
+});
 
 echo json_encode(['ok' => true]);
