@@ -21,7 +21,7 @@ cluedo_send_html_no_cache_headers();
         <div class="hub-grid">
           <a class="hub-button hub-button-secure" href="./admin.html">🔐 Administration</a>
           <a class="hub-button hub-button-secure" href="./monitor.html">📊 Supervision</a>
-          <a class="hub-button hub-button-free" href="./team.html?test=1">👥 Espace équipe</a>
+          <a class="hub-button hub-button-free" href="./team.html">👥 Espace équipe</a>
           <button type="button" class="hub-button hub-button-secondary" id="hub-show-team-qr">📱 Afficher le QR code – Espace équipe</button>
           <a class="hub-button hub-button-secondary" href="./api/download_character_qrs.php">⬇️ Télécharger tous les QR codes Personnages (ZIP)</a>
         </div>
@@ -64,7 +64,7 @@ cluedo_send_html_no_cache_headers();
       };
 
       const openQrModal = () => {
-        const teamHref = teamLink?.getAttribute("href") || "./team.html?test=1";
+        const teamHref = teamLink?.getAttribute("href") || "./team.html";
         const absoluteTargetUrl = new URL(teamHref, window.location.href).toString();
         qrImage.src = buildQrImageUrl(absoluteTargetUrl);
         modal.classList.remove("is-hidden");
