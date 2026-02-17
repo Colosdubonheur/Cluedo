@@ -85,7 +85,7 @@ function cluedo_delete_team_photo_files(array $profilesStore): void
     }
 
     $photoPath = trim((string) ($profile['photo'] ?? ''));
-    if ($photoPath === '' || !str_starts_with($photoPath, 'uploads/')) {
+    if ($photoPath === '' || !str_starts_with($photoPath, 'uploads/teams/')) {
       continue;
     }
 
@@ -229,20 +229,16 @@ if ($method === 'POST' && $action === 'reset_game') {
   }
 
   try {
-    $dataPath = cluedo_data_path();
-    $data = json_decode((string) file_get_contents($dataPath), true);
-    if (!is_array($data)) {
-      $data = [];
-    }
-
-    foreach ($data as $characterId => $character) {
-      if (!is_array($character)) {
-        continue;
+    cluedo_update_characters_data(function (array $data): array {
+      foreach ($data as $characterId => $character) {
+        if (!is_array($character)) {
+          continue;
+        }
+        $data[$characterId]['queue'] = [];
       }
-      $data[$characterId]['queue'] = [];
-    }
 
-    file_put_contents($dataPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+      return $data;
+    });
     cluedo_save_history(['teams' => []]);
     $profilesStore = cluedo_load_team_profiles();
     cluedo_delete_team_photo_files($profilesStore);
@@ -315,26 +311,24 @@ if ($method === 'POST' && $action === 'delete_team') {
   $photoDeleted = false;
 
   try {
-    $dataPath = cluedo_data_path();
-    $data = json_decode((string) file_get_contents($dataPath), true);
-    if (!is_array($data)) {
-      $data = [];
-    }
+    cluedo_update_characters_data(function (array $data) use ($token, &$removedQueueEntries): array {
+      foreach ($data as $characterId => $character) {
+        if (!isset($character['queue']) || !is_array($character['queue'])) {
+          continue;
+        }
 
-    foreach ($data as $characterId => $character) {
-      if (!isset($character['queue']) || !is_array($character['queue'])) {
-        continue;
+        $queue = $character['queue'];
+        $initialCount = count($queue);
+        $queue = array_values(array_filter($queue, function ($entry) use ($token) {
+          return (string) ($entry['token'] ?? '') !== $token;
+        }));
+
+        $removedQueueEntries += max(0, $initialCount - count($queue));
+        $data[$characterId]['queue'] = $queue;
       }
 
-      $queue = $character['queue'];
-      $initialCount = count($queue);
-      $queue = array_values(array_filter($queue, function ($entry) use ($token) {
-        return (string) ($entry['token'] ?? '') !== $token;
-      }));
-
-      $removedQueueEntries += max(0, $initialCount - count($queue));
-      $data[$characterId]['queue'] = $queue;
-    }
+      return $data;
+    });
 
     $historyStore = cluedo_load_history();
     if (isset($historyStore['teams'][$token])) {
@@ -362,7 +356,6 @@ if ($method === 'POST' && $action === 'delete_team') {
       $removedMessage = true;
     }
 
-    file_put_contents($dataPath, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
     cluedo_save_history($historyStore);
     cluedo_save_team_profiles($profilesStore);
     cluedo_save_team_presence($presenceStore);
