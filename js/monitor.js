@@ -201,6 +201,7 @@
     const status = statusInfo(team);
     const teamName = team.team_name || "Équipe sans nom";
     const players = renderPlayers(team);
+    const score = Math.trunc(Number(team?.score || 0));
     const photoHtml = team.photo
       ? `<img src="${escapeHtml(team.photo)}" alt="Photo ${escapeHtml(teamName || "équipe")}" class="monitor-team-photo"/>`
       : '<div class="monitor-team-photo monitor-team-photo-placeholder" aria-hidden="true"></div>';
@@ -213,6 +214,7 @@
           <span class="monitor-status ${status.css}">${escapeHtml(status.text)}</span>
           ${status.character ? `<p class="monitor-character-context">${escapeHtml(status.character)}</p>` : ""}
           ${status.timeInfo ? `<p class="monitor-character-context">${escapeHtml(status.timeInfo)}</p>` : ""}
+          <p class="monitor-character-context">Score : ${escapeHtml(String(score))}</p>
         </div>
       </header>
       <div class="monitor-team-body">

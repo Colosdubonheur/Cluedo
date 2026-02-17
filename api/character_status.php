@@ -34,11 +34,13 @@ function cluedo_build_character_game_overview(array $data, int $now, array $prof
 
       $token = trim((string) ($entry['token'] ?? ''));
       if ($token !== '' && !isset($teamsByToken[$token])) {
+        $profile = cluedo_get_team_profile($profilesStore, $token);
         $teamsByToken[$token] = [
           'token' => $token,
           'team_name' => $teamName,
           'state' => $index === 0 ? 'active' : 'waiting',
           'character_name' => (string) ($character['nom'] ?? ''),
+          'score' => (int) ($profile['score'] ?? 0),
         ];
       }
 
@@ -74,6 +76,7 @@ function cluedo_build_character_game_overview(array $data, int $now, array $prof
       'team_name' => $teamName,
       'state' => 'free',
       'character_name' => '',
+      'score' => (int) ($profile['score'] ?? 0),
     ];
   }
 
@@ -154,6 +157,7 @@ cluedo_update_characters_data(function (array $data) use ($id, $profilesStore, $
       'players' => $activePlayers,
       'photo' => (string) ($activeProfile['photo'] ?? ''),
       'incomplete_team_penalty' => !empty($activeProfile['incomplete_team_penalty']),
+      'score' => (int) ($activeProfile['score'] ?? 0),
     ];
   }
 

@@ -37,6 +37,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const teamPhotoSelectBtn = document.getElementById("team-photo-select-btn");
   const teamPhotoUploadBtn = document.getElementById("team-photo-upload-btn");
   const teamPhotoFeedbackEl = document.getElementById("team-photo-feedback");
+  const teamScoreEl = document.getElementById("team-score");
 
   const messageAudio = new Audio("./assets/message.wav");
   messageAudio.preload = "auto";
@@ -190,6 +191,12 @@ document.addEventListener("DOMContentLoaded", () => {
     setFeedback(feedbackName, "Cette équipe a été supprimée par la supervision. Merci de réinitialiser votre équipe.", "error");
   }
 
+
+  function renderTeamScore(score) {
+    if (!teamScoreEl) return;
+    const value = Number.isFinite(Number(score)) ? Number(score) : 0;
+    teamScoreEl.textContent = `Score : ${Math.trunc(value)}`;
+  }
   function fmt(sec) {
     const s = Math.max(0, Math.floor(Number(sec) || 0));
     if (s === 0) return "Disponible";
@@ -729,6 +736,7 @@ document.addEventListener("DOMContentLoaded", () => {
         updateTeamNameUi(retriedInit.teamName);
       }
       renderTeamPhoto(retriedProfile.photo || "");
+      renderTeamScore(retriedProfile.score || 0);
       const retriedBlocked = renderLockState(retriedInit);
       renderCurrentCharacterPanel(retriedPayload, null);
       renderCharactersList(retriedPayload, retriedBlocked);
@@ -755,6 +763,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     renderTeamPhoto(profile.photo || currentTeamPhotoPath || "");
+    renderTeamScore(profile.score || 0);
 
     const isBlocked = renderLockState(init);
     let queueStatus = null;

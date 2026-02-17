@@ -38,8 +38,13 @@ if (isset($input['players']) && is_array($input['players'])) {
   $profile['players'] = $players;
 }
 
-$profilesStore['teams'][$token] = $profile;
-if (!cluedo_save_team_profiles($profilesStore)) {
+try {
+  $updatedStore = cluedo_update_team_profiles(function (array $lockedStore) use ($token, $profile): array {
+    $lockedStore['teams'][$token] = $profile;
+    return $lockedStore;
+  });
+  $profile = cluedo_get_team_profile($updatedStore, $token);
+} catch (RuntimeException $e) {
   http_response_code(500);
   echo json_encode(['ok' => false, 'error' => 'save failed']);
   exit;

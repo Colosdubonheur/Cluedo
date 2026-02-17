@@ -488,6 +488,12 @@ body {
   line-height: 1;
 }
 
+.team-score {
+  margin: -8px 0 16px;
+  text-align: center;
+  font-weight: 800;
+  color: #fef08a;
+}
 
 .team-notifications-header {
   display: flex;
@@ -1297,6 +1303,7 @@ body {
 
 .character-active-team-state,
 .character-active-team-remaining,
+.character-active-team-score,
 .character-active-team-players-title,
 .character-active-team-players-empty {
   margin: 0 0 6px;

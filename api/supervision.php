@@ -648,6 +648,7 @@ foreach ($knownTokens as $token) {
       'time_per_personnage' => array_values($characterTotals),
       'players' => $profile['players'],
       'photo' => $profile['photo'],
+      'score' => (int) ($profile['score'] ?? 0),
       'encountered_personnages' => array_values($encounteredByCharacter),
       'seen_personnages' => array_values($seenByCharacter),
       'message' => cluedo_resolve_team_message($messagesStore, (string) $token),
