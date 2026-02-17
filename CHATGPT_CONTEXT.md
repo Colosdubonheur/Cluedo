@@ -710,6 +710,16 @@ Règles d’identité :
 - Au premier accès (ou si le runtime est absent / invalide), le backend initialise `data/personnages.json` depuis `data/personnages.sample.json`.
 - Toute sauvegarde depuis l’admin (`POST /api/save.php`) écrit **uniquement** dans `data/personnages.json`.
 
+### Architecture – Entités persistantes
+- Les **personnages sont des entités structurelles** : IDs fixes **1 à 15** (immutables), toujours présents dans `data/personnages.json`.
+- Les attributs persistants personnage (`nom`, `location`, `photo`, `active`) sont **conservés par défaut** et ne peuvent être modifiés que via l’administration (`admin.html` + API admin associées).
+- Un reset de partie (`reset_game`, nouvelle partie, fin de jeu) ne purge que les données runtime des équipes (files, profils, scores/historiques, messages, présence, états vu/jamais vu) et **ne doit jamais réinitialiser ni supprimer** les personnages.
+- Le dossier `uploads/characters/` est protégé : suppression uniquement lors d’un **remplacement explicite** d’une photo personnage.
+- En déploiement/mise à jour :
+  - si `data/personnages.json` n’existe pas encore, initialisation depuis `data/personnages.sample.json`;
+  - s’il existe, **aucune réinitialisation automatique** des personnages n’est autorisée.
+- Le mode test et les scripts de charge ne doivent jamais créer/supprimer/modifier les personnages (hors action admin explicite).
+
 Objectif : conserver un dépôt propre tout en laissant les animateurs modifier les données en direct sans conflit Git.
 
 ---
