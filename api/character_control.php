@@ -40,13 +40,67 @@ if ($action === 'set_incomplete_team_penalty') {
     exit;
   }
 
-  $profilesStore = cluedo_load_team_profiles();
-  $profile = cluedo_get_team_profile($profilesStore, $activeToken);
-  $profile['incomplete_team_penalty'] = $penaltyValue;
-  $profilesStore['teams'][$activeToken] = $profile;
-  cluedo_save_team_profiles($profilesStore);
+  try {
+    cluedo_update_team_profiles(function (array $profilesStore) use ($activeToken, $penaltyValue): array {
+      $profile = cluedo_get_team_profile($profilesStore, $activeToken);
+      $profile['incomplete_team_penalty'] = $penaltyValue;
+      $profilesStore['teams'][$activeToken] = $profile;
+      return $profilesStore;
+    });
+  } catch (RuntimeException $e) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'save failed']);
+    exit;
+  }
 
   echo json_encode(['ok' => true, 'changed' => true, 'incomplete_team_penalty' => $penaltyValue]);
+  exit;
+}
+
+if ($action === 'remove_points') {
+  $character = $data[$id];
+  if (!cluedo_character_is_active($character)) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'character unavailable']);
+    exit;
+  }
+
+  $queue = isset($character['queue']) && is_array($character['queue']) ? $character['queue'] : [];
+  $activeToken = trim((string) (($queue[0] ?? [])['token'] ?? ''));
+  if ($activeToken === '') {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'missing active token']);
+    exit;
+  }
+
+  $delta = (int) ($payload['delta'] ?? 0);
+  if (!in_array($delta, [-1, -2, -5], true)) {
+    http_response_code(400);
+    echo json_encode(['ok' => false, 'error' => 'invalid delta']);
+    exit;
+  }
+
+  try {
+    $updatedStore = cluedo_update_team_profiles(function (array $profilesStore) use ($activeToken, $delta): array {
+      $profile = cluedo_get_team_profile($profilesStore, $activeToken);
+      $profile['score'] = (int) ($profile['score'] ?? 0) + $delta;
+      $profilesStore['teams'][$activeToken] = $profile;
+      return $profilesStore;
+    });
+  } catch (RuntimeException $e) {
+    http_response_code(500);
+    echo json_encode(['ok' => false, 'error' => 'save failed']);
+    exit;
+  }
+
+  $updatedProfile = cluedo_get_team_profile($updatedStore, $activeToken);
+  echo json_encode([
+    'ok' => true,
+    'changed' => true,
+    'token' => $activeToken,
+    'score' => (int) ($updatedProfile['score'] ?? 0),
+    'delta' => $delta,
+  ]);
   exit;
 }
 

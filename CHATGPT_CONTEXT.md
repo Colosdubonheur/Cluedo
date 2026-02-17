@@ -1379,3 +1379,23 @@ Pour chaque ID de 1 à 15, les champs suivants sont configurables et persistés 
   - aucune requête concurrente (20–40 utilisateurs) ne peut écraser silencieusement les modifications admin/personnage,
   - aucune erreur de décodage JSON ne déclenche un retour implicite à un état neutre,
   - toute situation critique renvoie une erreur explicite côté API (`critical runtime state error`) avec détail journalisé.
+
+## Système de points (régulation terrain)
+
+- Chaque équipe possède un `score` entier, stocké dans le runtime JSON des profils équipes (`data/team_profiles.json`) et initialisé à `0` si absent.
+- Le score est visible sur :
+  - `team.html` (affichage clair "Score : X"),
+  - `character.html` pour l’équipe active (score affiché dans le panneau équipe active),
+  - `monitor.html` dans la tuile supervision de chaque équipe.
+- Modification du score (manuel uniquement) :
+  - les personnages peuvent retirer des points à l’équipe active via `character.html`,
+  - valeurs autorisées actuellement : `-1`, `-2`, `-5`,
+  - aucune sanction automatique n’existe.
+- Le score peut être négatif.
+- Le score n’impacte pas :
+  - l’ordre des files,
+  - les timers,
+  - l’accès aux personnages,
+  - toute logique de blocage ou victoire/défaite.
+- Le score est un outil de régulation terrain pour les animateurs/personnages, et non une règle punitive automatique.
+- La structure de stockage reste extensible pour des usages futurs (bonus, questions, mécaniques plus riches) sans changer les règles actuelles.

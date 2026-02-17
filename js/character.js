@@ -360,6 +360,7 @@
     const participantsDisplay = players.length
       ? players.map((name) => escapeHtml(name)).join(", ")
       : "Aucun participant renseigné.";
+    const score = Math.trunc(Number(activeTeam.score) || 0);
 
     currentEl.innerHTML = `
       <h3>Équipe active · ${escapeHtml(activeTeamName)}</h3>
@@ -370,6 +371,7 @@
             : '<div class="character-active-team-photo-placeholder" aria-hidden="true">👥</div>'}
           <div>
             <p class="character-active-team-remaining">Temps restant : ${remainingDisplay}</p>
+            <p class="character-active-team-score">Score : ${score}</p>
             <p class="character-active-team-players">Participants (${participantsCount}) : ${participantsDisplay}</p>
           </div>
         </div>
@@ -379,11 +381,19 @@
         <button id="minus30" type="button" class="admin-button character-action-minus">-30 S</button>
         <button id="eject" type="button" class="admin-button character-action-eject">Éjecter l’équipe</button>
       </div>
+      <div class="character-active-team-actions">
+        <button id="malus1" type="button" class="admin-button">Retirer 1 point</button>
+        <button id="malus2" type="button" class="admin-button">Retirer 2 points</button>
+        <button id="malus5" type="button" class="admin-button">Retirer 5 points</button>
+      </div>
     `;
 
     document.getElementById("plus30").onclick = () => control("plus_30");
     document.getElementById("minus30").onclick = () => control("minus_30");
     document.getElementById("eject").onclick = () => control("eject");
+    document.getElementById("malus1").onclick = () => control("remove_points", { delta: -1 });
+    document.getElementById("malus2").onclick = () => control("remove_points", { delta: -2 });
+    document.getElementById("malus5").onclick = () => control("remove_points", { delta: -5 });
   }
 
   function renderGameOverviewCharacters(characters) {
@@ -441,7 +451,8 @@
           stateLabel = `⏳ ${characterName}`;
         }
 
-        return `<li><span class="character-game-overview-item-name">${escapeHtml(teamName)} :</span> <span class="character-game-overview-item-state">${escapeHtml(stateLabel)}</span></li>`;
+        const score = Math.trunc(Number(team?.score) || 0);
+        return `<li><span class="character-game-overview-item-name">${escapeHtml(teamName)} :</span> <span class="character-game-overview-item-state">${escapeHtml(stateLabel)} · Score ${escapeHtml(String(score))}</span></li>`;
       })
       .join("")}</ol>`;
   }

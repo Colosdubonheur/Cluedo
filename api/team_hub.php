@@ -34,6 +34,7 @@ if (cluedo_is_team_token_deleted($token)) {
         'team_name' => '',
         'players' => [],
         'photo' => '',
+        'score' => 0,
       ],
       'history' => [],
       'message' => ['text' => '', 'created_at' => 0],
