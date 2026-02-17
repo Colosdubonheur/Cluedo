@@ -118,12 +118,35 @@ function cluedo_normalize_team_profile(array $profile): array
     return trim((string) $player);
   }, $players), 10, ''), 0, 10);
 
+  $scoreHistory = isset($profile['score_history']) && is_array($profile['score_history']) ? $profile['score_history'] : [];
+  $normalizedScoreHistory = [];
+  foreach ($scoreHistory as $entry) {
+    if (!is_array($entry)) {
+      continue;
+    }
+
+    $reasonKey = trim((string) ($entry['reason_key'] ?? ''));
+    $label = trim((string) ($entry['label'] ?? ''));
+    if ($reasonKey === '' || $label === '') {
+      continue;
+    }
+
+    $normalizedScoreHistory[] = [
+      'reason_key' => $reasonKey,
+      'label' => $label,
+      'delta' => (int) ($entry['delta'] ?? 0),
+      'created_at' => (int) ($entry['created_at'] ?? 0),
+      'character_id' => trim((string) ($entry['character_id'] ?? '')),
+    ];
+  }
+
   return [
     'team_name' => trim((string) ($profile['team_name'] ?? '')),
     'players' => $players,
     'photo' => trim((string) ($profile['photo'] ?? '')),
     'incomplete_team_penalty' => !empty($profile['incomplete_team_penalty']),
     'score' => (int) ($profile['score'] ?? 0),
+    'score_history' => $normalizedScoreHistory,
   ];
 }
 

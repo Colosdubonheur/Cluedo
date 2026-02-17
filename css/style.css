@@ -1345,6 +1345,26 @@ body {
   color: #fff1f2;
 }
 
+.character-score-actions {
+  margin-top: 14px;
+}
+
+.character-score-action {
+  flex: 1 1 260px;
+  min-height: 64px;
+  line-height: 1.25;
+}
+
+.character-score-action-bonus {
+  background: #16a34a;
+  color: #f0fdf4;
+}
+
+.character-score-action-penalty {
+  background: #dc2626;
+  color: #fff1f2;
+}
+
 .character-waiting-queue {
   border: 1px solid #2a3142;
 }
